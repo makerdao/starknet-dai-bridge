@@ -1,0 +1,38 @@
+{
+  "name": "starknet-dai-bridge",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:maciejka/starknet-dai-bridge.git",
+  "author": "Nick Ulven <nickulven@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy:l1:bridge": "hardhat deploy:L1DAITokenBridge",
+    "deploy:l1:escrow": "hardhat deploy:L1Escrow",
+    "deploy:l2:bridge": "python ./scripts/deploy.py l2_dai_bridge",
+    "deploy:l2:dai": "python ./scripts/deploy.py dai",
+    "test:l1": "hardhat test",
+    "test:l2": "pytest ./test/l2/test.py --disable-pytest-warnings"
+  },
+  "dependencies": {
+    "@ethersproject/abi": "^5.4.1",
+    "@ethersproject/abstract-signer": "^5.4.1",
+    "@ethersproject/bignumber": "^5.4.1",
+    "@ethersproject/bytes": "^5.4.0",
+    "@ethersproject/providers": "^5.4.5",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@types/chai": "^4.2.21",
+    "@types/mocha": "^9.0.0",
+    "dotenv": "^10.0.0",
+    "ethers": "^5.4.6",
+    "hardhat": "^2.6.4",
+    "hardhat-gas-reporter": "^1.0.4",
+    "hardhat-waffle": "^0.0.1-security",
+    "solidity-coverage": "^0.7.17",
+    "typescript": "^4.4.3"
+  },
+  "devDependencies": {
+    "ts-node": "^10.2.1"
+  }
+}
