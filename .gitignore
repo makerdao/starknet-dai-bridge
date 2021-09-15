@@ -1,1 +1,14 @@
-l2/**/*.json
+contracts/l2/**/*.json
+contracts/l2/**/*.txt
+
+__pycache__
+dist
+build
+*.egg-info
+
+node_modules
+.env
+
+#Hardhat files
+cache
+artifacts
