@@ -47,10 +47,14 @@ end
 
 @external
 func withdraw{syscall_ptr : felt*, storage_ptr : Storage*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        from_address : felt, to_address : felt, amount : felt):
+        l2_address : felt,
+        l1_address : felt,
+        amount : felt
+):
     alloc_locals
+
     let (dai_address) = dai.read()
-    IDAI.burn(contract_address=dai_address, from_address=from_address, value=amount)
+    IDAI.burn(contract_address=dai_address, from_address=l2_address, value=amount)
 
     # temporary l1 message check
     let (enable_l1_messages: felt) = l1_messages.read()
@@ -59,20 +63,25 @@ func withdraw{syscall_ptr : felt*, storage_ptr : Storage*, pedersen_ptr : HashBu
     else:
       # Send the withdrawal message.
       let (payload : felt*) = alloc()
-      assert payload[0] = from_address
-      assert payload[1] = to_address
-      assert payload[2] = amount
+      assert payload[0] = l1_address
+      assert payload[1] = amount
       let (bridge_address) = bridge.read()
 
-      send_message_to_l1(to_address=bridge_address, payload_size=3, payload=payload)
+      send_message_to_l1(to_address=bridge_address, payload_size=2, payload=payload)
       return ()
     end
 end
 
 @l1_handler
 func finalizeDeposit{syscall_ptr : felt*, storage_ptr : Storage*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        from_address : felt, to_address : felt, amount : felt):
+        from_address : felt, l2_address : felt, amount : felt):
+
+    # check message was sent by L1 contract
+    let (bridge_address) = bridge.read()
+    assert from_address = bridge_address
+
     let (dai_address) = dai.read()
-    IDAI.mint(contract_address=dai_address, to_address=to_address, value=amount)
+    IDAI.mint(contract_address=dai_address, to_address=l2_address, value=amount)
+
     return ()
 end

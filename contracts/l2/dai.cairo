@@ -31,20 +31,55 @@ end
 @external
 func mint{storage_ptr : Storage*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         to_address : felt, value : felt):
-    let (balance) = balances.read(to_address)
-    let (total) = total_balance.read()
-    balances.write(to_address, balance + value)
-    total_balance.write(total + value)
+
+    increment(to_address, value)
+
+    increment_total(value)
+
     return ()
 end
 
 @external
 func burn{storage_ptr : Storage*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         from_address : felt, value : felt):
-    let (balance) = balances.read(from_address)
-    let (total) = total_balance.read()
+
+    decrement(from_address, value)
+    decrement_total(value)
+
+    # send to burn address
+    increment(0, value)
+
+    return ()
+end
+
+func increment{storage_ptr : Storage*, pedersen_ptr : HashBuiltin*, range_check_ptr}(address : felt, value : felt):
+    let (balance) = balances.read(address)
+    balances.write(address, balance + value)
+
+    return ()
+end
+
+func decrement{storage_ptr : Storage*, pedersen_ptr : HashBuiltin*, range_check_ptr}(address : felt, value : felt):
+    let (balance) = balances.read(address)
     assert_nn_le(value, balance)
-    balances.write(from_address, balance - value)
+    balances.write(address, balance - value)
+
+    let (total) = total_balance.read()
     total_balance.write(total - value)
+
+    return ()
+end
+
+func increment_total{storage_ptr : Storage*, pedersen_ptr : HashBuiltin*, range_check_ptr}(value : felt):
+    let (total) = total_balance.read()
+    total_balance.write(total + value)
+
+    return ()
+end
+
+func decrement_total{storage_ptr : Storage*, pedersen_ptr : HashBuiltin*, range_check_ptr}(value : felt):
+    let (total) = total_balance.read()
+    total_balance.write(total - value)
+
     return ()
 end
