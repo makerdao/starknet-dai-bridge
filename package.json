@@ -6,7 +6,7 @@
   "author": "Nick Ulven <nickulven@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "chain": "hardhat node",
+    "chain": "hardhat node --no-deploy",
     "compile:l1": "hardhat compile",
     "deploy:l1:bridge": "hardhat deploy --tags L1DAITokenBridge",
     "deploy:l1:escrow": "hardhat deploy --tags L1Escrow",
