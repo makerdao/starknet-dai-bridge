@@ -1,19 +1,20 @@
 import os
+import json
 
+artifacts_dir = 'artifacts/contracts'
+deployments_dir = 'deployments/starknet'
 
-def main():
-    with open("./l2/dai_address.txt", "r") as f:
-        dai_address = f.read()
+with open('./{0}/dai.json'.format(deployments_dir), 'r') as f:
+    dai_address = json.load(f)['address']
 
-    # TODO: read l1 solidity contract address
-    l1_bridge_address = 0
+with open('./deployments/goerli/L1DAITokenBridge.json', 'r') as f:
+    l1_bridge_address = json.load(f)['address']
 
-    print("Initializing L2 DAI bridge contract with parameters:")
-    print(" L1 Bridge Address:", l1_bridge_address)
-    print(" DAI Address:", dai_address)
-    print()
-    stream = os.popen("interact invoke l2_dai_bridge.initialize \
-            %s %s %s" %
-                      (dai_address, l1_bridge_address, 0))
-    output = stream.read()
-    print(output)
+print('Initializing L2 DAI bridge contract with parameters:')
+print(' L1 Bridge Address:', l1_bridge_address)
+print(' DAI Address:', dai_address)
+print()
+stream = os.popen('python ./scripts/interact.py invoke l2_dai_bridge initialize \
+        {0} {1} {2}'.format(dai_address, l1_bridge_address, 0))
+output = stream.read()
+print(output)
