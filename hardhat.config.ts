@@ -3,8 +3,8 @@ import "@nomiclabs/hardhat-waffle";
 //import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
-
-import "./tasks/deployers";
+import "hardhat-deploy";
+import "@nomiclabs/hardhat-ethers";
 
 import { resolve } from "path";
 
@@ -44,17 +44,23 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
     },
     chainId: chainIds[network],
     url,
+    saveDeployments: true,
   };
 }
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
+  namedAccounts: {
+    deployer: 0,
+  },
+  /*
   gasReporter: {
     currency: "USD",
     enabled: process.env.REPORT_GAS ? true : false,
     excludeContracts: [],
     src: "./contracts",
   },
+  */
   networks: {
     hardhat: {
       accounts: {
@@ -66,6 +72,10 @@ const config: HardhatUserConfig = {
     kovan: getChainConfig("kovan"),
     rinkeby: getChainConfig("rinkeby"),
     ropsten: getChainConfig("ropsten"),
+    localhost: {
+      url: "http://127.0.0.1:8545",
+      saveDeployments: true,
+    },
   },
   paths: {
     artifacts: "./artifacts",
