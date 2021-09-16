@@ -142,8 +142,8 @@ async def test_second_initialize():
 @pytest.mark.asyncio
 async def test_withdraw():
     await bridge_contract.withdraw(
-        from_address=user1,
-        to_address=user2,
+        l2_address=user1,
+        l1_address=user2,
         amount=10).invoke()
 
     # check DAI contract balances
@@ -195,8 +195,8 @@ async def test_burn_insufficient_funds():
 async def test_withdraw_insufficient_funds():
     with pytest.raises(StarkException):
         await bridge_contract.withdraw(
-            from_address=no_funds,
-            to_address=user2,
+            l2_address=no_funds,
+            l1_address=user2,
             amount=10).invoke()
 
     await check_balances(100, 100)
