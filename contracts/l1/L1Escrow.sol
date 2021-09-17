@@ -1,20 +1,40 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+interface ApproveLike {
+  function approve(address, uint256) external;
+}
 
+// Escrow funds on L1, manage approval rights
 contract L1Escrow {
 
-  IERC20 dai;
-
-  constructor(IERC20 _dai) {
-    dai = _dai;
+  // --- Auth ---
+  mapping (address => uint256) public wards;
+  function rely(address usr) external auth {
+    wards[usr] = 1;
+    emit Rely(usr);
+  }
+  function deny(address usr) external auth {
+    wards[usr] = 0;
+    emit Deny(usr);
+  }
+  modifier auth {
+    // TODO: require(wards[msg.sender] == 1, "L1Escrow/not-authorized");
+    _;
   }
 
-  function getDAIAddress() external view returns (IERC20) {
-    return dai;
+  event Rely(address indexed usr);
+  event Deny(address indexed usr);
+
+  event Approve(address indexed token, address indexed spender, uint256 value);
+
+  constructor() {
+    wards[msg.sender] = 1;
+    emit Rely(msg.sender);
   }
 
-  function approve(uint256 amount) external {
-    dai.approve(address(this), amount);
+  function approve(address token, address spender, uint256 value) external auth {
+    emit Approve(token, spender, value);
+    ApproveLike(token).approve(spender, value);
   }
 }

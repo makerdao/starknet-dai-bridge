@@ -1,16 +1,17 @@
-
 import "@nomiclabs/hardhat-waffle";
-//import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "hardhat-deploy";
+import 'hardhat-deploy-ethers';
 import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-etherscan";
 
 import { resolve } from "path";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import { NetworkUserConfig } from "hardhat/types";
+import {getRequiredEnv} from "@makerdao/hardhat-utils";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
@@ -53,29 +54,18 @@ const config: HardhatUserConfig = {
   namedAccounts: {
     deployer: 0,
   },
-  /*
-  gasReporter: {
-    currency: "USD",
-    enabled: process.env.REPORT_GAS ? true : false,
-    excludeContracts: [],
-    src: "./contracts",
-  },
-  */
   networks: {
-    hardhat: {
-      accounts: {
-        mnemonic,
-      },
-      chainId: chainIds.hardhat,
-    },
+    // hardhat: {
+    //   accounts: {
+    //     mnemonic,
+    //   },
+    //   chainId: chainIds.hardhat,
+    // },
     goerli: getChainConfig("goerli"),
-    kovan: getChainConfig("kovan"),
-    rinkeby: getChainConfig("rinkeby"),
-    ropsten: getChainConfig("ropsten"),
-    localhost: {
-      url: "http://127.0.0.1:8545",
-      saveDeployments: true,
-    },
+    // localhost: {
+    //   url: "http://127.0.0.1:8545",
+    //   saveDeployments: true,
+    // },
   },
   paths: {
     artifacts: "./artifacts",
@@ -84,7 +74,7 @@ const config: HardhatUserConfig = {
     tests: "./test",
   },
   solidity: {
-    version: "0.8.7",
+    version: "0.8.4",
     settings: {
       metadata: {
         // Not including the metadata hash
@@ -105,6 +95,9 @@ const config: HardhatUserConfig = {
     target: "ethers-v5",
   },
   */
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY
+  }
 };
 
 export default config;

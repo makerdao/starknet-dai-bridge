@@ -1,75 +1,60 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IStarknetCore {
+interface TokenLike {
+  function transferFrom(address _from, address _to, uint256 _value) external returns (bool success);
+}
 
+interface StarkNetLike {
   function sendMessageToL2(
     uint256 to_address,
     uint256 selector,
     uint256[] calldata payload
   ) external;
-
   function consumeMessageFromL2(uint256 fromAddress, uint256[] calldata payload) external;
 }
 
-interface IL1Escrow {
-  function getDAIAddress() external view returns (IERC20);
-}
-
 contract L1DAITokenBridge {
-
-  IStarknetCore starknetCore;
-  IERC20 dai;
-  IL1Escrow escrow;
-
-  uint256 l2ContractAddress;
+  address public immutable starkNet;
+  address public immutable dai;
+  address public immutable escrow;
+  uint256 public immutable l2DaiBridge;
 
   uint256 constant MESSAGE_WITHDRAW = 0;
-
   uint256 constant DEPOSIT_SELECTOR = 1;
 
-  constructor(IStarknetCore _starknetCore, IL1Escrow _escrow) {
-    starknetCore = _starknetCore;
+  constructor(address _starkNet, address _dai, address _escrow, uint256 _l2DaiBridge) {
+    starkNet = _starkNet;
+    dai = _dai;
     escrow = _escrow;
-    dai = escrow.getDAIAddress();
-  }
-
-  function initialize(uint256 _l2ContractAddress) external {
-    l2ContractAddress = _l2ContractAddress;
+    l2DaiBridge = _l2DaiBridge;
   }
 
   function deposit(
-    address l1Address,
-    uint256 l2Address,
+    address from,
+    uint256 to,
     uint256 amount
   ) external {
+    // transfer funds on DAI contract user -> escrow
+    TokenLike(dai).transferFrom(from, escrow, amount);
 
     uint256[] memory payload = new uint256[](2);
-
-    payload[0] = l2Address;
+    payload[0] = to;
     payload[1] = amount;
 
-    // check that bridge is open
-
-    starknetCore.sendMessageToL2(l2ContractAddress, DEPOSIT_SELECTOR, payload);
-
-    // transfer funds on DAI contract user -> escrow
-    dai.transferFrom(l1Address, address(escrow), amount);
+    StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, DEPOSIT_SELECTOR, payload);
   }
 
-  function finalizeWithdrawal(address l1Address, uint256 amount) external {
+  function finalizeWithdrawal(address to, uint256 amount) external {
 
     uint256[] memory payload = new uint256[](2);
+    payload[0] = MESSAGE_WITHDRAW;
+    payload[1] = uint256(uint160(to));
+    payload[2] = amount;
 
-    // convert l1Address to uint256
-    uint256 l1AddressInt = 0;
-    payload[0] = l1AddressInt;
-    payload[1] = amount;
-
-    starknetCore.consumeMessageFromL2(l2ContractAddress, payload);
-
-    // transfer funds on DAI contract escrow -> user
-    dai.transferFrom(address(escrow), l1Address, amount);
+    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiBridge, payload);
+    TokenLike(dai).transferFrom(escrow, to, amount);
   }
 }
