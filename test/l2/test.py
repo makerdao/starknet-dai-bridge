@@ -111,10 +111,12 @@ async def check_balances(
     burn_balance = await dai_contract.balanceOf(burn).call()
     user1_balance = await dai_contract.balanceOf(user1).call()
     user2_balance = await dai_contract.balanceOf(user2).call()
+    total_supply = await dai_contract.totalSupply().call()
 
     assert burn_balance == (expected_burn_balance,)
     assert user1_balance == (expected_user1_balance,)
     assert user2_balance == (expected_user2_balance,)
+    assert total_supply == (expected_user1_balance+expected_user2_balance,)
 
 
 async def check_no_funds():
@@ -133,9 +135,23 @@ async def call_from(call, user):
     return res
 
 
-@pytest.fixture(scope="function", autouse=True)
-async def before_each():
-    # intialize two users with 100 DAI
+@pytest.fixture(scope="session")
+def event_loop():
+    return asyncio.get_event_loop()
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def before_all():
+    await initialize()
+    global bridge_contract
+    global dai_contract
+    bridge_contract = await deploy("l2_dai_bridge.cairo")
+    dai_contract = await deploy("dai.cairo")
+    await bridge_contract.initialize(
+        _dai=dai_contract.contract_address,
+        _bridge=int(starknet_contract_address, 16),
+    ).invoke()
+
     global user1
     global user2
     global user3
@@ -154,26 +170,27 @@ async def before_each():
     await user2_account.initialize(0, user2).invoke()
     await user3_account.initialize(0, user3).invoke()
 
+
+@pytest.fixture(scope="function", autouse=True)
+async def for_each():
+    # before each
+
+    # intialize two users with 100 DAI
     await dai_contract.mint(user1, 100).invoke()
     await dai_contract.mint(user2, 100).invoke()
 
+    yield
 
-@pytest.fixture(scope="session")
-def event_loop():
-    return asyncio.get_event_loop()
+    # after each
+    global burn_balance
 
+    (user1_balance,) = await dai_contract.balanceOf(user1).call()
+    await dai_contract.burn(user1, user1_balance).invoke()
+    burn_balance += user1_balance
 
-@pytest.fixture(scope="session", autouse=True)
-async def before_all():
-    await initialize()
-    global bridge_contract
-    global dai_contract
-    bridge_contract = await deploy("l2_dai_bridge.cairo")
-    dai_contract = await deploy("dai.cairo")
-    await bridge_contract.initialize(
-        _dai=dai_contract.contract_address,
-        _bridge=int(starknet_contract_address, 16),
-    ).invoke()
+    (user2_balance,) = await dai_contract.balanceOf(user2).call()
+    await dai_contract.burn(user2, user2_balance).invoke()
+    burn_balance += user2_balance
 
 
 #########
@@ -271,14 +288,14 @@ async def test_withdraw_insufficient_funds():
 #######
 @pytest.mark.asyncio
 async def test_mint():
-    await dai_contract.mint(to_address=user1, value=10).invoke()
+    await dai_contract.mint(to_address=user1, amount=10).invoke()
 
     await check_balances(burn_balance, 110, 100)
 
 
 @pytest.mark.asyncio
 async def test_burn():
-    await dai_contract.burn(from_address=user1, value=10).invoke()
+    await dai_contract.burn(from_address=user1, amount=10).invoke()
 
     global burn_balance
     burn_balance += 10
@@ -288,7 +305,7 @@ async def test_burn():
 @pytest.mark.asyncio
 async def test_burn_insufficient_funds():
     with pytest.raises(StarkException):
-        await dai_contract.burn(from_address=no_funds, value=10).invoke()
+        await dai_contract.burn(from_address=no_funds, amount=10).invoke()
 
     await check_balances(burn_balance, 100, 100)
     await check_no_funds()

@@ -62,6 +62,7 @@ func transfer{
     local syscall_ptr_local : felt* = syscall_ptr
     _transfer(sender, recipient, amount)
     let syscall_ptr : felt* = syscall_ptr_local
+
     return ()
 end
 
@@ -81,6 +82,7 @@ func transferFrom{
     _transfer(sender, recipient, amount)
     allowances.write(sender, caller, caller_allowance - amount)
     let syscall_ptr : felt* = syscall_ptr_local
+
     return ()
 end
 
@@ -89,8 +91,13 @@ func _transfer{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(sender: felt, recipient : felt, amount : felt):
-    decrease_balance(sender, amount)
-    increase_balance(recipient, amount)
+    let (balance) = balances.read(sender)
+    assert_nn_le(amount, balance)
+    balances.write(sender, balance - amount)
+
+    let (balance) = balances.read(recipient)
+    balances.write(recipient, balance + amount)
+
     return ()
 end
 
@@ -107,53 +114,6 @@ func approve{
     local syscall_ptr_local : felt* = syscall_ptr
     allowances.write(caller, spender, amount)
     let syscall_ptr : felt* = syscall_ptr_local
-    return ()
-end
-
-func increase_balance{
-    storage_ptr : Storage*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(address : felt, amount : felt):
-    let (balance) = balances.read(address)
-    balances.write(address, balance + amount)
-
-    return ()
-end
-
-func decrease_balance{
-    storage_ptr : Storage*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(address : felt, value : felt):
-    let (balance) = balances.read(address)
-    assert_nn_le(value, balance)
-    balances.write(address, balance - value)
-
-    let (total) = total_supply.read()
-    total_supply.write(total - value)
-
-    return ()
-end
-
-func increase_supply{
-    storage_ptr : Storage*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(value : felt):
-    let (total) = total_supply.read()
-    total_supply.write(total + value)
-
-    return ()
-end
-
-func decrease_supply{
-    storage_ptr : Storage*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(value : felt):
-    let (total) = total_supply.read()
-    total_supply.write(total - value)
 
     return ()
 end
