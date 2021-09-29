@@ -4,7 +4,9 @@ pragma solidity >=0.8.4;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface TokenLike {
-  function transferFrom(address _from, address _to, uint256 _value) external returns (bool success);
+  function transferFrom(
+    address _from, address _to, uint256 _value
+  ) external returns (bool success);
 }
 
 interface StarkNetLike {
@@ -13,10 +15,13 @@ interface StarkNetLike {
     uint256 selector,
     uint256[] calldata payload
   ) external;
-  function consumeMessageFromL2(uint256 fromAddress, uint256[] calldata payload) external;
+  function consumeMessageFromL2(
+    uint256 from_address,
+    uint256[] calldata payload
+  ) external;
 }
 
-contract L1DAITokenBridge {
+contract L1DAIBridge {
   address public immutable starkNet;
   address public immutable dai;
   address public immutable escrow;
@@ -37,7 +42,6 @@ contract L1DAITokenBridge {
     uint256 to,
     uint256 amount
   ) external {
-    // transfer funds on DAI contract user -> escrow
     TokenLike(dai).transferFrom(from, escrow, amount);
 
     uint256[] memory payload = new uint256[](2);

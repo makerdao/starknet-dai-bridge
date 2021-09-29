@@ -1,8 +1,6 @@
 import "@nomiclabs/hardhat-waffle";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
-import "hardhat-deploy";
-import 'hardhat-deploy-ethers';
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 
@@ -45,15 +43,14 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
     },
     chainId: chainIds[network],
     url,
-    saveDeployments: true,
   };
 }
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
-  namedAccounts: {
-    deployer: 0,
-  },
+  // namedAccounts: {
+  //   deployer: 0,
+  // },
   networks: {
     // hardhat: {
     //   accounts: {
