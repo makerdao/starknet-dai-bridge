@@ -270,6 +270,17 @@ async def test_should_not_transfer_to_zero_address():
 
 
 @pytest.mark.asyncio
+async def test_should_not_transfer_to_dai_address():
+    '''
+    with pytest.raises(StarkException):
+        await dai_contract.transfer(dai_contract.contract_address, 10).invoke()
+
+    await check_balances(burn_balance, 100, 100)
+    '''
+    pass
+
+
+@pytest.mark.asyncio
 async def test_mint():
     await dai_contract.mint(to_address=user1, amount=10).invoke()
 
