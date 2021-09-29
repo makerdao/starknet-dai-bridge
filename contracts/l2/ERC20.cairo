@@ -3,7 +3,7 @@
 
 from starkware.starknet.common.storage import Storage
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math import assert_nn_le
+from starkware.cairo.common.math import assert_nn_le, assert_not_equal
 from starkware.starknet.common.syscalls import get_caller_address
 
 
@@ -58,9 +58,11 @@ func transfer{
   }(recipient : felt, amount : felt):
     alloc_locals
 
-    let (sender) = get_caller_address()
+    assert_not_equal(recipient, 0)
+
+    let (caller) = get_caller_address()
     local syscall_ptr_local : felt* = syscall_ptr
-    _transfer(sender, recipient, amount)
+    _transfer(caller, recipient, amount)
     let syscall_ptr : felt* = syscall_ptr_local
 
     return ()
