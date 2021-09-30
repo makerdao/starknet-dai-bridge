@@ -53,7 +53,7 @@ contract L1DAIBridge {
 
   function finalizeWithdrawal(address to, uint256 amount) external {
 
-    uint256[] memory payload = new uint256[](2);
+    uint256[] memory payload = new uint256[](3);
     payload[0] = MESSAGE_WITHDRAW;
     payload[1] = uint256(uint160(to));
     payload[2] = amount;
