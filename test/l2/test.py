@@ -83,9 +83,6 @@ burn_balance = 0
 user1 = None
 user2 = None
 user3 = None
-user1_account = None
-user2_account = None
-user3_account = None
 
 '''
 L1_DEPLOYMENTS_DIR = os.path.join(
@@ -109,8 +106,8 @@ async def check_balances(
     expected_user2_balance,
 ):
     burn_balance = await dai_contract.balanceOf(burn).call()
-    user1_balance = await dai_contract.balanceOf(user1).call()
-    user2_balance = await dai_contract.balanceOf(user2).call()
+    user1_balance = await dai_contract.balanceOf(user1.contract_address).call()
+    user2_balance = await dai_contract.balanceOf(user2.contract_address).call()
     total_supply = await dai_contract.totalSupply().call()
 
     assert burn_balance == (expected_burn_balance,)
@@ -158,42 +155,34 @@ async def before_all():
     global user1_account
     global user2_account
     global user3_account
-    user1_account = await deploy("Account.cairo")
-    user2_account = await deploy("Account.cairo")
-    user3_account = await deploy("Account.cairo")
-    user1 = user1_account.contract_address
-    user2 = user2_account.contract_address
-    user3 = user3_account.contract_address
+    user1 = await deploy("Account.cairo")
+    user2 = await deploy("Account.cairo")
+    user3 = await deploy("Account.cairo")
 
     # change to L1 addresses
-    await user1_account.initialize(0, user1).invoke()
-    await user2_account.initialize(0, user2).invoke()
-    await user3_account.initialize(0, user3).invoke()
+    await user1.initialize(0, user1.contract_address).invoke()
+    await user2.initialize(0, user2.contract_address).invoke()
+    await user3.initialize(0, user3.contract_address).invoke()
 
 
 @pytest.fixture(scope="function", autouse=True)
 async def for_each():
     # before each
     # intialize two users with 100 DAI
-    await dai_contract.mint(user1, 100).invoke()
-    await dai_contract.mint(user2, 100).invoke()
-
-    yield
-
-    # after each
     global burn_balance
+    global user1_balance
+    global user2_balance
 
-    (user1_balance,) = await dai_contract.balanceOf(user1).call()
-    call = dai_contract.burn(user1, user1_balance)
-    await call_from(call, user1_account)
-    burn_balance += user1_balance
-    balance = await dai_contract.balanceOf(user1).call()
-    print(balance)
+    await dai_contract.mint(user1.contract_address, 100).invoke()
+    await dai_contract.mint(user2.contract_address, 100).invoke()
 
-    (user2_balance,) = await dai_contract.balanceOf(user2).call()
-    call = dai_contract.burn(user2, user2_balance)
-    await call_from(call, user2_account)
-    burn_balance += user2_balance
+    balance = await dai_contract.balanceOf(0).call()
+    burn_balance = balance[0]
+    balance = await dai_contract.balanceOf(user1.contract_address).call()
+    user1_balance = balance[0]
+    print(user1_balance)
+    balance = await dai_contract.balanceOf(user2.contract_address).call()
+    user2_balance = balance[0]
 
 
 #######
@@ -208,57 +197,65 @@ async def test_total_supply():
 
 @pytest.mark.asyncio
 async def test_balance_of():
-    balance = await dai_contract.balanceOf(user1).call()
+    balance = await dai_contract.balanceOf(user1.contract_address).call()
 
-    assert balance == (100,)
+    assert balance == (user1_balance,)
 
 
 @pytest.mark.asyncio
 async def test_transfer():
-    call = dai_contract.transfer(user2, 10)
-    await call_from(call, user1_account)
+    call = dai_contract.transfer(user2.contract_address, 10)
+    await call_from(call, user1)
 
-    await check_balances(burn_balance, 90, 110)
+    await check_balances(
+        burn_balance,
+        user1_balance-10,
+        user2_balance+10)
 
 
 @pytest.mark.asyncio
 async def test_transfer_to_yourself():
-    call = dai_contract.transfer(user1, 10)
-    await call_from(call, user1_account)
+    call = dai_contract.transfer(user1.contract_address, 10)
+    await call_from(call, user1)
 
-    await check_balances(burn_balance, 100, 100)
+    await check_balances(burn_balance, user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio
 async def test_transfer_from():
-    call = dai_contract.approve(user3, 10)
-    await call_from(call, user1_account)
+    call = dai_contract.approve(user3.contract_address, 10)
+    await call_from(call, user1)
     call2 = dai_contract.transferFrom(
-        sender=user1,
-        recipient=user2,
-        amount=10,
-    )
-    await call_from(call2, user3_account)
+        user1.contract_address,
+        user2.contract_address,
+        10)
+    await call_from(call2, user3)
 
-    await check_balances(burn_balance, 90, 110)
+    await check_balances(
+        burn_balance,
+        user1_balance-10,
+        user2_balance+10)
 
 
 @pytest.mark.asyncio
 async def test_transfer_to_yourself_using_transfer_from():
     with pytest.raises(StarkException):
-        call = dai_contract.transferFrom(user1, user2, 10)
-        await call_from(call, user1_account)
+        call = dai_contract.transferFrom(
+            user1.contract_address,
+            user2.contract_address,
+            10)
+        await call_from(call, user1)
 
-    await check_balances(burn_balance, 100, 100)
+    await check_balances(burn_balance, user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio
 async def test_should_not_transfer_beyond_balance():
     with pytest.raises(StarkException):
-        call = dai_contract.transfer(user2, 110)
-        await call_from(call, user1_account)
+        call = dai_contract.transfer(user2.contract_address, user1_balance+1)
+        await call_from(call, user1)
 
-    await check_balances(burn_balance, 100, 100)
+    await check_balances(burn_balance, user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio
@@ -266,7 +263,7 @@ async def test_should_not_transfer_to_zero_address():
     with pytest.raises(StarkException):
         await dai_contract.transfer(burn, 10).invoke()
 
-    await check_balances(burn_balance, 100, 100)
+    await check_balances(burn_balance, user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio
@@ -275,24 +272,24 @@ async def test_should_not_transfer_to_dai_address():
     with pytest.raises(StarkException):
         await dai_contract.transfer(dai_contract.contract_address, 10).invoke()
 
-    await check_balances(burn_balance, 100, 100)
+    await check_balances(burn_balance, user1_balance, user2_balance)
     '''
     pass
 
 
 @pytest.mark.asyncio
 async def test_mint():
-    await dai_contract.mint(to_address=user1, amount=10).invoke()
+    await dai_contract.mint(user1.contract_address, 10).invoke()
 
-    await check_balances(burn_balance, 110, 100)
+    await check_balances(burn_balance, user1_balance+10, user2_balance)
 
 
 @pytest.mark.asyncio
 async def test_should_not_allow_minting_to_zero_address():
     with pytest.raises(StarkException):
-        await dai_contract.mint(to_address=burn, amount=10).invoke()
+        await dai_contract.mint(burn, 10).invoke()
 
-    await check_balances(burn_balance, 100, 100)
+    await check_balances(burn_balance, user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio
@@ -301,11 +298,11 @@ async def test_should_not_allow_minting_to_dai_address():
     '''
     with pytest.raises(StarkException):
         await dai_contract.mint(
-                to_address=dai_contract.contract_address,
-                amount=10,
+                dai_contract.contract_address,
+                10,
             ).invoke()
 
-    await check_balances(burn_balance, 100, 100)
+    await check_balances(burn_balance, user1_balance, user2_balance)
     '''
 
 
@@ -317,30 +314,28 @@ async def test_should_not_allow_minting_to_address_beyond_max():
 
 @pytest.mark.asyncio
 async def test_burn():
-    call = dai_contract.burn(from_address=user1, amount=10)
-    await call_from(call, user1_account)
+    call = dai_contract.burn(user1.contract_address, 10)
+    await call_from(call, user1)
 
-    global burn_balance
-    burn_balance += 10
-    await check_balances(burn_balance, 90, 100)
+    await check_balances(burn_balance+10, user1_balance-10, user2_balance)
 
 
 @pytest.mark.asyncio
 async def test_should_not_burn_beyond_balance():
     with pytest.raises(StarkException):
-        await dai_contract.burn(from_address=no_funds, amount=10).invoke()
+        call = dai_contract.burn(user1.contract_address, user1_balance+1)
+        await call_from(call, user1)
 
-    await check_balances(burn_balance, 100, 100)
-    await check_no_funds()
+    await check_balances(burn_balance, user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio
 async def test_should_not_burn_other():
     with pytest.raises(StarkException):
-        call = dai_contract.burn(from_address=user1, amount=10)
-        await call_from(call, user2_account)
+        call = dai_contract.burn(user1.contract_address, 10)
+        await call_from(call, user2)
 
-    await check_balances(burn_balance, 100, 100)
+    await check_balances(burn_balance, user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio
@@ -351,28 +346,25 @@ async def test_deployer_can_burn_other():
 
 @pytest.mark.asyncio
 async def test_approve():
-    call = dai_contract.approve(user2, 10)
-    await call_from(call, user1_account)
+    call = dai_contract.approve(user2.contract_address, 10)
+    await call_from(call, user1)
 
-    allowance = await dai_contract.allowance(user1, user2).call()
+    allowance = await dai_contract.allowance(
+        user1.contract_address,
+        user2.contract_address).call()
 
     assert allowance == (10,)
 
 
 @pytest.mark.asyncio
 async def test_can_burn_other_if_approved():
-    '''
-    call = dai_contract.approve(user2, 10)
-    await call_from(call, user1_account)
+    call = dai_contract.approve(user2.contract_address, 10)
+    await call_from(call, user1)
 
-    call2 = dai_contract.burn(user1, 10)
-    await call_from(call2, user2_account)
+    call2 = dai_contract.burn(user1.contract_address, 10)
+    await call_from(call2, user2)
 
-    global burn_balance
-    burn_balance += 10
-    await check_balances(burn_balance, 90, 100)
-    '''
-    pass
+    await check_balances(burn_balance+10, user1_balance-10, user2_balance)
 
 
 @pytest.mark.asyncio
@@ -395,53 +387,54 @@ async def test_does_not_approve_with_invalid_permit():
 
 @pytest.mark.asyncio
 async def test_transfer_using_transfer_from_and_allowance():
-    call = dai_contract.approve(user3, 10)
-    await call_from(call, user1_account)
+    call = dai_contract.approve(user3.contract_address, 10)
+    await call_from(call, user1)
 
-    call2 = dai_contract.transferFrom(user1, user2, 10)
-    await call_from(call2, user3_account)
+    call2 = dai_contract.transferFrom(
+        user1.contract_address,
+        user2.contract_address,
+        10)
+    await call_from(call2, user3)
 
-    await check_balances(burn_balance, 90, 110)
+    await check_balances(burn_balance, user1_balance-10, user2_balance+10)
 
 
 @pytest.mark.asyncio
 async def test_should_not_transfer_beyond_allowance():
-    call = dai_contract.approve(user3, 10)
-    await call_from(call, user1_account)
+    call = dai_contract.approve(user3.contract_address, 10)
+    await call_from(call, user1)
 
     with pytest.raises(StarkException):
-        call2 = dai_contract.transferFrom(user1, user2, 20)
-        await call_from(call2, user3_account)
+        call2 = dai_contract.transferFrom(
+            user1.contract_address,
+            user2.contract_address,
+            20)
+        await call_from(call2, user3)
 
-    await check_balances(burn_balance, 100, 100)
+    await check_balances(burn_balance, user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio
 async def test_burn_using_burn_and_allowance():
-    '''
-    call = dai_contract.approve(user2, 10)
-    await call_from(call, user1_account)
+    call = dai_contract.approve(user2.contract_address, 10)
+    await call_from(call, user1)
 
-    call2 = dai_contract.burn(user1, 10)
-    await call_from(call2, user2_account)
+    call2 = dai_contract.burn(user1.contract_address, 10)
+    await call_from(call2, user2)
 
-    global burn_balance
-    burn_balance -= 10
-    await check_balances(burn_balance, 90, 100)
-    '''
-    pass
+    await check_balances(burn_balance+10, user1_balance-10, user2_balance)
 
 
 @pytest.mark.asyncio
 async def test_should_not_burn_beyond_allowance():
-    call = dai_contract.approve(user2, 10)
-    await call_from(call, user1_account)
+    call = dai_contract.approve(user2.contract_address, 10)
+    await call_from(call, user1)
 
-    call2 = dai_contract.burn(user1, 10)
+    call2 = dai_contract.burn(user1.contract_address, 20)
     with pytest.raises(StarkException):
-        await call_from(call2, user2_account)
+        await call_from(call2, user2)
 
-    await check_balances(burn_balance, 100, 100)
+    await check_balances(burn_balance, user1_balance, user2_balance)
 
 
 ##########
@@ -462,16 +455,14 @@ async def test_second_initialize():
 async def test_withdraw():
     '''
     call = bridge_contract.withdraw(
-        l2_address=user1,
-        l1_address=user2,
+        l2_address=user1.contract_address,
+        l1_address=user2.contract_address,
         amount=10)
-    await call_from(call, user1_account)
+    await call_from(call, user1)
 
     # check DAI contract balances
     # user2 should be unaffected as the withdraw goes to the burn address
-    global burn_balance
-    burn_balance += 10
-    await check_balances(burn_balance, 90, 100)
+    await check_balances(burn_balance+10, user1_balance-10, user2_balance)
     # check l1 message?
     '''
     pass
@@ -482,10 +473,10 @@ async def test_withdraw_insufficient_funds():
     with pytest.raises(StarkException):
         await bridge_contract.withdraw(
             l2_address=no_funds,
-            l1_address=user2,
+            l1_address=user2.contract_address,
             amount=10).invoke()
 
-    await check_balances(burn_balance, 100, 100)
+    await check_balances(burn_balance, user1_balance, user2_balance)
     await check_no_funds()
 
 
@@ -496,8 +487,8 @@ async def test_withdraw_insufficient_funds():
 async def test_finalize_deposit():
     await bridge_contract.finalizeDeposit(
         from_address=int(starknet_contract_address, 16),
-        l2_address=user2,
+        l2_address=user2.contract_address,
         amount=10).invoke()
 
     # user1 should be unaffected as the new coin is minted
-    await check_balances(burn_balance, 100, 110)
+    await check_balances(burn_balance, user1_balance, user2_balance+10)
