@@ -61,9 +61,8 @@ func transfer{
     assert_not_equal(recipient, 0)
 
     let (caller) = get_caller_address()
-    local syscall_ptr_local : felt* = syscall_ptr
+    local syscall_ptr : felt* = syscall_ptr
     _transfer(caller, recipient, amount)
-    let syscall_ptr : felt* = syscall_ptr_local
 
     return ()
 end
@@ -79,11 +78,10 @@ func transferFrom{
 
     let (local caller) = get_caller_address()
     let (local caller_allowance) = allowances.read(owner=sender, spender=caller)
-    local syscall_ptr_local : felt* = syscall_ptr
+    local syscall_ptr : felt* = syscall_ptr
     assert_nn_le(amount, caller_allowance)
     _transfer(sender, recipient, amount)
     allowances.write(sender, caller, caller_allowance - amount)
-    let syscall_ptr : felt* = syscall_ptr_local
 
     return ()
 end
@@ -113,9 +111,8 @@ func approve{
     alloc_locals
 
     let (caller) = get_caller_address()
-    local syscall_ptr_local : felt* = syscall_ptr
+    local syscall_ptr : felt* = syscall_ptr
     allowances.write(caller, spender, amount)
-    let syscall_ptr : felt* = syscall_ptr_local
 
     return ()
 end
