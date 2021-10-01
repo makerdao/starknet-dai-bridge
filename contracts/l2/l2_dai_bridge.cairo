@@ -39,11 +39,12 @@ func initialize{storage_ptr : Storage*, pedersen_ptr : HashBuiltin*, range_check
 end
 
 @external
-func withdraw{syscall_ptr : felt*, storage_ptr : Storage*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        l2_address : felt,
-        l1_address : felt,
-        amount : felt
-):
+func withdraw{
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(l2_address : felt, l1_address : felt, amount : felt):
     alloc_locals
 
     let (dai_address) = dai.read()
@@ -58,10 +59,16 @@ func withdraw{syscall_ptr : felt*, storage_ptr : Storage*, pedersen_ptr : HashBu
     return ()
 end
 
+
+# external is temporary
 @external
 @l1_handler
-func finalizeDeposit{syscall_ptr : felt*, storage_ptr : Storage*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        from_address : felt, l2_address : felt, amount : felt):
+func finalizeDeposit{
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(from_address : felt, l2_address : felt, amount : felt):
 
     # check message was sent by L1 contract
     let (bridge_address) = bridge.read()

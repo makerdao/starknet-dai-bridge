@@ -34,7 +34,6 @@ func burn{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(from_address : felt, amount : felt):
-    alloc_locals
 
     let (caller) = get_caller_address()
 
@@ -50,21 +49,20 @@ func burn{
     let (balance) = balances.read(0)
     balances.write(0, balance + amount)
 
-    local syscall_ptr_local : felt* = syscall_ptr
-    local storage_ptr_local : Storage* = storage_ptr
-    local pedersen_ptr_local : HashBuiltin* = pedersen_ptr
-    local range_check_ptr_local = range_check_ptr
     if caller != from_address:
       let (allowance) = allowances.read(from_address, caller)
       assert_nn_le(amount, allowance)
       allowances.write(from_address, caller, allowance - amount)
+      tempvar syscall_ptr : felt* = syscall_ptr
+      tempvar storage_ptr : Storage* = storage_ptr
+      tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
+      tempvar range_check_ptr = range_check_ptr
+    else:
+      tempvar syscall_ptr : felt* = syscall_ptr
+      tempvar storage_ptr : Storage* = storage_ptr
+      tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
+      tempvar range_check_ptr = range_check_ptr
     end
-
-    let syscall_ptr : felt* = syscall_ptr_local
-    let storage_ptr : Storage* = storage_ptr_local
-    let pedersen_ptr : HashBuiltin*= pedersen_ptr_local
-    let range_check_ptr = range_check_ptr_local
-
 
     return ()
 end
