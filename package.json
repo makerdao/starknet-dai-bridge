@@ -8,6 +8,8 @@
   "scripts": {
     "format": "prettier --check \"./**/*.ts\"",
     "format:fix": "prettier --write \"./**/*.ts\"",
+    "lint": "eslint --ext .ts test test-e2e scripts optimism-helpers hardhat.config.ts",
+    "lint:fix": "yarn lint --fix",
     "compile:l1": "hardhat compile",
     "deploy:goerli": "hardhat run --network goerli ./scripts/deployGoerli.ts",
     "deploy:l2:bridge": "python ./scripts/deploy.py l2_dai_bridge",
