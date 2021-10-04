@@ -22,19 +22,50 @@ interface StarkNetLike {
 }
 
 contract L1DAIBridge {
+   // --- Auth ---
+  mapping (address => uint256) public wards;
+  function rely(address usr) external auth {
+    wards[usr] = 1;
+    emit Rely(usr);
+  }
+  function deny(address usr) external auth {
+    wards[usr] = 0;
+    emit Deny(usr);
+  }
+  modifier auth {
+    require(wards[msg.sender] == 1, "L1DAIBridge/not-authorized");
+    _;
+  }
+
+  event Rely(address indexed usr);
+  event Deny(address indexed usr);
+
+
   address public immutable starkNet;
   address public immutable dai;
   address public immutable escrow;
   uint256 public immutable l2DaiBridge;
 
+  uint256 public isOpen = 1;
+
   uint256 constant MESSAGE_WITHDRAW = 0;
-  uint256 constant DEPOSIT_SELECTOR = 1;
+  uint256 constant DEPOSIT_SELECTOR = 0;
+
+  event Closed();
 
   constructor(address _starkNet, address _dai, address _escrow, uint256 _l2DaiBridge) {
+    wards[msg.sender] = 1;
+    emit Rely(msg.sender);
+
     starkNet = _starkNet;
     dai = _dai;
     escrow = _escrow;
     l2DaiBridge = _l2DaiBridge;
+  }
+
+  function close() external auth {
+    isOpen = 0;
+    emit Closed();
   }
 
   function deposit(
@@ -42,6 +73,8 @@ contract L1DAIBridge {
     uint256 to,
     uint256 amount
   ) external {
+    require(isOpen == 1, "L1DAIBridge/closed");
+
     TokenLike(dai).transferFrom(from, escrow, amount);
 
     uint256[] memory payload = new uint256[](2);
@@ -55,7 +88,7 @@ contract L1DAIBridge {
 
     uint256[] memory payload = new uint256[](3);
     payload[0] = MESSAGE_WITHDRAW;
-    payload[1] = uint256(uint160(to));
+    payload[1] = uint256(uint160(msg.sender));
     payload[2] = amount;
 
     StarkNetLike(starkNet).consumeMessageFromL2(l2DaiBridge, payload);
