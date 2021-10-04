@@ -34,7 +34,5 @@ jobs:
 
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
-      - run: yarn build
-
       - run: yarn test:l1
 
