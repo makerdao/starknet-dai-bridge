@@ -6,18 +6,18 @@
   "author": "Nick Ulven <nickulven@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "chain": "hardhat node --no-deploy",
+    "format": "prettier --check \"./**/*.ts\"",
+    "format:fix": "prettier --write \"./**/*.ts\"",
     "compile:l1": "hardhat compile",
     "deploy:goerli": "hardhat run --network goerli ./scripts/deployGoerli.ts",
-    "deploy:l1:bridge": "hardhat deploy --tags L1DAITokenBridge",
-    "deploy:l1:escrow": "hardhat deploy --tags L1Escrow",
     "deploy:l2:bridge": "python ./scripts/deploy.py l2_dai_bridge",
     "deploy:l2:dai": "python ./scripts/deploy.py dai",
     "interact:l2:bridge": "python ./scripts/interact.py l2_dai_bridge",
     "interact:l2:dai": "python ./scripts/interact.py dai",
     "init-l2-bridge": "python ./scripts/initialize.py",
     "test:l1": "hardhat test",
-    "test:l2": "pytest ./test/l2/test.py --disable-pytest-warnings"
+    "test:l2": "pytest ./test/l2/test.py --disable-pytest-warnings",
+    "test:fix": "yarn lint:fix && yarn format:fix && yarn test:l1 && yarn typecheck"
   },
   "devDependencies": {
     "@codechecks/client": "^0.1.11",

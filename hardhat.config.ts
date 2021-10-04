@@ -9,7 +9,7 @@ import { resolve } from "path";
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import { NetworkUserConfig } from "hardhat/types";
-import {getRequiredEnv} from "@makerdao/hardhat-utils";
+import { getRequiredEnv } from "@makerdao/hardhat-utils";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
@@ -93,8 +93,8 @@ const config: HardhatUserConfig = {
   },
   */
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY
-  }
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
 };
 
 export default config;
