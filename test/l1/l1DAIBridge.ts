@@ -1,6 +1,6 @@
 import hre from 'hardhat';
 import chai, {expect} from "chai";
-import {simpleDeploy, testAuth} from "@makerdao/hardhat-utils";
+import {assertPublicMutableMethods, simpleDeploy, testAuth} from "@makerdao/hardhat-utils";
 import {parseEther} from "ethers/lib/utils";
 import {smock} from "@defi-wonderland/smock";
 
@@ -13,9 +13,9 @@ const DEPOSIT_SELECTOR = 0;
 const MESSAGE_WITHDRAW = 0;
 
 describe('L1DAIBridge', function () {
-  it('initializes', async () => {
+  it('initializes properly', async () => {
 
-    const { admin, dai, starkNetFake, escrow, l1Bridge, l2BridgeAddress } = await setupTest();
+    const {admin, dai, starkNetFake, escrow, l1Bridge, l2BridgeAddress} = await setupTest();
 
     expect(await l1Bridge.starkNet()).to.be.eq(starkNetFake.address)
     expect(await l1Bridge.dai()).to.be.eq(dai.address)
@@ -23,6 +23,15 @@ describe('L1DAIBridge', function () {
     expect(await l1Bridge.l2DaiBridge()).to.be.eq(l2BridgeAddress)
 
     expect(await dai.balanceOf(admin.address)).to.be.eq(eth('1000000'))
+  })
+  it('has correct public interface', async () => {
+    await assertPublicMutableMethods('L1DAIBridge', [
+      'rely(address)',
+      'deny(address)',
+      'close()',
+      'deposit(address,uint256,uint256)',
+      'finalizeWithdrawal(address,uint256)',
+    ])
   })
   describe('deposit', function () {
     it('escrows funds and sends a message to l2 on deposit', async () => {
@@ -71,8 +80,17 @@ describe('L1DAIBridge', function () {
         l1Bridge.connect(l1Alice).deposit(l1Alice.address, l2User, depositAmount)
       ).to.be.revertedWith('ERC20: transfer amount exceeds balance')
     })
-    it.skip('reverts when bridge is closed', async () => {
-      //TODO
+    it('reverts when bridge is closed', async () => {
+      const {admin, l1Alice, dai, starkNetFake, escrow, l1Bridge} = await setupTest();
+
+      const depositAmount = eth('333')
+      const l2User = '123'
+
+      await l1Bridge.connect(admin).close()
+
+      await expect(
+        l1Bridge.connect(l1Alice).deposit(l1Alice.address, l2User, depositAmount)
+      ).to.be.revertedWith('L1DAIBridge/closed')
     })
   })
   describe('finalizeWithdrawal', function () {
@@ -219,12 +237,24 @@ describe('L1DAIBridge', function () {
   describe('close', function () {
     it('can be closed by admin', async () => {
       const {admin, l1Bridge} = await setupTest();
+
       expect(await l1Bridge.isOpen()).to.be.eq(1)
       expect(await l1Bridge.connect(admin).close()).to.emit(l1Bridge, 'Closed')
       expect(await l1Bridge.isOpen()).to.be.eq(0)
     })
+    it('close is idempotent', async () => {
+      const {admin, l1Bridge} = await setupTest();
+      expect(await l1Bridge.isOpen()).to.be.eq(1)
+
+      await l1Bridge.connect(admin).close()
+      expect(await l1Bridge.isOpen()).to.be.eq(0)
+
+      await l1Bridge.connect(admin).close()
+      expect(await l1Bridge.isOpen()).to.be.eq(0)
+    })
     it('reverts when called not by the owner', async () => {
       const {l1Alice, l1Bridge} = await setupTest();
+
       expect(await l1Bridge.isOpen()).to.be.eq(1)
       await expect(l1Bridge.connect(l1Alice).close()).to.be.revertedWith('s')
     })

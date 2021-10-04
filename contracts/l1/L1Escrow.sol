@@ -19,7 +19,7 @@ contract L1Escrow {
     emit Deny(usr);
   }
   modifier auth {
-    // TODO: require(wards[msg.sender] == 1, "L1Escrow/not-authorized");
+    require(wards[msg.sender] == 1, "L1Escrow/not-authorized");
     _;
   }
 
