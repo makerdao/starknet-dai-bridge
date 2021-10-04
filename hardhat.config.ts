@@ -1,16 +1,13 @@
-
 import "@nomiclabs/hardhat-waffle";
-//import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
-import "hardhat-deploy";
 import "@nomiclabs/hardhat-ethers";
-
-import { resolve } from "path";
+import "@nomiclabs/hardhat-etherscan";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import { NetworkUserConfig } from "hardhat/types";
+import { resolve } from "path";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
@@ -35,7 +32,7 @@ if (!infuraApiKey) {
 }
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url: string = "https://" + network + ".infura.io/v3/" + infuraApiKey;
+  const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;
   return {
     accounts: {
       count: 10,
@@ -44,38 +41,26 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
     },
     chainId: chainIds[network],
     url,
-    saveDeployments: true,
   };
 }
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
-  namedAccounts: {
-    deployer: 0,
-  },
-  /*
-  gasReporter: {
-    currency: "USD",
-    enabled: process.env.REPORT_GAS ? true : false,
-    excludeContracts: [],
-    src: "./contracts",
-  },
-  */
+  // namedAccounts: {
+  //   deployer: 0,
+  // },
   networks: {
-    hardhat: {
-      accounts: {
-        mnemonic,
-      },
-      chainId: chainIds.hardhat,
-    },
+    // hardhat: {
+    //   accounts: {
+    //     mnemonic,
+    //   },
+    //   chainId: chainIds.hardhat,
+    // },
     goerli: getChainConfig("goerli"),
-    kovan: getChainConfig("kovan"),
-    rinkeby: getChainConfig("rinkeby"),
-    ropsten: getChainConfig("ropsten"),
-    localhost: {
-      url: "http://127.0.0.1:8545",
-      saveDeployments: true,
-    },
+    // localhost: {
+    //   url: "http://127.0.0.1:8545",
+    //   saveDeployments: true,
+    // },
   },
   paths: {
     artifacts: "./artifacts",
@@ -84,7 +69,7 @@ const config: HardhatUserConfig = {
     tests: "./test",
   },
   solidity: {
-    version: "0.8.7",
+    version: "0.8.4",
     settings: {
       metadata: {
         // Not including the metadata hash
@@ -105,6 +90,9 @@ const config: HardhatUserConfig = {
     target: "ethers-v5",
   },
   */
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
 };
 
 export default config;

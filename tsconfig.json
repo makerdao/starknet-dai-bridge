@@ -16,7 +16,7 @@
     "strict": true,
     "target": "es6"
   },
-  "exclude": ["node_modules"],
-  "files": ["./hardhat.config.ts"],
-  "include": ["./hardhat.config.ts", "tasks/**/*.ts", "test/**/*.ts"]
+  "include": ["*.ts", "**/*.ts", "artifacts/*.json"],
+  "files": ["./hardhat.config.ts", "./modules.d.ts"],
+  "exclude": ["./build", "node_modules"]
 }
