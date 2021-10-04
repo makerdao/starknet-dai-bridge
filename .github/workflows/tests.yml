@@ -32,6 +32,8 @@ jobs:
           restore-keys: |
             yarn-
 
+      - run: cp .env.ci .env
+
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
       - run: yarn test:l1
