@@ -5,15 +5,14 @@ import {
   testAuth,
 } from "@makerdao/hardhat-utils";
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
-import { smock } from "@defi-wonderland/smock";
+import hre from "hardhat";
 
 const allowanceLimit = 100;
 
 describe("escrow", () => {
   describe("approve", () => {
     it("sets approval on erc20 tokens", async () => {
-      const { admin, l1Alice, dai, escrow } = await setupTest();
+      const { l1Alice, dai, escrow } = await setupTest();
 
       expect(await dai.allowance(escrow.address, l1Alice.address)).to.be.eq(0);
 

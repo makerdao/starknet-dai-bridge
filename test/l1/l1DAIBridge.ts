@@ -1,16 +1,14 @@
-import hre from "hardhat";
-import chai, { expect } from "chai";
+import { smock } from "@defi-wonderland/smock";
 import {
   assertPublicMutableMethods,
   simpleDeploy,
   testAuth,
 } from "@makerdao/hardhat-utils";
+import chai, { expect } from "chai";
 import { parseEther } from "ethers/lib/utils";
-import { smock } from "@defi-wonderland/smock";
+import hre from "hardhat";
 
 chai.use(smock.matchers);
-
-const { deployContract } = hre.waffle;
 
 const MAX_UINT256 = hre.ethers.constants.MaxUint256;
 const DEPOSIT_SELECTOR = 0;
@@ -71,8 +69,7 @@ describe("L1DAIBridge", function () {
       );
     });
     it("reverts when approval is too low", async () => {
-      const { admin, l1Alice, dai, starkNetFake, escrow, l1Bridge } =
-        await setupTest();
+      const { admin, l1Alice, dai, l1Bridge } = await setupTest();
 
       const depositAmount = eth("333");
       const l2User = "123";
@@ -89,8 +86,7 @@ describe("L1DAIBridge", function () {
       ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
     });
     it("reverts when funds too low", async () => {
-      const { admin, l1Alice, dai, starkNetFake, escrow, l1Bridge } =
-        await setupTest();
+      const { admin, l1Alice, dai, l1Bridge } = await setupTest();
 
       const depositAmount = eth("333");
       const l2User = "123";
@@ -105,8 +101,7 @@ describe("L1DAIBridge", function () {
       ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
     it("reverts when bridge is closed", async () => {
-      const { admin, l1Alice, dai, starkNetFake, escrow, l1Bridge } =
-        await setupTest();
+      const { admin, l1Alice, l1Bridge } = await setupTest();
 
       const depositAmount = eth("333");
       const l2User = "123";
@@ -275,7 +270,6 @@ describe("L1DAIBridge", function () {
       const {
         admin,
         l1Alice,
-        l1Bob,
         dai,
         starkNetFake,
         escrow,
@@ -314,15 +308,7 @@ describe("L1DAIBridge", function () {
       );
     });
     it("reverts when escrow access was revoked", async () => {
-      const {
-        admin,
-        l1Alice,
-        dai,
-        starkNetFake,
-        escrow,
-        l1Bridge,
-        l2BridgeAddress,
-      } = await setupTest();
+      const { admin, l1Alice, dai, escrow, l1Bridge } = await setupTest();
 
       const withdrawalAmount = eth("333");
 
@@ -341,7 +327,7 @@ describe("L1DAIBridge", function () {
       const { admin, l1Bridge } = await setupTest();
 
       expect(await l1Bridge.isOpen()).to.be.eq(1);
-      expect(await l1Bridge.connect(admin).close()).to.emit(l1Bridge, "Closed");
+      await expect(l1Bridge.connect(admin).close()).to.emit(l1Bridge, "Closed");
       expect(await l1Bridge.isOpen()).to.be.eq(0);
     });
     it("close is idempotent", async () => {

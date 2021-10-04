@@ -1,6 +1,6 @@
+import { Interface } from "@ethersproject/abi";
 import { Signer } from "@ethersproject/abstract-signer";
 import { ethers } from "hardhat";
-import { Interface } from "@ethersproject/abi";
 import { isEmpty } from "lodash";
 
 interface Options {

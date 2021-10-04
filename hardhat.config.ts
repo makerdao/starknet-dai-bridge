@@ -4,12 +4,10 @@ import "solidity-coverage";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 
-import { resolve } from "path";
-
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import { NetworkUserConfig } from "hardhat/types";
-import { getRequiredEnv } from "@makerdao/hardhat-utils";
+import { resolve } from "path";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
@@ -34,7 +32,7 @@ if (!infuraApiKey) {
 }
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url: string = "https://" + network + ".infura.io/v3/" + infuraApiKey;
+  const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;
   return {
     accounts: {
       count: 10,
