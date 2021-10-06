@@ -37,6 +37,8 @@ async function deployUsingFactory<T extends ContractFactoryLike>(
 
   await contractDeployed.deployed();
 
+  console.log(signer)
+
   console.log(
     `npx hardhat --network NETWORK_NAME_HERE verify ${
       contractDeployed.address
@@ -55,13 +57,13 @@ export async function deploy(opts: Options) {
     [opts.L1_TX_OPTS]
   );
 
-  const l1DAITokenBridge = await deployUsingFactory(
+  const l1DAIBridge = await deployUsingFactory(
     opts.l1Deployer,
-    await ethers.getContractFactory("L1DAITokenBridge"),
+    await ethers.getContractFactory("L1DAIBridge"),
     [
+      opts.L1_STARKNET_ADDRESS,
       opts.L1_DAI_ADDRESS,
       l1Escrow.address,
-      opts.L1_STARKNET_ADDRESS,
       opts.L2_DAI_BRIDGE_ADDRESS,
       opts.L1_TX_OPTS,
     ]
@@ -69,6 +71,6 @@ export async function deploy(opts: Options) {
 
   return {
     l1Escrow,
-    l1DAITokenBridge,
+    l1DAIBridge,
   };
 }

@@ -7,6 +7,8 @@ from starkware.starknet.common.storage import Storage
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_le
 
+const MESSAGE_WITHDRAW = 0
+
 @contract_interface
 namespace IDAI:
     func mint(to_address : felt, value : felt):
@@ -51,14 +53,14 @@ func withdraw{
     IDAI.burn(contract_address=dai_address, from_address=l2_address, value=amount)
 
     let (payload : felt*) = alloc()
-    assert payload[0] = l1_address
-    assert payload[1] = amount
+    assert payload[0] = MESSAGE_WITHDRAW
+    assert payload[1] = l1_address
+    assert payload[2] = amount
     let (bridge_address) = bridge.read()
 
-    send_message_to_l1(to_address=bridge_address, payload_size=2, payload=payload)
+    send_message_to_l1(to_address=bridge_address, payload_size=3, payload=payload)
     return ()
 end
-
 
 # external is temporary
 @external

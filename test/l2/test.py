@@ -55,19 +55,10 @@ async def initialize():
 
 
 async def deploy(contract_name):
+    print(contract_name)
     CONTRACT_FILE = os.path.join(L2_CONTRACTS_DIR, contract_name)
+    contract = await starknet.deploy(CONTRACT_FILE)
 
-    contract_definition = compile_starknet_files(
-            [CONTRACT_FILE],
-            debug_info=True)
-
-    contract_address = await starknet.deploy(
-        contract_definition=contract_definition)
-    contract = StarknetContract(
-        starknet=starknet,
-        abi=contract_definition.abi,
-        contract_address=contract_address,
-    )
     return contract
 
 
@@ -159,11 +150,6 @@ async def before_all():
     user2 = await deploy("Account.cairo")
     user3 = await deploy("Account.cairo")
 
-    # change to L1 addresses
-    await user1.initialize(0, user1.contract_address).invoke()
-    await user2.initialize(0, user2.contract_address).invoke()
-    await user3.initialize(0, user3.contract_address).invoke()
-
 
 @pytest.fixture(scope="function", autouse=True)
 async def for_each():
@@ -193,7 +179,6 @@ async def test_total_supply():
     total_supply = await dai_contract.totalSupply().call()
 
     assert total_supply == (200,)
-
 
 @pytest.mark.asyncio
 async def test_balance_of():

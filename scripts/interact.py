@@ -1,7 +1,8 @@
 import os
 import sys
+import json
 
-
+deployments_dir = 'deployments/starknet'
 artifacts_dir = 'artifacts/contracts/l2'
 
 assert len(sys.argv) >= 4
@@ -14,11 +15,11 @@ func = sys.argv[3]
 
 inputs = sys.argv[4:]
 
-address_file = './{0}/{1}_address.txt'.format(artifacts_dir, contract_name)
+address_file = './{0}/{1}.json'.format(deployments_dir, contract_name)
 abi_file = './{0}/{1}_abi.json'.format(artifacts_dir, contract_name)
 
 with open(address_file, 'r') as f:
-    CONTRACT_ADDRESS = f.read()
+    CONTRACT_ADDRESS = json.load(f)['address']
 
 stream = os.popen('starknet {0} --address {1} \
         --abi {2} \
