@@ -33,7 +33,6 @@ end
 func wards(user : felt) -> (res : felt):
 end
 
-
 func auth{
     syscall_ptr : felt*,
     storage_ptr : Storage*,
@@ -77,15 +76,13 @@ func initialize{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }( _dai : felt, _bridge : felt):
+  }(_dai : felt, _bridge : felt):
     let (_initialized) = initialized.read()
     assert _initialized = 0
     initialized.write(1)
 
     let (dai_address) = dai.read()
     let (bridge_address) = bridge.read()
-    assert dai_address = 0
-    assert bridge_address = 0
     dai.write(_dai)
     bridge.write(_bridge)
 

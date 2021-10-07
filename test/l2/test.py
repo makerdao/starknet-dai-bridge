@@ -141,14 +141,6 @@ def event_loop():
 @pytest.fixture(scope="session", autouse=True)
 async def before_all():
     await initialize()
-    global bridge_contract
-    global dai_contract
-    bridge_contract = await deploy("l2_dai_bridge.cairo")
-    dai_contract = await deploy("dai.cairo")
-    await bridge_contract.initialize(
-        _dai=dai_contract.contract_address,
-        _bridge=int(starknet_contract_address, 16),
-    ).invoke()
 
     global auth_user
     global user1
@@ -165,10 +157,20 @@ async def before_all():
     await user2.initialize(0, user2.contract_address).invoke()
     await user3.initialize(0, user3.contract_address).invoke()
 
+    global bridge_contract
+    global dai_contract
+    bridge_contract = await deploy("l2_dai_bridge.cairo")
+    dai_contract = await deploy("dai.cairo")
+    call = bridge_contract.initialize(
+        _dai=dai_contract.contract_address,
+        _bridge=int(starknet_contract_address, 16)
+    )
+    await call_from(call, auth_user)
+
     call = dai_contract.initialize()
     await call_from(call, auth_user)
 
-    call = dai_contract.rely(dai_contract.contract_address)
+    call = dai_contract.rely(bridge_contract.contract_address)
     await call_from(call, auth_user)
 
 
@@ -189,7 +191,6 @@ async def for_each():
     burn_balance = balance[0]
     balance = await dai_contract.balanceOf(user1.contract_address).call()
     user1_balance = balance[0]
-    print(user1_balance)
     balance = await dai_contract.balanceOf(user2.contract_address).call()
     user2_balance = balance[0]
 
@@ -248,12 +249,11 @@ async def test_transfer_from():
 
 @pytest.mark.asyncio
 async def test_transfer_to_yourself_using_transfer_from():
-    with pytest.raises(StarkException):
-        call = dai_contract.transferFrom(
-            user1.contract_address,
-            user2.contract_address,
-            10)
-        await call_from(call, user1)
+    call = dai_contract.transferFrom(
+        user1.contract_address,
+        user1.contract_address,
+        10)
+    await call_from(call, user1)
 
     await check_balances(burn_balance, user1_balance, user2_balance)
 
@@ -459,7 +459,6 @@ async def test_second_initialize():
         await bridge_contract.initialize(
             _dai=3,
             _bridge=4,
-            enable_l1_messages=0,
         ).invoke()
 
 
@@ -497,10 +496,11 @@ async def test_withdraw_insufficient_funds():
 #############
 @pytest.mark.asyncio
 async def test_finalize_deposit():
-    await bridge_contract.finalizeDeposit(
+    call = bridge_contract.finalizeDeposit(
         from_address=int(starknet_contract_address, 16),
         l2_address=user2.contract_address,
-        amount=10).invoke()
+        amount=10)
+    await call_from(call, user2)
 
     # user1 should be unaffected as the new coin is minted
     await check_balances(burn_balance, user1_balance, user2_balance+10)
