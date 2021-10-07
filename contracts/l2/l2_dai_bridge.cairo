@@ -73,6 +73,7 @@ end
 
 @external
 func initialize{
+    syscall_ptr : felt*,
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
@@ -80,6 +81,9 @@ func initialize{
     let (_initialized) = initialized.read()
     assert _initialized = 0
     initialized.write(1)
+
+    let (caller) = get_caller_address()
+    wards.write(caller, 1)
 
     let (dai_address) = dai.read()
     let (bridge_address) = bridge.read()

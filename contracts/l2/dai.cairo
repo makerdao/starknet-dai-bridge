@@ -6,6 +6,49 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_nn_le, assert_not_equal
 from starkware.starknet.common.syscalls import get_caller_address
 
+# change value
+const MAX = 2**120
+
+@storage_var
+func wards(user : felt) -> (res : felt):
+end
+
+@storage_var
+func initialized() -> (res : felt):
+end
+
+
+func auth{
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }() -> ():
+  let (caller) = get_caller_address()
+
+  let (ward) = wards.read(caller)
+  assert ward = 1
+
+  return ()
+end
+
+@external
+func initialize{
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }() -> ():
+  let (_initialized) = initialized.read()
+  assert _initialized = 0
+  initialized.write(1)
+
+  let (caller) = get_caller_address()
+  wards.write(caller, 1)
+
+  return ()
+end
+
 @external
 func mint{
     syscall_ptr : felt*,
@@ -50,14 +93,9 @@ func burn{
     let (total) = total_supply.read()
     total_supply.write(total - amount)
 
-    # send to burn address
-    let (balance) = balances.read(0)
-    balances.write(0, balance + amount)
-
     if caller != from_address:
       let (allowance) = allowances.read(from_address, caller)
-      let max = 2**250
-      if allowance != max:
+      if allowance != MAX:
         assert_nn_le(amount, allowance)
         allowances.write(from_address, caller, allowance - amount)
         tempvar syscall_ptr : felt* = syscall_ptr_local
@@ -85,10 +123,6 @@ end
 # ERC20 Functions #
 ###################
 @storage_var
-func wards(user : felt) -> (res : felt):
-end
-
-@storage_var
 func balances(user : felt) -> (res : felt):
 end
 
@@ -98,10 +132,6 @@ end
 
 @storage_var
 func allowances(owner : felt, spender : felt) -> (res : felt):
-end
-
-@storage_var
-func initialized() -> (res : felt):
 end
 
 
@@ -133,37 +163,6 @@ func allowance{
   }(owner : felt, spender : felt) -> (res : felt):
     let (res) = allowances.read(owner, spender)
     return (res)
-end
-
-func auth{
-    syscall_ptr : felt*,
-    storage_ptr : Storage*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }() -> ():
-  let (caller) = get_caller_address()
-
-  let (ward) = wards.read(caller)
-  assert ward = 1
-
-  return ()
-end
-
-@external
-func initialize{
-    syscall_ptr : felt*,
-    storage_ptr : Storage*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }() -> ():
-  let (_initialized) = initialized.read()
-  assert _initialized = 0
-  initialized.write(1)
-
-  let (caller) = get_caller_address()
-  wards.write(caller, 1)
-
-  return ()
 end
 
 @external
@@ -224,8 +223,7 @@ func transferFrom{
 
     if caller != sender:
       let (allowance) = allowances.read(sender, caller)
-      let max = 2**250
-      if allowance != max:
+      if allowance != MAX:
         assert_nn_le(amount, allowance)
         allowances.write(sender, caller, allowance - amount)
         tempvar syscall_ptr : felt* = syscall_ptr_local
@@ -277,4 +275,32 @@ func approve{
     allowances.write(caller, spender, amount)
 
     return ()
+end
+
+@external
+func increaseAllowance{
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(spender : felt, amount : felt):
+  let (caller) = get_caller_address()
+  let (allowance) = allowances.read(caller, spender)
+  assert_nn_le(amount, MAX - allowance)
+  allowances.write(caller, spender, allowance + amount)
+  return ()
+end
+
+@external
+func decreaseAllowance{
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(spender : felt, amount : felt):
+  let (caller) = get_caller_address()
+  let (allowance) = allowances.read(caller, spender)
+  assert_nn_le(amount, allowance)
+  allowances.write(caller, spender, allowance - amount)
+  return ()
 end
