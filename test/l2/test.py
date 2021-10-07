@@ -80,6 +80,7 @@ burn = 0
 no_funds = 1
 burn_balance = 0
 
+auth_user = None
 user1 = None
 user2 = None
 user3 = None
@@ -149,20 +150,26 @@ async def before_all():
         _bridge=int(starknet_contract_address, 16),
     ).invoke()
 
+    global auth_user
     global user1
     global user2
     global user3
-    global user1_account
-    global user2_account
-    global user3_account
+    auth_user = await deploy("Account.cairo")
     user1 = await deploy("Account.cairo")
     user2 = await deploy("Account.cairo")
     user3 = await deploy("Account.cairo")
 
     # change to L1 addresses
+    await auth_user.initialize(0, auth_user.contract_address).invoke()
     await user1.initialize(0, user1.contract_address).invoke()
     await user2.initialize(0, user2.contract_address).invoke()
     await user3.initialize(0, user3.contract_address).invoke()
+
+    call = dai_contract.initialize()
+    await call_from(call, auth_user)
+
+    call = dai_contract.rely(dai_contract.contract_address)
+    await call_from(call, auth_user)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -173,8 +180,10 @@ async def for_each():
     global user1_balance
     global user2_balance
 
-    await dai_contract.mint(user1.contract_address, 100).invoke()
-    await dai_contract.mint(user2.contract_address, 100).invoke()
+    call1 = dai_contract.mint(user1.contract_address, 100)
+    call2 = dai_contract.mint(user2.contract_address, 100)
+    await call_from(call1, auth_user)
+    await call_from(call2, auth_user)
 
     balance = await dai_contract.balanceOf(0).call()
     burn_balance = balance[0]
@@ -279,7 +288,8 @@ async def test_should_not_transfer_to_dai_address():
 
 @pytest.mark.asyncio
 async def test_mint():
-    await dai_contract.mint(user1.contract_address, 10).invoke()
+    call = dai_contract.mint(user1.contract_address, 10)
+    await call_from(call, auth_user)
 
     await check_balances(burn_balance, user1_balance+10, user2_balance)
 
@@ -287,7 +297,8 @@ async def test_mint():
 @pytest.mark.asyncio
 async def test_should_not_allow_minting_to_zero_address():
     with pytest.raises(StarkException):
-        await dai_contract.mint(burn, 10).invoke()
+        call = dai_contract.mint(burn, 10)
+        await call_from(call, auth_user)
 
     await check_balances(burn_balance, user1_balance, user2_balance)
 
@@ -297,10 +308,11 @@ async def test_should_not_allow_minting_to_dai_address():
     pass
     '''
     with pytest.raises(StarkException):
-        await dai_contract.mint(
+        call = dai_contract.mint(
                 dai_contract.contract_address,
                 10,
-            ).invoke()
+            )
+        await call_from(call, auth_user)
 
     await check_balances(burn_balance, user1_balance, user2_balance)
     '''

@@ -6,6 +6,7 @@ from starkware.starknet.common.messages import send_message_to_l1
 from starkware.starknet.common.storage import Storage
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_le
+from starkware.starknet.common.syscalls import get_caller_address
 
 @contract_interface
 namespace IDAI:
@@ -24,10 +25,63 @@ end
 func bridge() -> (res : felt):
 end
 
+@storage_var
+func initialized() -> (res : felt):
+end
+
+@storage_var
+func wards(user : felt) -> (res : felt):
+end
+
+
+func auth{
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }() -> ():
+  let (caller) = get_caller_address()
+
+  let (ward) = wards.read(caller)
+  assert ward = 1
+
+  return ()
+end
 
 @external
-func initialize{storage_ptr : Storage*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    _dai : felt, _bridge : felt):
+func rely{
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(user : felt) -> ():
+  auth()
+  wards.write(user, 1)
+  return ()
+end
+
+@external
+func deny{
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(user : felt) -> ():
+  auth()
+  wards.write(user, 0)
+  return ()
+end
+
+@external
+func initialize{
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }( _dai : felt, _bridge : felt):
+    let (_initialized) = initialized.read()
+    assert _initialized = 0
+    initialized.write(1)
+
     let (dai_address) = dai.read()
     let (bridge_address) = bridge.read()
     assert dai_address = 0
@@ -58,7 +112,6 @@ func withdraw{
     send_message_to_l1(to_address=bridge_address, payload_size=2, payload=payload)
     return ()
 end
-
 
 # external is temporary
 @external
