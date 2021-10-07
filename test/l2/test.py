@@ -276,12 +276,11 @@ async def test_should_not_allow_minting_to_zero_address():
         call = dai_contract.mint(burn, 10)
         await call_from(call, auth_user)
 
-    await check_balances(burn_balance, user1_balance, user2_balance)
+    await check_balances(user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio
 async def test_should_not_allow_minting_to_dai_address():
-    pass
     '''
     with pytest.raises(StarkException):
         call = dai_contract.mint(
@@ -424,11 +423,97 @@ async def test_should_not_burn_beyond_allowance():
     call = dai_contract.approve(user2.contract_address, 10)
     await call_from(call, user1)
 
-    call2 = dai_contract.burn(user1.contract_address, 20)
+    allowance = await dai_contract.allowance(
+        user1.contract_address,
+        user2.contract_address).call()
+
+    call2 = dai_contract.burn(user1.contract_address, allowance[0]+1)
     with pytest.raises(StarkException):
         await call_from(call2, user2)
 
-    await check_balances(burn_balance, user1_balance, user2_balance)
+    await check_balances(user1_balance, user2_balance)
+
+
+@pytest.mark.asyncio
+async def test_increase_allowance():
+    call = dai_contract.approve(user2.contract_address, 10)
+    await call_from(call, user1)
+    call = dai_contract.increaseAllowance(user2.contract_address, 10)
+    await call_from(call, user1)
+
+    allowance = await dai_contract.allowance(
+        user1.contract_address,
+        user2.contract_address).call()
+    assert allowance == (20,)
+
+
+@pytest.mark.asyncio
+async def test_should_not_increase_allowance_beyond_max():
+    call = dai_contract.approve(user2.contract_address, 10)
+    await call_from(call, user1)
+    with pytest.raises(StarkException):
+        call = dai_contract.increaseAllowance(user2.contract_address, MAX)
+        await call_from(call, user1)
+
+
+@pytest.mark.asyncio
+async def test_decrease_allowance():
+    call = dai_contract.approve(user2.contract_address, 10)
+    await call_from(call, user1)
+    call = dai_contract.decreaseAllowance(user2.contract_address, 1)
+    await call_from(call, user1)
+
+    allowance = await dai_contract.allowance(
+        user1.contract_address,
+        user2.contract_address).call()
+    assert allowance == (9,)
+
+
+@pytest.mark.asyncio
+async def test_should_not_decrease_allowance_beyond_allowance():
+    call = dai_contract.approve(user2.contract_address, 10)
+    await call_from(call, user1)
+
+    allowance = await dai_contract.allowance(
+        user1.contract_address,
+        user2.contract_address).call()
+
+    with pytest.raises(StarkException):
+        call = dai_contract.decreaseAllowance(
+            user2.contract_address,
+            allowance[0] + 1)
+        await call_from(call, user1)
+
+
+# MAXIMUM ALLOWANCE
+@pytest.mark.asyncio
+async def test_does_not_decrease_allowance_using_transfer_from():
+    call = dai_contract.approve(user3.contract_address, MAX)
+    await call_from(call, user1)
+    call = dai_contract.transferFrom(
+        user1.contract_address,
+        user2.contract_address,
+        10,
+    )
+    await call_from(call, user3)
+
+    allowance = await dai_contract.allowance(
+        user1.contract_address,
+        user3.contract_address).call()
+    assert allowance == (MAX,)
+
+
+@pytest.mark.asyncio
+async def test_does_not_decrease_allowance_using_burn():
+    call = dai_contract.approve(user3.contract_address, MAX)
+    await call_from(call, user1)
+    call = dai_contract.burn(user1.contract_address, 10)
+    await call_from(call, user3)
+
+    allowance = await dai_contract.allowance(
+        user1.contract_address,
+        user3.contract_address).call()
+    assert allowance == (MAX,)
 
 
 ##########
