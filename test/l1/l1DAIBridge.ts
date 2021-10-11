@@ -376,7 +376,9 @@ describe("L1DAIBridge", function () {
       const { admin, l1Bridge } = await setupTest();
 
       expect(await l1Bridge.ceiling()).to.be.eq(0);
-      await expect(l1Bridge.connect(admin).setCeiling(1)).to.emit(l1Bridge, "Ceiling");
+      await expect(l1Bridge.connect(admin).setCeiling(1))
+        .to.emit(l1Bridge, "Ceiling")
+        .withArgs(1);
       expect(await l1Bridge.ceiling()).to.be.eq(1);
     });
     it("reverts when called not by the owner", async () => {
