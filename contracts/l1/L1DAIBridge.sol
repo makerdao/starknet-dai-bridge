@@ -52,6 +52,8 @@ contract L1DAIBridge {
   uint256 constant DEPOSIT_SELECTOR = 0;
 
   event Closed();
+  event Deposit(address indexed from, uint256 indexed to, uint256 amount);
+  event FinalizeWithdrawal(address indexed to, uint256 amount);
 
   constructor(address _starkNet, address _dai, address _escrow, uint256 _l2DaiBridge) {
     wards[msg.sender] = 1;
@@ -82,6 +84,8 @@ contract L1DAIBridge {
     payload[1] = amount;
 
     StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, DEPOSIT_SELECTOR, payload);
+
+    emit Deposit(from, to, amount);
   }
 
   function finalizeWithdrawal(address to, uint256 amount) external {
@@ -93,5 +97,7 @@ contract L1DAIBridge {
 
     StarkNetLike(starkNet).consumeMessageFromL2(l2DaiBridge, payload);
     TokenLike(dai).transferFrom(escrow, to, amount);
+
+    emit FinalizeWithdrawal(to, amount);
   }
 }

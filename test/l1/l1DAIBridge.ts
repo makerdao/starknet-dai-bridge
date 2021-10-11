@@ -53,9 +53,13 @@ describe("L1DAIBridge", function () {
       await dai.connect(admin).transfer(l1Alice.address, depositAmount);
       await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount);
 
-      await l1Bridge
-        .connect(l1Alice)
-        .deposit(l1Alice.address, l2User, depositAmount);
+      await expect(
+        l1Bridge
+          .connect(l1Alice)
+          .deposit(l1Alice.address, l2User, depositAmount)
+      )
+        .to.emit(l1Bridge, "Deposit")
+        .withArgs(l1Alice.address, l2User, depositAmount);
 
       expect(await dai.balanceOf(l1Alice.address)).to.be.eq(0);
       expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
@@ -137,9 +141,13 @@ describe("L1DAIBridge", function () {
       expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
       expect(await dai.balanceOf(escrow.address)).to.be.eq(withdrawalAmount);
 
-      await l1Bridge
-        .connect(l1Alice)
-        .finalizeWithdrawal(l1Alice.address, withdrawalAmount);
+      await expect(
+        l1Bridge
+          .connect(l1Alice)
+          .finalizeWithdrawal(l1Alice.address, withdrawalAmount)
+      )
+        .to.emit(l1Bridge, "FinalizeWithdrawal")
+        .withArgs(l1Alice.address, withdrawalAmount);
 
       expect(await dai.balanceOf(l1Alice.address)).to.be.eq(withdrawalAmount);
       expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
