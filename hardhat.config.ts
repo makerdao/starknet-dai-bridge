@@ -1,9 +1,9 @@
 
 import "@nomiclabs/hardhat-waffle";
-//import "@typechain/hardhat";
+import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
-import "hardhat-deploy";
+import "@shardlabs/starknet-hardhat-plugin";
 import "@nomiclabs/hardhat-ethers";
 
 import { resolve } from "path";
@@ -11,6 +11,9 @@ import { resolve } from "path";
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import { NetworkUserConfig } from "hardhat/types";
+
+import "./scripts/deploy";
+import "./scripts/interact";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
@@ -44,15 +47,12 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
     },
     chainId: chainIds[network],
     url,
-    saveDeployments: true,
+    gasPrice: 50000000000,
   };
 }
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
-  namedAccounts: {
-    deployer: 0,
-  },
   /*
   gasReporter: {
     currency: "USD",
@@ -74,7 +74,6 @@ const config: HardhatUserConfig = {
     ropsten: getChainConfig("ropsten"),
     localhost: {
       url: "http://127.0.0.1:8545",
-      saveDeployments: true,
     },
   },
   paths: {
@@ -82,22 +81,47 @@ const config: HardhatUserConfig = {
     cache: "./cache",
     sources: "./contracts",
     tests: "./test",
+    starknetSources: "./contracts",
+    starknetArtifacts: "./artifacts",
   },
   solidity: {
-    version: "0.8.7",
-    settings: {
-      metadata: {
-        // Not including the metadata hash
-        // https://github.com/paulrberg/solidity-template/issues/31
-        bytecodeHash: "none",
+    compilers: [
+      {
+        version: "0.8.7",
+        settings: {
+          metadata: {
+            // Not including the metadata hash
+            // https://github.com/paulrberg/solidity-template/issues/31
+            bytecodeHash: "none",
+          },
+          // Disable the optimizer when debugging
+          // https://hardhat.org/hardhat-network/#solidity-optimizer-support
+          optimizer: {
+            enabled: true,
+            runs: 800,
+          },
+        },
       },
-      // Disable the optimizer when debugging
-      // https://hardhat.org/hardhat-network/#solidity-optimizer-support
-      optimizer: {
-        enabled: true,
-        runs: 800,
+      {
+        version: "0.6.11",
+        settings: {
+          metadata: {
+            // Not including the metadata hash
+            // https://github.com/paulrberg/solidity-template/issues/31
+            bytecodeHash: "none",
+          },
+          // Disable the optimizer when debugging
+          // https://hardhat.org/hardhat-network/#solidity-optimizer-support
+          optimizer: {
+            enabled: true,
+            runs: 800,
+          },
+        },
       },
-    },
+    ],
+  },
+  cairo: {
+    version: "0.4.2",
   },
   /*
   typechain: {
