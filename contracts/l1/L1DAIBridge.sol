@@ -7,6 +7,9 @@ interface TokenLike {
   function transferFrom(
     address _from, address _to, uint256 _value
   ) external returns (bool success);
+  function balanceOf(
+    address account
+  ) external view returns (uint256);
 }
 
 interface StarkNetLike {
@@ -47,11 +50,14 @@ contract L1DAIBridge {
   uint256 public immutable l2DaiBridge;
 
   uint256 public isOpen = 1;
+  uint256 public ceiling = 0;
 
   uint256 constant MESSAGE_WITHDRAW = 0;
   uint256 constant DEPOSIT_SELECTOR = 0;
 
   event Closed();
+
+  event Ceiling(uint256 ceiling);
 
   constructor(address _starkNet, address _dai, address _escrow, uint256 _l2DaiBridge) {
     wards[msg.sender] = 1;
@@ -68,6 +74,11 @@ contract L1DAIBridge {
     emit Closed();
   }
 
+  function setCeiling(uint256 _ceiling) external auth {
+    ceiling = _ceiling;
+    emit Ceiling(_ceiling);
+  }
+
   function deposit(
     address from,
     uint256 to,
@@ -76,6 +87,8 @@ contract L1DAIBridge {
     require(isOpen == 1, "L1DAIBridge/closed");
 
     TokenLike(dai).transferFrom(from, escrow, amount);
+
+    require(TokenLike(dai).balanceOf(escrow) <= ceiling, "L1DAIBridge/above-ceiling");
 
     uint256[] memory payload = new uint256[](2);
     payload[0] = to;
