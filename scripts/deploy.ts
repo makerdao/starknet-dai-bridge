@@ -27,11 +27,6 @@ task('deploy', 'Full deployment', async (_taskArgs, hre) => {
   const account = await Account.deploy();
   save('Account-auth', account, NETWORK);
 
-  // TODO
-  const publicKey = 1
-  const l1Address = 0
-  account.invoke('initialize', [publicKey, l1Address]);
-
   console.log('Deploying l2_dai_bridge');
   const L2DaiBridge = await hre.starknet.getContractFactory('l2_dai_bridge');
   const l2DaiBridge = await L2DaiBridge.deploy();
