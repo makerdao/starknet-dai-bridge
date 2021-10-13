@@ -133,12 +133,6 @@ async def before_all():
     user2 = await deploy("Account.cairo")
     user3 = await deploy("Account.cairo")
 
-    # change to L1 addresses
-    await auth_user.initialize(0, auth_user.contract_address).invoke()
-    await user1.initialize(0, user1.contract_address).invoke()
-    await user2.initialize(0, user2.contract_address).invoke()
-    await user3.initialize(0, user3.contract_address).invoke()
-
     global bridge_contract
     global dai_contract
     bridge_contract = await deploy("l2_dai_bridge.cairo")

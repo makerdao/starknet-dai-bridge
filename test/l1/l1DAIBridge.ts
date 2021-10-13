@@ -1,4 +1,5 @@
 import { smock } from "@defi-wonderland/smock";
+import { parseFixed } from "@ethersproject/bignumber";
 import {
   assertPublicMutableMethods,
   simpleDeploy,
@@ -11,7 +12,7 @@ import hre from "hardhat";
 chai.use(smock.matchers);
 
 const MAX_UINT256 = hre.ethers.constants.MaxUint256;
-const DEPOSIT_SELECTOR = 0;
+const DEPOSIT_SELECTOR = parseFixed('1719001440962431497946253267335313592375607408367068470900111420804409451977');
 const MESSAGE_WITHDRAW = 0;
 
 describe("L1DAIBridge", function () {

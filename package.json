@@ -14,6 +14,7 @@
     "deploy:goerli": "hardhat run --network goerli ./scripts/deployGoerli.ts",
     "deploy:l2:bridge": "python ./scripts/deploy.py l2_dai_bridge",
     "deploy:l2:dai": "python ./scripts/deploy.py dai",
+    "deploy:l2:account": "python ./scripts/deploy.py Account",
     "interact:l2:bridge": "python ./scripts/interact.py l2_dai_bridge",
     "interact:l2:dai": "python ./scripts/interact.py dai",
     "init-l2-bridge": "python ./scripts/initialize.py",
