@@ -14,6 +14,7 @@ import { NetworkUserConfig } from "hardhat/types";
 
 import "./scripts/deploy";
 import "./scripts/interact";
+import "./scripts/account";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 

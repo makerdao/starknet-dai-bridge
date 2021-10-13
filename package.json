@@ -11,6 +11,8 @@
     "compile:l2": "hardhat starknet-compile",
     "compile": "yarn compile:l1 && yarn compile:l2",
     "deploy:goerli": "hardhat deploy --network goerli",
+    "account:create": "hardhat account:create --network goerli",
+    "account:get": "hardhat account:get --network goerli",
     "call:l1": "hardhat call:l1 --network goerli",
     "call:l2": "hardhat call:l2 --network goerli",
     "invoke:l2": "hardhat invoke:l2 --network goerli",

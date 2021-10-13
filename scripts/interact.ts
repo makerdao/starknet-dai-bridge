@@ -1,40 +1,14 @@
 import { task } from 'hardhat/config';
-import { StarknetContract, StarknetContractFactory } from 'hardhat/types/runtime';
-import { ethers } from 'ethers';
-import fs from 'fs';
+import { callFrom, getSelectorFromName, getAddress } from './utils';
 
-const MASK_250 = BigInt(2**250 - 1);
 let NETWORK: string;
-const DEPLOYMENTS_DIR = `deployments`;
 
-function getSelectorFromName(name: string) {
-  return BigInt(ethers.utils.keccak256(Buffer.from(name))) % MASK_250
-}
-
-async function call_from(
-  contract: StarknetContract,
-  call: string,
-  calldata: any[],
-  caller: StarknetContract,
-) {
-  const selector = getSelectorFromName(call);
-  return caller.invoke('execute', [
-    contract.address,
-    selector,
-    calldata.length,
-    ...calldata,
-  ]);
-}
-
-function getAddress(contract: string) {
-    return JSON.parse(fs.readFileSync(`./deployments/${NETWORK}/${contract}.json`).toString()).address;
-}
-
-task('invoke:l2', '')
+task('invoke:l2', 'Invoke an L2 contract')
   .addParam('contract', 'Contract to call')
-  .addParam('function', 'Function to call')
+  .addParam('func', 'Function to call')
   .addOptionalParam('calldata', 'Inputs to the function')
-  .setAction(async (_taskArgs, hre) => {
+  .addOptionalParam('name', 'Account name to execute from')
+  .setAction(async ({ contract, func, calldata, name }, hre) => {
     const [signer] = await hre.ethers.getSigners();
     if (signer.provider) {
       const network = await signer.provider.getNetwork();
@@ -42,37 +16,29 @@ task('invoke:l2', '')
     }
     console.log(`Calling on ${NETWORK}`);
 
-    const address = getAddress(_taskArgs.contract);
-    const contractFactory = await hre.starknet.getContractFactory(_taskArgs.contract);
-    const contract = await contractFactory.getContractAt(address);
-    const accountAddress = getAddress('Account');
-    const Account = await hre.starknet.getContractFactory('Account');
-    const account = await Account.getContractAt(accountAddress);
+    const address = getAddress(contract, NETWORK);
+    const ContractFactory = await hre.starknet.getContractFactory(contract);
+    const Contract = await ContractFactory.getContractAt(address);
+    const _name = name ? name : 'auth';
+    const accountAddress = getAddress(`Account-${_name}`, NETWORK);
+    const AccountFactory = await hre.starknet.getContractFactory('Account');
+    const Account = await AccountFactory.getContractAt(accountAddress);
 
-    let res;
-    if (_taskArgs.calldata) {
-      res = await call_from(
-        contract,
-        _taskArgs.function,
-        _taskArgs.calldata.split(','),
-        account,
-      );
-    } else {
-      res = await call_from(
-        contract,
-        _taskArgs.function,
-        [],
-        account,
-      );
-    }
-    console.log(res);
+    const _calldata = calldata ? calldata.split(',') : [];
+    const res = await callFrom(
+      Contract,
+      func,
+      _calldata,
+      Account,
+    );
+    console.log('Response:', res);
 });
 
-task('call:l2', '')
+task('call:l2', 'Call an L2 contract')
   .addParam('contract', 'Contract to call')
-  .addParam('function', 'Function to call')
+  .addParam('func', 'Function to call')
   .addOptionalParam('calldata', 'Inputs to the function')
-  .setAction(async (_taskArgs, hre) => {
+  .setAction(async ({ contract, func, calldata }, hre) => {
     const [signer] = await hre.ethers.getSigners();
     if (signer.provider) {
       const network = await signer.provider.getNetwork();
@@ -80,27 +46,20 @@ task('call:l2', '')
     }
     console.log(`Calling on ${NETWORK}`);
 
-    const address = getAddress(_taskArgs.contract);
-    const contractFactory = await hre.starknet.getContractFactory(_taskArgs.contract);
-    const contract = await contractFactory.getContractAt(address);
-    const accountAddress = getAddress('Account');
-    const Account = await hre.starknet.getContractFactory('Account');
-    const account = await Account.getContractAt(accountAddress);
+    const address = getAddress(contract, NETWORK);
+    const ContractFactory = await hre.starknet.getContractFactory(contract);
+    const Contract = await ContractFactory.getContractAt(address);
 
-    let res;
-    if (_taskArgs.calldata) {
-      res = await contract.call(_taskArgs.function, _taskArgs.calldata.split(','));
-    } else {
-      res = await contract.call(_taskArgs.function, []);
-    }
-    console.log(res);
+    const _calldata = calldata ? calldata.split(',') : [];
+    const res = await Contract.call(func, _calldata);
+    console.log('Response:', res);
 });
 
-task('call:l1', '')
+task('call:l1', 'Call an L1 contract')
   .addParam('contract', 'Contract to call')
-  .addParam('function', 'Function to call')
+  .addParam('func', 'Function to call')
   .addOptionalParam('calldata', 'Inputs to the function')
-  .setAction(async (_taskArgs, hre) => {
+  .setAction(async ({ contract, func, calldata }, hre) => {
     const [signer] = await hre.ethers.getSigners();
     if (signer.provider) {
       const network = await signer.provider.getNetwork();
@@ -108,15 +67,11 @@ task('call:l1', '')
     }
     console.log(`Calling on ${NETWORK}`);
 
-    const address = getAddress(_taskArgs.contract);
-    const contractFactory = await hre.ethers.getContractFactory(_taskArgs.contract);
-    const contract = await contractFactory.attach(address);
+    const address = getAddress(contract, NETWORK);
+    const ContractFactory = await hre.ethers.getContractFactory(contract);
+    const Contract = await ContractFactory.attach(address);
 
-    let res;
-    if (_taskArgs.calldata) {
-      res = await contract[_taskArgs.function](..._taskArgs.calldata.split(','));
-    } else {
-      res = await contract[_taskArgs.function]();
-    }
-    console.log(res);
+    const _calldata = calldata ? calldata.split(',') : [];
+    const res = await contract[func](..._calldata);
+    console.log('Response:', res);
 });
