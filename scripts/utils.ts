@@ -17,7 +17,6 @@ export function getAddress(contract: string, network: string) {
 export function save(name: string, contract: any, network: string) {
   fs.writeFileSync(`${DEPLOYMENTS_DIR}/${network}/${name}.json`, JSON.stringify({
     'address': contract.address,
-    'abi': contract.abi,
   }));
 }
 

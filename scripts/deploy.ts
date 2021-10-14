@@ -20,6 +20,7 @@ task('deploy', 'Full deployment', async (_taskArgs, hre) => {
   if (!fs.existsSync(`./deployments/${NETWORK}`)) {
     fs.mkdirSync(`./deployments/${NETWORK}`);
   }
+  save('DAI', { address: L1_GOERLI_DAI_ADDRESS }, NETWORK);
 
   console.log('Deploying L1Escrow');
   const L1Escrow = await hre.ethers.getContractFactory('L1Escrow');
