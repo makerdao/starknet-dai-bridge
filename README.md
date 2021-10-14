@@ -20,24 +20,42 @@ cp .env.example .env
 In `.env` set the `INFURA_API_KEY` and `MNEMONIC` variables.
 
 
-## Run local environment
-In a separate terminal, run the following to start the hardhat chain
+## Run goerli environment
+Deploy the contracts
 ```
-yarn chain
+yarn compile
+yarn deploy:goerli
 ```
-
-Deploy the L1 contracts
-```
-yarn deploy:l1:escrow --network localhost
-yarn deploy:l1:bridge --network localhost
-```
-
-
-Deploy the L2 contracts
-```
-yarn deploy:l2:dai
-yarn deploy:l2:bridge
-```
-
 
 The deploy contracts and abi are stored in a json in `./deployments/NETWORK/CONTRACT_NAME.json`.
+
+## Interactions
+
+### Create Account
+```
+yarn account:create --name NAME
+```
+
+### Get Account address
+```
+yarn account:get --name NAME
+```
+
+### Withdraw
+```
+yarn invoke:l2 --contract dai --func approve --calldata BRIDGE_ADDRESS,AMOUNT
+yarn invoke:l2 --contract l2_dai_bridge --func withdraw --calldata L1_ADDRESS,AMOUNT
+```
+
+### Deposit
+```
+yarn call:l1 --contract DAI --func approve --calldata BRIDGE_ADDRESS,AMOUNT
+yarn call:l1 --contract L1DAIBridge --func deposit --calldata L1_ADDRESS,L2_ADDRESS,AMOUNT
+```
+Note `L2_ADDRESS` must be converted from hex to an integer
+
+### L2 Transfers
+```
+yarn account:get --name user
+yarn invoke:l2 --contract dai --func transfer --calldata ADDRESS,AMOUNT
+```
