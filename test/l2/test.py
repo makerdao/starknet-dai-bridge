@@ -92,10 +92,12 @@ async def check_balances(
 ):
     user1_balance = await dai_contract.balanceOf(user1.contract_address).call()
     user2_balance = await dai_contract.balanceOf(user2.contract_address).call()
+    user3_balance = await dai_contract.balanceOf(user3.contract_address).call()
     total_supply = await dai_contract.totalSupply().call()
 
     assert user1_balance == (expected_user1_balance,)
     assert user2_balance == (expected_user2_balance,)
+    assert user3_balance == (0,)
     assert total_supply == (expected_user1_balance+expected_user2_balance,)
 
 
