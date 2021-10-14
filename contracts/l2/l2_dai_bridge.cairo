@@ -138,3 +138,34 @@ func finalizeDeposit{
 
     return ()
 end
+
+@l1_handler
+func finalizeRequestWithdrawal{
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(from_address : felt, l2_address : felt, amount : felt):
+
+    alloc_locals
+
+    let (dai_address) = dai.read()
+
+    # make sure from_address is registered as exit address for l2_address
+    IDAI.burn(contract_address=dai_address, from_address=l2_address, value=amount)
+
+    sendWithdrawMessage(from_address, amount)
+
+    return ()
+end
+
+func sendWithdrawMessage(to_address : felt, amount : felt) {
+    alloc_locals
+    let (payload : felt*) = alloc()
+    assert payload[0] = MESSAGE_WITHDRAW
+    assert payload[1] = from_address
+    assert payload[2] = amount
+    let (bridge_address) = bridge.read()
+
+    send_message_to_l1(to_address=bridge_address, payload_size=3, payload=payload)
+}

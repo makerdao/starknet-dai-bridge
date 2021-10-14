@@ -57,6 +57,7 @@ contract L1DAIBridge {
   //  from starkware.starknet.compiler.compile import get_selector_from_name
   //  print(get_selector_from_name('finalizeDeposit'))
   uint256 constant DEPOSIT_SELECTOR = 1719001440962431497946253267335313592375607408367068470900111420804409451977;
+  uint256 constant FINALIZE_WITHDRAW_SELECTOR = 1719001440962431497946253267335313592375607408367068470900111420804409451977;
 
   event Closed();
   event Deposit(address indexed from, uint256 indexed to, uint256 amount);
@@ -116,4 +117,18 @@ contract L1DAIBridge {
 
     emit FinalizeWithdrawal(to, amount);
   }
+
+  function requestWithdrawal(address from, uint256 amount) external {
+    require(isOpen == 1, "L1DAIBridge/closed");
+
+    uint256[] memory payload = new uint256[](2);
+    payload[0] = from;
+    payload[1] = amount;
+
+    StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, DEPOSIT_SELECTOR, payload);
+
+    emit Deposit(from, to, amount);
+  }
+
+
 }
