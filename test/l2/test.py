@@ -12,7 +12,7 @@ from starkware.starknet.public.abi import get_selector_from_name
 
 # The path to the contract source code.
 L2_CONTRACTS_DIR = os.path.join(
-        os.getcwd(), "contracts/l2")
+    os.getcwd(), "contracts/l2")
 MAX = 2**120
 
 
@@ -97,12 +97,6 @@ async def check_balances(
     assert user1_balance == (expected_user1_balance,)
     assert user2_balance == (expected_user2_balance,)
     assert total_supply == (expected_user1_balance+expected_user2_balance,)
-
-
-async def check_no_funds():
-    no_funds_balance = await dai_contract.balanceOf(no_funds).call()
-
-    assert no_funds_balance == (0,)
 
 
 async def call_from(call, user):
@@ -527,9 +521,7 @@ async def test_withdraw():
     call = dai_contract.approve(bridge_contract.contract_address, 10)
     await call_from(call, user1)
     call = bridge_contract.withdraw(
-        l2_address=user1.contract_address,
-        l1_address=user2.contract_address,
-        amount=10)
+        l1_address=user2.contract_address, amount=10)
     await call_from(call, user1)
 
     await check_balances(user1_balance-10, user2_balance)
@@ -538,13 +530,10 @@ async def test_withdraw():
 @pytest.mark.asyncio
 async def test_withdraw_insufficient_funds():
     with pytest.raises(StarkException):
-        await bridge_contract.withdraw(
-            l2_address=no_funds,
-            l1_address=user2.contract_address,
-            amount=10).invoke()
-
+        call = bridge_contract.withdraw(
+            l1_address=user2.contract_address, amount=10)
+        await call_from(call, user3)
     await check_balances(user1_balance, user2_balance)
-    await check_no_funds()
 
 
 #############
