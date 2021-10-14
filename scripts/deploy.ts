@@ -2,6 +2,7 @@
  * Full goerli deploy including any permissions that need to be set.
  */
 import { task } from 'hardhat/config';
+import fs from 'fs';
 import { save, callFrom, getSelectorFromName } from './utils';
 
 const L1_GOERLI_DAI_ADDRESS = '0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844';
@@ -15,6 +16,10 @@ task('deploy', 'Full deployment', async (_taskArgs, hre) => {
     NETWORK = network.name;
   }
   console.log(`Deploying on ${NETWORK}`);
+
+  if (!fs.existsSync(`./deployments/${NETWORK}`)) {
+    fs.mkdirSync(`./deployments/${NETWORK}`);
+  }
 
   console.log('Deploying L1Escrow');
   const L1Escrow = await hre.ethers.getContractFactory('L1Escrow');

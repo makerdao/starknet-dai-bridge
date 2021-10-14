@@ -7,7 +7,11 @@ const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2**250 - 1);
 
 export function getAddress(contract: string, network: string) {
+  try {
     return JSON.parse(fs.readFileSync(`./deployments/${network}/${contract}.json`).toString()).address;
+  } catch (err) {
+    throw Error(`${contract} deployment on ${network} not found, run 'yarn deploy:${network}'`);
+  }
 }
 
 export function save(name: string, contract: any, network: string) {

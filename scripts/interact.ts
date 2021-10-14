@@ -72,6 +72,6 @@ task('call:l1', 'Call an L1 contract')
     const Contract = await ContractFactory.attach(address);
 
     const _calldata = calldata ? calldata.split(',') : [];
-    const res = await contract[func](..._calldata);
+    const res = await Contract[func](..._calldata);
     console.log('Response:', res);
 });

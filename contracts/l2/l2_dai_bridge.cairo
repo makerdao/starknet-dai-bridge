@@ -99,11 +99,13 @@ func withdraw{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(l2_address : felt, l1_address : felt, amount : felt):
+  }(l1_address : felt, amount : felt):
     alloc_locals
 
     let (dai_address) = dai.read()
-    IDAI.burn(contract_address=dai_address, from_address=l2_address, value=amount)
+    let (caller) = get_caller_address()
+
+    IDAI.burn(contract_address=dai_address, from_address=caller, value=amount)
 
     let (payload : felt*) = alloc()
     assert payload[0] = l1_address
