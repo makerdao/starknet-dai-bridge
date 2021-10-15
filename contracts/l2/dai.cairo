@@ -134,7 +134,6 @@ end
 func allowances(owner : felt, spender : felt) -> (res : felt):
 end
 
-
 @view
 func totalSupply{
     storage_ptr : Storage*,

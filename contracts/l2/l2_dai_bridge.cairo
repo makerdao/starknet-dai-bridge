@@ -19,8 +19,18 @@ namespace IDAI:
     end
 end
 
+@contract_interface
+namespace IRegistry:
+    func l1_address(l2_address : felt) -> (l1_address : felt):
+    end
+end
+
 @storage_var
 func dai() -> (res : felt):
+end
+
+@storage_var
+func registry() -> (res : felt):
 end
 
 @storage_var
@@ -79,7 +89,7 @@ func initialize{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(_dai : felt, _bridge : felt):
+  }(_dai : felt, _bridge : felt, _registry : felt):
     let (_initialized) = initialized.read()
     assert _initialized = 0
     initialized.write(1)
@@ -87,10 +97,9 @@ func initialize{
     let (caller) = get_caller_address()
     wards.write(caller, 1)
 
-    let (dai_address) = dai.read()
-    let (bridge_address) = bridge.read()
     dai.write(_dai)
     bridge.write(_bridge)
+    registry.write(_registry)
 
     return ()
 end
@@ -107,15 +116,10 @@ func withdraw{
     let (dai_address) = dai.read()
     let (caller) = get_caller_address()
 
-    IDAI.burn(contract_address=dai_address, from_address=caller, value=amount)
+    IDAI.burn(dai_address, caller, amount)
 
-    let (payload : felt*) = alloc()
-    assert payload[0] = MESSAGE_WITHDRAW
-    assert payload[1] = l1_address
-    assert payload[2] = amount
-    let (bridge_address) = bridge.read()
+    sendWithdrawMessage(l1_address, amount)
 
-    send_message_to_l1(to_address=bridge_address, payload_size=3, payload=payload)
     return ()
 end
 
@@ -134,7 +138,7 @@ func finalizeDeposit{
     assert from_address = bridge_address
 
     let (dai_address) = dai.read()
-    IDAI.mint(contract_address=dai_address, to_address=l2_address, value=amount)
+    IDAI.mint(dai_address, l2_address, amount)
 
     return ()
 end
@@ -146,26 +150,35 @@ func finalizeRequestWithdrawal{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(from_address : felt, l2_address : felt, amount : felt):
-
     alloc_locals
 
-    let (dai_address) = dai.read()
+    let (registry_address) = registry.read()
 
-    # make sure from_address is registered as exit address for l2_address
-    IDAI.burn(contract_address=dai_address, from_address=l2_address, value=amount)
+    let (l1_address) = IRegistry.l1_address(registry_address, l2_address)
+    assert l1_address = from_address
+
+    let (dai_address) = dai.read()
+    IDAI.burn(dai_address, l2_address, amount)
 
     sendWithdrawMessage(from_address, amount)
 
     return ()
 end
 
-func sendWithdrawMessage(to_address : felt, amount : felt) {
+func sendWithdrawMessage{
+  syscall_ptr : felt*,
+  storage_ptr : Storage*,
+  pedersen_ptr : HashBuiltin*,
+  range_check_ptr
+}(to_address : felt, amount : felt):
     alloc_locals
     let (payload : felt*) = alloc()
     assert payload[0] = MESSAGE_WITHDRAW
-    assert payload[1] = from_address
+    assert payload[1] = to_address
     assert payload[2] = amount
     let (bridge_address) = bridge.read()
 
-    send_message_to_l1(to_address=bridge_address, payload_size=3, payload=payload)
-}
+    send_message_to_l1(bridge_address, 3, payload)
+
+    return ()
+end
