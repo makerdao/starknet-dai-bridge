@@ -38,3 +38,38 @@ jobs:
 
       - run: yarn test:l1
 
+  test:
+    name: L2 Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: Set up node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 12.x
+
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          node-version: 3.8
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Cache YARN dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-
+
+      - run: cp .env.ci .env
+
+      - run: yarn --no-progress --non-interactive --frozen-lockfile
+
+      - run: yarn test:l2
