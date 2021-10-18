@@ -17,6 +17,12 @@ namespace IDAI:
 
     func burn(from_address : felt, value : felt):
     end
+
+    func allowances(owner : felt, spender : felt) -> (res : felt):
+    end
+
+    func balances(user : felt) -> (res : felt):
+    end
 end
 
 @contract_interface
@@ -113,6 +119,8 @@ func withdraw{
   }(l1_address : felt, amount : felt):
     alloc_locals
 
+    # revert when closed
+
     let (dai_address) = dai.read()
     let (caller) = get_caller_address()
 
@@ -149,15 +157,30 @@ func finalizeRequestWithdrawal{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(from_address : felt, l2_address : felt, amount : felt):
+  }(from_address : felt, l2_address : felt, from_l1_address : felt, amount : felt):
     alloc_locals
 
-    let (registry_address) = registry.read()
+    # revert when closed
 
+    # check message was sent by L1 contract
+    let (bridge_address) = bridge.read()
+    assert from_address = bridge_address
+
+    let (registry_address) = registry.read()
     let (l1_address) = IRegistry.l1_address(registry_address, l2_address)
-    assert l1_address = from_address
+    # if l1_address != from_l1_address:
+    #   return()
 
     let (dai_address) = dai.read()
+
+    let (balance) = IDAI.balances(dai_address, l2_address)
+    # if balance < amount:
+    #   return()
+
+    let (allowance) = IDAI.allowances(dai_address, l2_address, self)
+    # if allowance < amount:
+    #   return()
+
     IDAI.burn(dai_address, l2_address, amount)
 
     sendWithdrawMessage(from_address, amount)
