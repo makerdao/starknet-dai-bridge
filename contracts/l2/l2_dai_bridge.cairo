@@ -5,7 +5,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
 from starkware.starknet.common.storage import Storage
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math import assert_le
+from starkware.cairo.common.math_cmp import is_le
 from starkware.starknet.common.syscalls import get_caller_address
 
 const MESSAGE_WITHDRAW = 0
@@ -18,10 +18,10 @@ namespace IDAI:
     func burn(from_address : felt, value : felt):
     end
 
-    func allowances(owner : felt, spender : felt) -> (res : felt):
+    func allowance(owner : felt, spender : felt) -> (res : felt):
     end
 
-    func balances(user : felt) -> (res : felt):
+    func balanceOf(user : felt) -> (res : felt):
     end
 end
 
@@ -89,13 +89,17 @@ func deny{
   return ()
 end
 
+@storage_var
+func self() -> (res : felt):
+end
+
 @external
 func initialize{
     syscall_ptr : felt*,
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(_dai : felt, _bridge : felt, _registry : felt):
+  }(_dai : felt, _bridge : felt, _registry : felt, _self : felt):
     let (_initialized) = initialized.read()
     assert _initialized = 0
     initialized.write(1)
@@ -106,6 +110,7 @@ func initialize{
     dai.write(_dai)
     bridge.write(_bridge)
     registry.write(_registry)
+    self.write(_self)
 
     return ()
 end
@@ -151,6 +156,8 @@ func finalizeDeposit{
     return ()
 end
 
+# external is temporary
+@external
 @l1_handler
 func finalizeRequestWithdrawal{
     syscall_ptr : felt*,
@@ -168,18 +175,32 @@ func finalizeRequestWithdrawal{
 
     let (registry_address) = registry.read()
     let (l1_address) = IRegistry.l1_address(registry_address, l2_address)
-    # if l1_address != from_l1_address:
-    #   return()
+    if l1_address != from_l1_address:
+      return()
+    end
 
-    let (dai_address) = dai.read()
+    let (local dai_address) = dai.read()
 
-    let (balance) = IDAI.balances(dai_address, l2_address)
-    # if balance < amount:
-    #   return()
+    let (balance) = IDAI.balanceOf(dai_address, l2_address)
+    local syscall_ptr : felt* = syscall_ptr
+    local storage_ptr : Storage* = storage_ptr
+    local pedersen_ptr : HashBuiltin* = pedersen_ptr
+    local range_check_ptr = range_check_ptr
+    let (balance_check) = is_le(amount, balance)
+    if balance_check == 0:
+      return()
+    end
 
-    let (allowance) = IDAI.allowances(dai_address, l2_address, self)
-    # if allowance < amount:
-    #   return()
+    let (_self) = self.read()
+    let (allowance) = IDAI.allowance(dai_address, l2_address, _self)
+    local syscall_ptr: felt* = syscall_ptr
+    local storage_ptr : Storage* = storage_ptr
+    local pedersen_ptr : HashBuiltin* = pedersen_ptr
+    local range_check_ptr = range_check_ptr
+    let (allowance_check) = is_le(amount, allowance)
+    if allowance_check == 0:
+      return()
+    end
 
     IDAI.burn(dai_address, l2_address, amount)
 
