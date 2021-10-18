@@ -1,5 +1,5 @@
 import { task } from 'hardhat/config';
-import { callFrom, getSelectorFromName, getAddress } from './utils';
+import { callFrom, getSelectorFromName, getAddress, parseCalldata } from './utils';
 
 let NETWORK: string;
 
@@ -24,7 +24,7 @@ task('invoke:l2', 'Invoke an L2 contract')
     const AccountFactory = await hre.starknet.getContractFactory('Account');
     const Account = await AccountFactory.getContractAt(accountAddress);
 
-    const _calldata = calldata ? calldata.split(',') : [];
+    const _calldata = parseCalldata(calldata, 2, NETWORK);
     const res = await callFrom(
       Contract,
       func,
@@ -50,7 +50,7 @@ task('call:l2', 'Call an L2 contract')
     const ContractFactory = await hre.starknet.getContractFactory(contract);
     const Contract = await ContractFactory.getContractAt(address);
 
-    const _calldata = calldata ? calldata.split(',') : [];
+    const _calldata = parseCalldata(calldata, 2, NETWORK);
     const res = await Contract.call(func, _calldata);
     console.log('Response:', res);
 });
@@ -71,7 +71,7 @@ task('call:l1', 'Call an L1 contract')
     const ContractFactory = await hre.ethers.getContractFactory(contract);
     const Contract = await ContractFactory.attach(address);
 
-    const _calldata = calldata ? calldata.split(',') : [];
+    const _calldata = parseCalldata(calldata, 1, NETWORK);
     const res = await Contract[func](..._calldata);
     console.log('Response:', res);
 });

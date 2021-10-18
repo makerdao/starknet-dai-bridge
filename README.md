@@ -33,29 +33,29 @@ The deploy contracts and abi are stored in a json in `./deployments/NETWORK/CONT
 
 ### Create Account
 ```
-yarn account:create --name NAME
+yarn account:create --name ACCOUNT_NAME
 ```
 
 ### Get Account address
 ```
-yarn account:get --name NAME
-```
-
-### Withdraw
-```
-yarn invoke:l2 --contract dai --func approve --calldata BRIDGE_ADDRESS,AMOUNT
-yarn invoke:l2 --contract l2_dai_bridge --func withdraw --calldata L1_ADDRESS,AMOUNT
+yarn account:get --name ACCOUNT_NAME
 ```
 
 ### Deposit
 ```
-yarn call:l1 --contract DAI --func approve --calldata BRIDGE_ADDRESS,AMOUNT
-yarn call:l1 --contract L1DAIBridge --func deposit --calldata L1_ADDRESS,L2_ADDRESS,AMOUNT
+yarn call:l1 --contract DAI --func approve --calldata l2_dai_bridge,AMOUNT
+yarn call:l1 --contract L1DAIBridge --func deposit --calldata L1_ADDRESS,ACCOUNT_NAME,AMOUNT
 ```
-Note `L2_ADDRESS` must be converted from hex to an integer
+
+### Withdraw
+```
+yarn invoke:l2 --contract dai --func approve --calldata l2_dai_bridge,AMOUNT
+yarn invoke:l2 --contract l2_dai_bridge --func withdraw --calldata L1_ADDRESS,AMOUNT
+yarn call:l1 --contract L1DAIBridge --func finalizeWithdrawal --calldata L1_ADDRESS,AMOUNT
+```
 
 ### L2 Transfers
 ```
 yarn account:get --name user
-yarn invoke:l2 --contract dai --func transfer --calldata ADDRESS,AMOUNT
+yarn invoke:l2 --contract dai --func transfer --calldata ACCOUNT_NAME,AMOUNT
 ```

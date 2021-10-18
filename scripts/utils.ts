@@ -14,6 +14,37 @@ export function getAddress(contract: string, network: string) {
   }
 }
 
+export function getAccounts(network: string) {
+  const files = fs.readdirSync(`./deployments/${network}`);
+  return files.filter(file => file.slice(0, 7) === 'Account').map(file => {
+    return file.split('-')[1].split('.')[0];
+  });
+}
+
+export function parseCalldata(calldata: string, layer: number, network: string) {
+  const _calldata = calldata ? calldata.split(',') : [];
+  const accounts = getAccounts(network);
+  return _calldata.map((input: string) => {
+    if (accounts.includes(input)) {
+      return BigInt(getAddress(`Account-${input}`, network)).toString();
+    } else if (input === 'l2_dai_bridge') {
+      if (layer === 1) {
+        return getAddress('l2_dai_bridge', network);
+      } else {
+        return BigInt(getAddress('l2_dai_bridge', network)).toString();
+      }
+    } else if (input === 'L1DAIBridge') {
+      if (layer == 1) {
+        return getAddress('L1DAIBridge', network);
+      } else {
+        return BigInt(getAddress('L1DAIBridge', network)).toString();
+      }
+    } else {
+      return input;
+    }
+  });
+}
+
 export function save(name: string, contract: any, network: string) {
   fs.writeFileSync(`${DEPLOYMENTS_DIR}/${network}/${name}.json`, JSON.stringify({
     'address': contract.address,
@@ -21,7 +52,7 @@ export function save(name: string, contract: any, network: string) {
 }
 
 export function getSelectorFromName(name: string) {
-  return BigInt(ethers.utils.keccak256(Buffer.from(name))) % MASK_250
+  return (BigInt(ethers.utils.keccak256(Buffer.from(name))) % MASK_250).toString();
 }
 
 export async function callFrom(
