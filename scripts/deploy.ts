@@ -62,4 +62,8 @@ task('deploy', 'Full deployment', async (_taskArgs, hre) => {
     [BigInt(L2DAI.address).toString(), BigInt(L1DAIBridge.address).toString()],
     Account,
   );
+
+  const DAIAddress = getAddress('DAI', NETWORK);
+  const MAX = BigInt(2**256)-BigInt(1);
+  await L1Escrow.approve(DAIAddress, L1DAIBridge.address, MAX);
 });

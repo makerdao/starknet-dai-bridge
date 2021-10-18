@@ -43,7 +43,7 @@ yarn account:get --name ACCOUNT_NAME
 
 ### Deposit
 ```
-yarn call:l1 --contract DAI --func approve --calldata l2_dai_bridge,AMOUNT
+yarn call:l1 --contract DAI --func approve --calldata L1DAIBridge,AMOUNT
 yarn call:l1 --contract L1DAIBridge --func deposit --calldata L1_ADDRESS,ACCOUNT_NAME,AMOUNT
 ```
 
