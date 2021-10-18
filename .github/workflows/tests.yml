@@ -72,4 +72,6 @@ jobs:
 
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
+      - run: pip install -r requirements.txt
+
       - run: yarn test:l2
