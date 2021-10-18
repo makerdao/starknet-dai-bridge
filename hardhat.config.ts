@@ -47,20 +47,11 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
     },
     chainId: chainIds[network],
     url,
-    gasPrice: 50000000000,
   };
 }
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
-  /*
-  gasReporter: {
-    currency: "USD",
-    enabled: process.env.REPORT_GAS ? true : false,
-    excludeContracts: [],
-    src: "./contracts",
-  },
-  */
   networks: {
     // hardhat: {
     //   accounts: {

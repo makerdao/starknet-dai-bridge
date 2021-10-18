@@ -7,7 +7,6 @@ interface TokenLike {
   function transferFrom(
     address _from, address _to, uint256 _value
   ) external returns (bool success);
-  
   function balanceOf(
     address account
   ) external view returns (uint256);

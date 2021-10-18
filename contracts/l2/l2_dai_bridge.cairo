@@ -8,6 +8,8 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_le
 from starkware.starknet.common.syscalls import get_caller_address
 
+const MESSAGE_WITHDRAW = 0
+
 @contract_interface
 namespace IDAI:
     func mint(to_address : felt, value : felt):
@@ -16,8 +18,6 @@ namespace IDAI:
     func burn(from_address : felt, value : felt):
     end
 end
-
-const MESSAGE_WITHDRAW = 0
 
 @storage_var
 func dai() -> (res : felt):
