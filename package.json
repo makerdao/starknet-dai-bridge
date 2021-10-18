@@ -6,7 +6,10 @@
   "author": "Nick Ulven <nickulven@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "chain": "hardhat node --no-deploy",
+    "format": "prettier --check \"./**/*.ts\"",
+    "format:fix": "prettier --write \"./**/*.ts\"",
+    "lint": "eslint --ext .ts test scripts hardhat.config.ts",
+    "lint:fix": "yarn lint --fix",
     "compile:l1": "hardhat compile",
     "compile:l2": "hardhat starknet-compile",
     "compile": "yarn compile:l1 && yarn compile:l2",
@@ -16,22 +19,22 @@
     "call:l1": "hardhat call:l1 --network goerli",
     "call:l2": "hardhat call:l2 --network goerli",
     "invoke:l2": "hardhat invoke:l2 --network goerli",
-    "interact:l2:bridge": "python ./scripts/interact.py l2_dai_bridge",
-    "interact:l2:dai": "python ./scripts/interact.py dai",
-    "init-l2-bridge": "python ./scripts/initialize.py",
     "test:l1": "hardhat test",
-    "test:l2": "pytest ./test/l2/test.py --disable-pytest-warnings"
+    "test:l2": "pytest ./test/l2/test.py --disable-pytest-warnings",
+    "test:fix": "yarn lint:fix && yarn format:fix && yarn test:l1 && yarn typecheck"
   },
   "devDependencies": {
     "@codechecks/client": "^0.1.11",
     "@commitlint/cli": "^13.1.0",
     "@commitlint/config-conventional": "^13.1.0",
+    "@defi-wonderland/smock": "^2.0.7",
     "@ethersproject/abi": "^5.4.1",
     "@ethersproject/abstract-signer": "^5.4.1",
     "@ethersproject/bignumber": "^5.4.1",
     "@ethersproject/bytes": "^5.4.0",
     "@ethersproject/providers": "^5.4.5",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-etherscan": "^2.1.6",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@typechain/ethers-v5": "^7.0.1",
     "@typechain/hardhat": "^2.3.0",
@@ -52,7 +55,6 @@
     "ethers": "^5.4.6",
     "fs-extra": "^10.0.0",
     "hardhat": "^2.6.2",
-    "hardhat-deploy": "^0.9.1",
     "hardhat-gas-reporter": "^1.0.4",
     "husky": "^7.0.2",
     "lint-staged": "^11.1.2",
@@ -70,8 +72,16 @@
   },
   "dependencies": {
     "@makerdao/hardhat-utils": "^0.1.3",
-    "@openzeppelin/contracts": "^4.3.2",
     "@shardlabs/starknet-hardhat-plugin": "^0.2.0",
-    "keccak256": "^1.0.3"
+    "@eth-optimism/smock": "^1.1.10",
+    "@ethersproject/abstract-provider": "^5.4.1",
+    "@nomiclabs/ethereumjs-vm": "^4.2.2",
+    "@openzeppelin/contracts": "^4.3.2",
+    "eslint-config-typestrict": "^1.0.2",
+    "eslint-plugin-no-only-tests": "^2.6.0",
+    "eslint-plugin-simple-import-sort": "^7.0.0",
+    "eslint-plugin-sonarjs": "^0.10.0",
+    "eslint-plugin-unused-imports": "^1.1.5",
+    "lodash": "^4.17.21"
   }
 }

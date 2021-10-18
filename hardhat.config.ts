@@ -1,16 +1,15 @@
-
 import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
 import "@nomiclabs/hardhat-ethers";
-
-import { resolve } from "path";
+import "@nomiclabs/hardhat-etherscan";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import { NetworkUserConfig } from "hardhat/types";
+import { resolve } from "path";
 
 import "./scripts/deploy";
 import "./scripts/interact";
@@ -39,7 +38,7 @@ if (!infuraApiKey) {
 }
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url: string = "https://" + network + ".infura.io/v3/" + infuraApiKey;
+  const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;
   return {
     accounts: {
       count: 10,
@@ -63,16 +62,13 @@ const config: HardhatUserConfig = {
   },
   */
   networks: {
-    hardhat: {
-      accounts: {
-        mnemonic,
-      },
-      chainId: chainIds.hardhat,
-    },
+    // hardhat: {
+    //   accounts: {
+    //     mnemonic,
+    //   },
+    //   chainId: chainIds.hardhat,
+    // },
     goerli: getChainConfig("goerli"),
-    kovan: getChainConfig("kovan"),
-    rinkeby: getChainConfig("rinkeby"),
-    ropsten: getChainConfig("ropsten"),
     localhost: {
       url: "http://127.0.0.1:8545",
     },
@@ -130,6 +126,9 @@ const config: HardhatUserConfig = {
     target: "ethers-v5",
   },
   */
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
 };
 
 export default config;
