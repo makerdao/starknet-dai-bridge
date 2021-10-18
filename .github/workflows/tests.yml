@@ -38,3 +38,21 @@ jobs:
 
       - run: yarn test:l1
 
+  test2:
+    name: L2 Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          node-version: 3.8
+
+      - run: cp .env.ci .env
+
+      - run: pip install -r requirements.txt
+
+      - run: pytest ./test/l2/test.py --disable-pytest-warnings
