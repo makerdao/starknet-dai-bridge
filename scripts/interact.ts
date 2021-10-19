@@ -17,19 +17,19 @@ task('invoke:l2', 'Invoke an L2 contract')
     console.log(`Calling on ${NETWORK}`);
 
     const address = getAddress(contract, NETWORK);
-    const ContractFactory = await hre.starknet.getContractFactory(contract);
-    const Contract = await ContractFactory.getContractAt(address);
+    const contractFactory = await hre.starknet.getContractFactory(contract);
+    const contractInstance = await contractFactory.getContractAt(address);
     const _name = name ? name : 'auth';
     const accountAddress = getAddress(`Account-${_name}`, NETWORK);
-    const AccountFactory = await hre.starknet.getContractFactory('Account');
-    const Account = await AccountFactory.getContractAt(accountAddress);
+    const accountFactory = await hre.starknet.getContractFactory('Account');
+    const accountInstance = await accountFactory.getContractAt(accountAddress);
 
     const _calldata = parseCalldata(calldata, 2, NETWORK);
     const res = await callFrom(
-      Contract,
+      contractInstance,
       func,
       _calldata,
-      Account,
+      accountInstance,
     );
     console.log('Response:', res);
 });
@@ -47,11 +47,11 @@ task('call:l2', 'Call an L2 contract')
     console.log(`Calling on ${NETWORK}`);
 
     const address = getAddress(contract, NETWORK);
-    const ContractFactory = await hre.starknet.getContractFactory(contract);
-    const Contract = await ContractFactory.getContractAt(address);
+    const contractFactory = await hre.starknet.getContractFactory(contract);
+    const contractInstance = await contractFactory.getContractAt(address);
 
     const _calldata = parseCalldata(calldata, 2, NETWORK);
-    const res = await Contract.call(func, _calldata);
+    const res = await contractInstance.call(func, _calldata);
     console.log('Response:', res);
 });
 
@@ -68,10 +68,10 @@ task('call:l1', 'Call an L1 contract')
     console.log(`Calling on ${NETWORK}`);
 
     const address = getAddress(contract, NETWORK);
-    const ContractFactory = await hre.ethers.getContractFactory(contract);
-    const Contract = await ContractFactory.attach(address);
+    const contractFactory = await hre.ethers.getContractFactory(contract);
+    const contractInstance = await contractFactory.attach(address);
 
     const _calldata = parseCalldata(calldata, 1, NETWORK);
-    const res = await Contract[func](..._calldata);
+    const res = await contractInstance[func](..._calldata);
     console.log('Response:', res);
 });
