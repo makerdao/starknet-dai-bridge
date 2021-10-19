@@ -1,5 +1,4 @@
 import os
-import json
 import pytest
 import asyncio
 
@@ -60,6 +59,7 @@ async def deploy(contract_name):
 starknet = None
 bridge_contract = None
 dai_contract = None
+uint_contract = None
 
 # constant addresses
 burn = 0
@@ -86,6 +86,36 @@ starknet_contract_address = '0x0'
 ###########
 # HELPERS #
 ###########
+def to_split_uint(a):
+    return (a & ((1 << 128) - 1), a >> 128)
+
+
+@pytest.mark.asyncio
+async def uint_add(a, b):
+    (a_low, a_high) = to_split_uint(a)
+    (b_low, b_high) = to_split_uint(b)
+    split_uint = await uint_contract.add_ext(
+        a_low,
+        a_high,
+        b_low,
+        b_high,
+    ).invoke()
+    assert split_uint == to_split_uint(a+b)
+
+
+@pytest.mark.asyncio
+async def uint_sub(a, b):
+    (a_low, a_high) = to_split_uint(a)
+    (b_low, b_high) = to_split_uint(b)
+    split_uint = await uint_contract.sub_ext(
+        a_low,
+        a_high,
+        b_low,
+        b_high,
+    ).invoke()
+    assert split_uint == to_split_uint(a-b)
+
+
 async def check_balances(
     expected_user1_balance,
     expected_user2_balance,
@@ -144,6 +174,10 @@ async def before_all():
 
     call = dai_contract.rely(bridge_contract.contract_address)
     await call_from(call, auth_user)
+
+    # temporary uint tester
+    global uint_contract
+    uint_contract = await deploy("uint.cairo")
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -550,3 +584,80 @@ async def test_finalize_deposit():
     await call_from(call, user2)
 
     await check_balances(user1_balance, user2_balance+10)
+
+
+########
+# uint #
+########
+@pytest.mark.asyncio
+async def test_uint_add_under_split():
+    a = 1
+    b = 2
+    await uint_add(a, b)
+
+
+@pytest.mark.asyncio
+async def test_uint_add_over_split():
+    a = 2**128 - 1
+    b = 2**128 - 1
+    await uint_add(a, b)
+
+
+@pytest.mark.asyncio
+async def test_uint_add_over_split_2():
+    a = 2**130
+    b = 2**128 - 1
+    await uint_add(a, b)
+
+
+@pytest.mark.asyncio
+async def test_uint_add_overflow():
+    a = 2**256-1
+    b = 2**256-1
+    with pytest.raises(StarkException):
+        await uint_add(a, b)
+
+
+@pytest.mark.asyncio
+async def test_uint_sub_1():
+    a = 2
+    b = 1
+    await uint_sub(a, b)
+
+
+@pytest.mark.asyncio
+async def test_uint_sub_2():
+    a = 2**128
+    b = 1
+    await uint_sub(a, b)
+
+
+@pytest.mark.asyncio
+async def test_uint_sub_3():
+    a = 2**128+2
+    b = 2**128+1
+    await uint_sub(a, b)
+
+
+@pytest.mark.asyncio
+async def test_uint_sub_negative_1():
+    a = 1
+    b = 2
+    with pytest.raises(StarkException):
+        await uint_sub(a, b)
+
+
+@pytest.mark.asyncio
+async def test_uint_sub_negative_2():
+    a = 2**128+1
+    b = 2**129+1
+    with pytest.raises(StarkException):
+        await uint_sub(a, b)
+
+
+@pytest.mark.asyncio
+async def test_uint_sub_negative_3():
+    a = 2**128-1
+    b = 2**129+1
+    with pytest.raises(StarkException):
+        await uint_sub(a, b)
