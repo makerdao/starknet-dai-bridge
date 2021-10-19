@@ -619,6 +619,21 @@ async def test_uint_add_overflow():
 
 
 @pytest.mark.asyncio
+async def test_uint_add_bad_input():
+    a_low = 2**128
+    a_high = 0
+    b_low = 0
+    b_high = 0
+    with pytest.raises(StarkException):
+        await uint_contract.add_ext(
+            a_low,
+            a_high,
+            b_low,
+            b_high,
+        ).invoke()
+
+
+@pytest.mark.asyncio
 async def test_uint_sub_1():
     a = 2
     b = 1
@@ -661,3 +676,18 @@ async def test_uint_sub_negative_3():
     b = 2**129+1
     with pytest.raises(StarkException):
         await uint_sub(a, b)
+
+
+@pytest.mark.asyncio
+async def test_uint_sub_bad_input():
+    a_low = 2**128
+    a_high = 0
+    b_low = 0
+    b_high = 0
+    with pytest.raises(StarkException):
+        await uint_contract.sub_ext(
+            a_low,
+            a_high,
+            b_low,
+            b_high,
+        ).invoke()
