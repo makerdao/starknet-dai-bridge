@@ -48,12 +48,26 @@ contract L1DAIBridge {
     event Rely(address indexed usr);
     event Deny(address indexed usr);
 
+
+    uint256 public isOpen = 1;
+
+    modifier whenOpen() {
+        require(isOpen == 1, "L1DAIBridge/closed");
+        _;
+    }
+
+    function close() external auth {
+        isOpen = 0;
+        emit Closed();
+    }
+
+    event Closed();
+
     address public immutable starkNet;
     address public immutable dai;
     address public immutable escrow;
     uint256 public immutable l2DaiBridge;
 
-    uint256 public isOpen = 1;
     uint256 public ceiling = 0;
 
     uint256 constant FINALIZE_WITHDRAW = 0;
@@ -67,7 +81,6 @@ contract L1DAIBridge {
     uint256 constant FORCE_WITHDRAW =
         855858504913659940327667045659575078143338465596943247368797815565006091899;
 
-    event Closed();
     event Ceiling(uint256 ceiling);
     event Deposit(address indexed from, uint256 indexed to, uint256 amount);
     event FinalizeWithdrawal(address indexed to, uint256 amount);
@@ -93,12 +106,7 @@ contract L1DAIBridge {
         l2DaiBridge = _l2DaiBridge;
     }
 
-    function close() external auth {
-        isOpen = 0;
-        emit Closed();
-    }
-
-    function setCeiling(uint256 _ceiling) external auth {
+    function setCeiling(uint256 _ceiling) external auth whenOpen {
         ceiling = _ceiling;
         emit Ceiling(_ceiling);
     }
@@ -107,9 +115,7 @@ contract L1DAIBridge {
         address from,
         uint256 to,
         uint256 amount
-    ) external {
-        require(isOpen == 1, "L1DAIBridge/closed");
-
+    ) external whenOpen {
         TokenLike(dai).transferFrom(from, escrow, amount);
 
         require(
@@ -138,7 +144,7 @@ contract L1DAIBridge {
         emit FinalizeWithdrawal(to, amount);
     }
 
-    function forceWithdrawal(uint256 from, uint256 amount) external {
+    function forceWithdrawal(uint256 from, uint256 amount) external whenOpen {
         uint256[] memory payload = new uint256[](3);
         payload[0] = from;
         payload[1] = uint256(uint160(msg.sender));
