@@ -8,7 +8,8 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math_cmp import is_le
 from starkware.starknet.common.syscalls import get_caller_address
 
-const MESSAGE_WITHDRAW = 0
+const FINALIZE_WITHDRAW = 0
+const FINALIZE_FORCE_WITHDRAW = 1
 
 @contract_interface
 namespace IDAI:
@@ -32,23 +33,27 @@ namespace IRegistry:
 end
 
 @storage_var
-func dai() -> (res : felt):
+func _dai() -> (res : felt):
 end
 
 @storage_var
-func registry() -> (res : felt):
+func _registry() -> (res : felt):
 end
 
 @storage_var
-func bridge() -> (res : felt):
+func _bridge() -> (res : felt):
 end
 
 @storage_var
-func initialized() -> (res : felt):
+func _initialized() -> (res : felt):
 end
 
 @storage_var
-func wards(user : felt) -> (res : felt):
+func _wards(user : felt) -> (res : felt):
+end
+
+@storage_var
+func _self() -> (res : felt):
 end
 
 func auth{
@@ -59,7 +64,7 @@ func auth{
   }() -> ():
   let (caller) = get_caller_address()
 
-  let (ward) = wards.read(caller)
+  let (ward) = _wards.read(caller)
   assert ward = 1
 
   return ()
@@ -73,7 +78,7 @@ func rely{
     range_check_ptr
   }(user : felt) -> ():
   auth()
-  wards.write(user, 1)
+  _wards.write(user, 1)
   return ()
 end
 
@@ -85,12 +90,8 @@ func deny{
     range_check_ptr
   }(user : felt) -> ():
   auth()
-  wards.write(user, 0)
+  _wards.write(user, 0)
   return ()
-end
-
-@storage_var
-func self() -> (res : felt):
 end
 
 @external
@@ -99,18 +100,18 @@ func initialize{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(_dai : felt, _bridge : felt, _registry : felt, _self : felt):
-    let (_initialized) = initialized.read()
-    assert _initialized = 0
-    initialized.write(1)
+  }(dai : felt, bridge : felt, registry : felt, self : felt):
+    let (initialized) = _initialized.read()
+    assert initialized = 0
+    _initialized.write(1)
 
     let (caller) = get_caller_address()
-    wards.write(caller, 1)
+    _wards.write(caller, 1)
 
-    dai.write(_dai)
-    bridge.write(_bridge)
-    registry.write(_registry)
-    self.write(_self)
+    _dai.write(dai)
+    _bridge.write(bridge)
+    _registry.write(registry)
+    _self.write(self)
 
     return ()
 end
@@ -121,22 +122,29 @@ func withdraw{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(l1_address : felt, amount : felt):
+  }(dest : felt, amount : felt):
     alloc_locals
 
-    # revert when closed
+    # TODO: revert when closed
 
-    let (dai_address) = dai.read()
+    let (dai) = _dai.read()
     let (caller) = get_caller_address()
 
-    IDAI.burn(dai_address, caller, amount)
+    IDAI.burn(dai, caller, amount)
 
-    sendWithdrawMessage(l1_address, amount)
+    let (payload : felt*) = alloc()
+    assert payload[0] = FINALIZE_WITHDRAW
+    assert payload[1] = dest
+    assert payload[2] = amount
+
+    let (bridge) = _bridge.read()
+
+    send_message_to_l1(bridge, 3, payload)
 
     return ()
 end
 
-# external is temporary
+# TODO: external is temporary
 @external
 @l1_handler
 func finalizeDeposit{
@@ -144,85 +152,88 @@ func finalizeDeposit{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(from_address : felt, l2_address : felt, amount : felt):
+  }(sender : felt, dest : felt, amount : felt):
 
-    # check message was sent by L1 contract
-    let (bridge_address) = bridge.read()
-    assert from_address = bridge_address
+    # check l1 message sender
+    let (bridge) = _bridge.read()
+    assert sender = bridge
 
-    let (dai_address) = dai.read()
-    IDAI.mint(dai_address, l2_address, amount)
+    let (dai) = _dai.read()
+    IDAI.mint(dai, dest, amount)
 
     return ()
 end
 
-# external is temporary
+# TODO: external is temporary
 @external
 @l1_handler
-func finalizeRequestWithdrawal{
+func finalizeForceWithdrawal{
     syscall_ptr : felt*,
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(from_address : felt, l2_address : felt, from_l1_address : felt, amount : felt):
+  }(sender : felt, source : felt, dest : felt, amount : felt):
     alloc_locals
 
-    # revert when closed
+    # check l1 message sender
+    let (bridge) = _bridge.read()
+    assert sender = bridge
 
-    # check message was sent by L1 contract
-    let (bridge_address) = bridge.read()
-    assert from_address = bridge_address
-
-    let (registry_address) = registry.read()
-    let (l1_address) = IRegistry.l1_address(registry_address, l2_address)
-    if l1_address != from_l1_address:
+    # check l1 recipent address
+    let (registry) = _registry.read()
+    let (_dest) = IRegistry.l1_address(registry, source)
+    if _dest != dest:
+      sendFinalizeForceWithdraw(dest, 0)
       return()
     end
 
-    let (local dai_address) = dai.read()
+    let (local dai) = _dai.read()
 
-    let (balance) = IDAI.balanceOf(dai_address, l2_address)
+    # check l2 DAI balance
+    let (balance) = IDAI.balanceOf(dai, source)
     local syscall_ptr : felt* = syscall_ptr
     local storage_ptr : Storage* = storage_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
     local range_check_ptr = range_check_ptr
     let (balance_check) = is_le(amount, balance)
     if balance_check == 0:
+      sendFinalizeForceWithdraw(dest, 0)
       return()
     end
 
-    let (_self) = self.read()
-    let (allowance) = IDAI.allowance(dai_address, l2_address, _self)
+    # check allowance
+    let (self) = _self.read()
+    let (allowance) = IDAI.allowance(dai, source, self)
     local syscall_ptr: felt* = syscall_ptr
     local storage_ptr : Storage* = storage_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
     local range_check_ptr = range_check_ptr
     let (allowance_check) = is_le(amount, allowance)
     if allowance_check == 0:
+      sendFinalizeForceWithdraw(dest, 0)
       return()
     end
 
-    IDAI.burn(dai_address, l2_address, amount)
-
-    sendWithdrawMessage(from_address, amount)
-
+    IDAI.burn(dai, source, amount)
+    sendFinalizeForceWithdraw(dest, amount)
     return ()
 end
 
-func sendWithdrawMessage{
+func sendFinalizeForceWithdraw{
   syscall_ptr : felt*,
   storage_ptr : Storage*,
   pedersen_ptr : HashBuiltin*,
   range_check_ptr
-}(to_address : felt, amount : felt):
+}(dest : felt, amount : felt):
     alloc_locals
+
     let (payload : felt*) = alloc()
-    assert payload[0] = MESSAGE_WITHDRAW
-    assert payload[1] = to_address
+    assert payload[0] = FINALIZE_FORCE_WITHDRAW
+    assert payload[1] = dest
     assert payload[2] = amount
-    let (bridge_address) = bridge.read()
 
-    send_message_to_l1(bridge_address, 3, payload)
+    let (bridge) = _bridge.read()
 
+    send_message_to_l1(bridge, 3, payload)
     return ()
 end

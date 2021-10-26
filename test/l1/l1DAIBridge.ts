@@ -12,8 +12,9 @@ import hre from "hardhat";
 chai.use(smock.matchers);
 
 const MAX_UINT256 = hre.ethers.constants.MaxUint256;
-const DEPOSIT_SELECTOR = parseFixed('1719001440962431497946253267335313592375607408367068470900111420804409451977');
-const FINALIZE_WITHDRAW_SELECTOR = parseFixed('445294147998055781766362018077835583743363152459026443725942079426086721020');
+const DEPOSIT = parseFixed('1719001440962431497946253267335313592375607408367068470900111420804409451977');
+const FORCE_WITHDRAW = parseFixed('445294147998055781766362018077835583743363152459026443725942079426086721020');
+
 const MESSAGE_WITHDRAW = 0;
 
 describe("L1DAIBridge", function () {
@@ -35,7 +36,8 @@ describe("L1DAIBridge", function () {
       "close()",
       "deposit(address,uint256,uint256)",
       "finalizeWithdrawal(address,uint256)",
-      "requestWithdrawal(uint256,uint256)",
+      "forceWithdrawal(uint256,uint256)",
+      "finalizeForceWithdrawal(uint256)",
       "setCeiling(uint256)",
     ]);
   });
@@ -74,7 +76,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.sendMessageToL2).to.have.been.calledOnce;
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
         l2BridgeAddress,
-        DEPOSIT_SELECTOR,
+        DEPOSIT,
         [l2User, depositAmount]
       );
     });
@@ -379,7 +381,8 @@ describe("L1DAIBridge", function () {
       const { l1Alice, l1Bridge } = await setupTest();
 
       expect(await l1Bridge.isOpen()).to.be.eq(1);
-      await expect(l1Bridge.connect(l1Alice).close()).to.be.revertedWith("L1DAIBridge/not-authorized");
+      await expect(l1Bridge.connect(l1Alice).close())
+        .to.be.revertedWith("L1DAIBridge/not-authorized");
     });
   });
   describe("setCeiling", function () {
@@ -396,10 +399,11 @@ describe("L1DAIBridge", function () {
       const { l1Alice, l1Bridge } = await setupTest();
 
       expect(await l1Bridge.ceiling()).to.be.eq(0);
-      await expect(l1Bridge.connect(l1Alice).setCeiling(1)).to.be.revertedWith("L1DAIBridge/not-authorized");
+      await expect(l1Bridge.connect(l1Alice).setCeiling(1))
+        .to.be.revertedWith("L1DAIBridge/not-authorized");
     });
   });
-  describe("requestWithdrawal", function () {
+  describe("forceWithdrawal", function () {
     it("sends a message to l2, emits event", async () => {
       const {
         l1Alice,
@@ -414,15 +418,15 @@ describe("L1DAIBridge", function () {
       await expect(
         l1Bridge
           .connect(l1Alice)
-          .requestWithdrawal(l2User, amount)
+          .forceWithdrawal(l2User, amount)
       )
-        .to.emit(l1Bridge, "RequestWithdrawal")
+        .to.emit(l1Bridge, "ForceWithdrawal")
         .withArgs(l1Alice.address, l2User, amount);
 
       expect(starkNetFake.sendMessageToL2).to.have.been.calledOnce;
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
         l2BridgeAddress,
-        FINALIZE_WITHDRAW_SELECTOR,
+        FORCE_WITHDRAW,
         [l2User, l1Alice.address, amount]
       );
     });
@@ -443,15 +447,15 @@ describe("L1DAIBridge", function () {
       await expect(
         l1Bridge
           .connect(l1Alice)
-          .requestWithdrawal(l2User, amount)
+          .forceWithdrawal(l2User, amount)
       )
-        .to.emit(l1Bridge, "RequestWithdrawal")
+        .to.emit(l1Bridge, "ForceWithdrawal")
         .withArgs(l1Alice.address, l2User, amount);
 
       expect(starkNetFake.sendMessageToL2).to.have.been.calledOnce;
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
         l2BridgeAddress,
-        FINALIZE_WITHDRAW_SELECTOR,
+        FORCE_WITHDRAW,
         [l2User, l1Alice.address, amount]
       );
     });
