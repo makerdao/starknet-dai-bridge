@@ -1,6 +1,8 @@
 import "@nomiclabs/hardhat-waffle";
+import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+import "@shardlabs/starknet-hardhat-plugin";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 
@@ -8,6 +10,10 @@ import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
+
+import "./scripts/deploy";
+import "./scripts/interact";
+import "./scripts/account";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
@@ -46,9 +52,6 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
-  // namedAccounts: {
-  //   deployer: 0,
-  // },
   networks: {
     // hardhat: {
     //   accounts: {
@@ -57,32 +60,56 @@ const config: HardhatUserConfig = {
     //   chainId: chainIds.hardhat,
     // },
     goerli: getChainConfig("goerli"),
-    // localhost: {
-    //   url: "http://127.0.0.1:8545",
-    //   saveDeployments: true,
-    // },
+    localhost: {
+      url: "http://127.0.0.1:8545",
+    },
   },
   paths: {
     artifacts: "./artifacts",
     cache: "./cache",
     sources: "./contracts",
     tests: "./test",
+    starknetSources: "./contracts",
+    starknetArtifacts: "./artifacts",
   },
   solidity: {
-    version: "0.8.4",
-    settings: {
-      metadata: {
-        // Not including the metadata hash
-        // https://github.com/paulrberg/solidity-template/issues/31
-        bytecodeHash: "none",
+    compilers: [
+      {
+        version: "0.8.7",
+        settings: {
+          metadata: {
+            // Not including the metadata hash
+            // https://github.com/paulrberg/solidity-template/issues/31
+            bytecodeHash: "none",
+          },
+          // Disable the optimizer when debugging
+          // https://hardhat.org/hardhat-network/#solidity-optimizer-support
+          optimizer: {
+            enabled: true,
+            runs: 800,
+          },
+        },
       },
-      // Disable the optimizer when debugging
-      // https://hardhat.org/hardhat-network/#solidity-optimizer-support
-      optimizer: {
-        enabled: true,
-        runs: 800,
+      {
+        version: "0.6.11",
+        settings: {
+          metadata: {
+            // Not including the metadata hash
+            // https://github.com/paulrberg/solidity-template/issues/31
+            bytecodeHash: "none",
+          },
+          // Disable the optimizer when debugging
+          // https://hardhat.org/hardhat-network/#solidity-optimizer-support
+          optimizer: {
+            enabled: true,
+            runs: 800,
+          },
+        },
       },
-    },
+    ],
+  },
+  cairo: {
+    version: "0.4.2",
   },
   /*
   typechain: {

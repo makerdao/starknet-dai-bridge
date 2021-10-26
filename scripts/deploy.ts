@@ -2,7 +2,8 @@
  * Full goerli deploy including any permissions that need to be set.
  */
 import { task } from 'hardhat/config';
-import { save, callFrom, getSelectorFromName } from './utils';
+import fs from 'fs';
+import { save, callFrom, getSelectorFromName, getAddress } from './utils';
 
 const L1_GOERLI_DAI_ADDRESS = '0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844';
 const L1_GOERLI_STARKNET_ADDRESS = '0x5e6229F2D4d977d20A50219E521dE6Dd694d45cc';
@@ -14,44 +15,55 @@ task('deploy', 'Full deployment', async (_taskArgs, hre) => {
     const network = await signer.provider.getNetwork();
     NETWORK = network.name;
   }
+  console.log(`Deploying on ${NETWORK}`);
 
-  console.log(`Deploying on: ${NETWORK} from: ${signer.address}`);
+  if (!fs.existsSync(`./deployments/${NETWORK}`)) {
+    fs.mkdirSync(`./deployments/${NETWORK}`);
+  }
+  save('DAI', { address: L1_GOERLI_DAI_ADDRESS }, NETWORK);
 
   console.log('Deploying L1Escrow');
-  const L1Escrow = await hre.ethers.getContractFactory('L1Escrow');
-  const l1Escrow = await L1Escrow.deploy();
+  const l1EscrowFactory = await hre.ethers.getContractFactory('L1Escrow');
+  const l1Escrow = await l1EscrowFactory.deploy();
   await l1Escrow.deployed();
   save('L1Escrow', l1Escrow, NETWORK);
 
   console.log('Deploying Account');
-  const Account = await hre.starknet.getContractFactory('Account');
-  const account = await Account.deploy();
+  const accountFactory = await hre.starknet.getContractFactory('Account');
+  const account = await accountFactory.deploy();
   save('Account-auth', account, NETWORK);
 
   console.log('Deploying l2_dai_bridge');
-  const L2DaiBridge = await hre.starknet.getContractFactory('l2_dai_bridge');
-  const l2DaiBridge = await L2DaiBridge.deploy();
-  save('l2_dai_bridge', l2DaiBridge, NETWORK);
-  const L1DaiBridge = await hre.ethers.getContractFactory('L1DAIBridge');
-  const l1DaiBridge = await L1DaiBridge.deploy(
+  const l2DAIBridgeFactory = await hre.starknet.getContractFactory('l2_dai_bridge');
+  const l2DAIBridge = await l2DAIBridgeFactory.deploy();
+  save('l2_dai_bridge', l2DAIBridge, NETWORK);
+  const l1DAIBridgeFactory = await hre.ethers.getContractFactory('L1DAIBridge');
+  const l1DAIBridge = await l1DAIBridgeFactory.deploy(
     L1_GOERLI_STARKNET_ADDRESS,
     L1_GOERLI_DAI_ADDRESS,
     l1Escrow.address,
-    l2DaiBridge.address,
+    l2DAIBridge.address,
   );
-  await l1DaiBridge.deployed();
-  save('L1DAIBridge', l1DaiBridge, NETWORK);
+  await l1DAIBridge.deployed();
+  save('L1DAIBridge', l1DAIBridge, NETWORK);
 
   console.log('Deploying dai');
-  const l2DaiContractFactory = await hre.starknet.getContractFactory('dai');
-  const l2DaiContract = await l2DaiContractFactory.deploy();
-  save('dai', l2DaiContract, NETWORK);
+  const l2DAIFactory = await hre.starknet.getContractFactory('dai');
+  const l2DAI = await l2DAIFactory.deploy();
+  save('dai', l2DAI, NETWORK);
+
+  console.log('Initializing dai');
+  await callFrom(l2DAI, 'initialize', [], account);
+  await callFrom(l2DAI, 'rely', [l2DAIBridge.address], account);
+  console.log('Initializing l2_dai_bridge');
   await callFrom(
-    l2DaiBridge,
+    l2DAIBridge,
     'initialize',
-    [l2DaiContract.address, l1DaiBridge.address],
+    [BigInt(l2DAI.address).toString(), BigInt(l1DAIBridge.address).toString()],
     account,
   );
 
-  await callFrom(l2DaiContract, 'initialize', [], account);
+  const DAIAddress = getAddress('DAI', NETWORK);
+  const MAX = BigInt(2**256)-BigInt(1);
+  await l1Escrow.approve(DAIAddress, l1DAIBridge.address, MAX);
 });
