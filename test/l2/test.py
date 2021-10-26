@@ -129,10 +129,10 @@ async def before_all():
     global user1
     global user2
     global user3
-    auth_user = await deploy("Account.cairo")
-    user1 = await deploy("Account.cairo")
-    user2 = await deploy("Account.cairo")
-    user3 = await deploy("Account.cairo")
+    auth_user = await deploy("account.cairo")
+    user1 = await deploy("account.cairo")
+    user2 = await deploy("account.cairo")
+    user3 = await deploy("account.cairo")
 
     call = registry_contract.register(int(L1_ADDRESS))
     await call_from(call, auth_user)
@@ -147,10 +147,10 @@ async def before_all():
 
     # TODO: replace starknet_contract_address with L1 bridge address
     call = bridge_contract.initialize(
-        _dai=dai_contract.contract_address,
-        _bridge=int(starknet_contract_address),
-        _registry=registry_contract.contract_address,
-        _self=bridge_contract.contract_address,
+        dai=dai_contract.contract_address,
+        bridge=int(starknet_contract_address),
+        registry=registry_contract.contract_address,
+        self=bridge_contract.contract_address,
     )
     await call_from(call, auth_user)
 
@@ -527,18 +527,14 @@ async def test_does_not_decrease_allowance_using_burn():
 @pytest.mark.asyncio
 async def test_second_initialize():
     with pytest.raises(Exception):
-        await bridge_contract.initialize(
-            _dai=3,
-            _bridge=4,
-        ).invoke()
+        await bridge_contract.initialize(dai=3, bridge=4,).invoke()
 
 
 @pytest.mark.asyncio
 async def test_withdraw():
     call = dai_contract.approve(bridge_contract.contract_address, 10)
     await call_from(call, user1)
-    call = bridge_contract.withdraw(
-        l1_address=user2.contract_address, amount=10)
+    call = bridge_contract.withdraw(dest=user2.contract_address, amount=10)
     await call_from(call, user1)
 
     await check_balances(user1_balance-10, user2_balance)
@@ -547,8 +543,7 @@ async def test_withdraw():
 @pytest.mark.asyncio
 async def test_withdraw_insufficient_funds():
     with pytest.raises(StarkException):
-        call = bridge_contract.withdraw(
-            l1_address=user2.contract_address, amount=10)
+        call = bridge_contract.withdraw(dest=user2.contract_address, amount=10)
         await call_from(call, user3)
     await check_balances(user1_balance, user2_balance)
 
@@ -560,8 +555,8 @@ async def test_withdraw_insufficient_funds():
 async def test_finalize_deposit():
     # TODO: replace starknet_contract_address with L1 bridge address
     call = bridge_contract.finalizeDeposit(
-        from_address=int(starknet_contract_address),
-        l2_address=user2.contract_address,
+        sender=int(starknet_contract_address),
+        dest=user2.contract_address,
         amount=10)
     await call_from(call, user2)
 
@@ -569,14 +564,14 @@ async def test_finalize_deposit():
 
 
 @pytest.mark.asyncio
-async def test_finalize_request_withdrawal():
+async def test_finalize_force_withdrawal():
     # TODO: replace starknet_contract_address with L1 bridge address
     call = dai_contract.approve(bridge_contract.contract_address, 10)
     await call_from(call, user1)
-    call = bridge_contract.finalizeRequestWithdrawal(
-        from_address=int(starknet_contract_address),
-        l2_address=user1.contract_address,
-        from_l1_address=int(L1_ADDRESS),
+    call = bridge_contract.finalizeForceWithdrawal(
+        sender=int(starknet_contract_address),
+        source=user1.contract_address,
+        dest=int(L1_ADDRESS),
         amount=10)
     await call_from(call, user1)
 
@@ -584,14 +579,14 @@ async def test_finalize_request_withdrawal():
 
 
 @pytest.mark.asyncio
-async def test_finalize_request_withdrawal_insufficient_funds():
+async def test_finalize_force_withdrawal_insufficient_funds():
     # TODO: replace starknet_contract_address with L1 bridge address
     call = dai_contract.approve(bridge_contract.contract_address, 10)
     await call_from(call, user3)
-    call = bridge_contract.finalizeRequestWithdrawal(
-        from_address=int(starknet_contract_address),
-        l2_address=user3.contract_address,
-        from_l1_address=int(L1_ADDRESS),
+    call = bridge_contract.finalizeForceWithdrawal(
+        sender=int(starknet_contract_address),
+        source=user3.contract_address,
+        dest=int(L1_ADDRESS),
         amount=10)
     await call_from(call, user3)
 
@@ -599,12 +594,12 @@ async def test_finalize_request_withdrawal_insufficient_funds():
 
 
 @pytest.mark.asyncio
-async def test_finalize_request_withdrawal_insufficient_allowance():
+async def test_finalize_Force_withdrawal_insufficient_allowance():
     # TODO: replace starknet_contract_address with L1 bridge address
-    call = bridge_contract.finalizeRequestWithdrawal(
-        from_address=int(starknet_contract_address),
-        l2_address=user1.contract_address,
-        from_l1_address=int(L1_ADDRESS),
+    call = bridge_contract.finalizeForceWithdrawal(
+        sender=int(starknet_contract_address),
+        source=user1.contract_address,
+        dest=int(L1_ADDRESS),
         amount=10)
     await call_from(call, user1)
 
