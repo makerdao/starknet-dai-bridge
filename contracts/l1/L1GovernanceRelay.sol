@@ -33,17 +33,12 @@ contract L1GovernanceRelay {
   }
 
   uint256 constant RELAY_SELECTOR = 300224956480472355485152391090755024345070441743081995053718200325371913697;
-  uint256 constant RELY_SELECTOR = 1496536124238287716823880339464828645384760243085392191791554724922079220400;
-  uint256 constant DENY_SELECTOR = 1405354272814642791807791490850870027727270009409301426028607061893467956449;
-
-  address public immutable l2GovernanceRelay;
-
-  event Rely(address indexed usr);
-  event Deny(address indexed usr);
 
   address public immutable starkNet;
+  uint256 public immutable l2GovernanceRelay;
 
-  constructor(address _starkNet, address _l2GovernanceRelay) {
+
+  constructor(address _starkNet, uint256 _l2GovernanceRelay) {
     wards[msg.sender] = 1;
     emit Rely(msg.sender);
 
@@ -51,38 +46,16 @@ contract L1GovernanceRelay {
     l2GovernanceRelay = _l2GovernanceRelay;
   }
 
-  function rely(
-    uint256 target,
-  ) external auth {
-    uint256[] memory payload = new uint256[](1);
-    payload[0] = target;
-
-    StarkNetLike(starkNet).sendMessageToL2(l2GovernanceRelay, RELY_SELECTOR, payload);
-  }
-
-  function deny(
-    uint256 target,
-  ) external auth {
-    uint256[] memory payload = new uint256[](1);
-    payload[0] = target;
-
-    StarkNetLike(starkNet).sendMessageToL2(l2GovernanceRelay, DENY_SELECTOR, payload);
-  }
-
   // Forward a call to be repeated on L2
   function relay(
     uint256 to,
     uint256 selector,
-    uint256[] calldata
+    uint256[] calldata input
   ) external auth {
-    uint256 payloadSize = 3 + calldata.length;
-    uint256[] memory payload = new uint256[](payloadSize);
+    uint256 calldataLength = input.length;
+    uint256[] memory payload = new uint256[](2);
     payload[0] = to;
     payload[1] = selector;
-    payload[2] = calldata.length;
-    for (uint i = 0; i < calldata.length; i++) {
-      payload[i+3] = calldata[i];
-    }
 
     StarkNetLike(starkNet).sendMessageToL2(l2GovernanceRelay, RELAY_SELECTOR, payload);
   }
