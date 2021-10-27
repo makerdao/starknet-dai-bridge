@@ -3,33 +3,60 @@
 
 from starkware.starknet.common.storage import Storage
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math import assert_nn_le, assert_not_equal
+from starkware.cairo.common.math import assert_nn_le, assert_not_equal, assert_not_zero
 from starkware.starknet.common.syscalls import get_caller_address
 
 # change value
 const MAX = 2**120
 
 @storage_var
-func wards(user : felt) -> (res : felt):
+func _wards(user : felt) -> (res : felt):
 end
 
 @storage_var
-func initialized() -> (res : felt):
+func _initialized() -> (res : felt):
 end
 
+@storage_var
+func _balances(user : felt) -> (res : felt):
+end
 
-func auth{
-    syscall_ptr : felt*,
+@storage_var
+func _total_supply() -> (res : felt):
+end
+
+@storage_var
+func _allowances(owner : felt, spender : felt) -> (res : felt):
+end
+
+@view
+func totalSupply{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }() -> ():
-  let (caller) = get_caller_address()
+  }() -> (res : felt):
+    let (res) = _total_supply.read()
+    return (res)
+end
 
-  let (ward) = wards.read(caller)
-  assert ward = 1
+@view
+func balanceOf{
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(user : felt) -> (res : felt):
+    let (res) = _balances.read(user=user)
+    return (res)
+end
 
-  return ()
+@view
+func allowance{
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(owner : felt, spender : felt) -> (res : felt):
+    let (res) = _allowances.read(owner, spender)
+    return (res)
 end
 
 @external
@@ -39,12 +66,12 @@ func initialize{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> ():
-  let (_initialized) = initialized.read()
-  assert _initialized = 0
-  initialized.write(1)
+  let (initialized) = _initialized.read()
+  assert initialized = 0
+  _initialized.write(1)
 
   let (caller) = get_caller_address()
-  wards.write(caller, 1)
+  _wards.write(caller, 1)
 
   return ()
 end
@@ -55,20 +82,21 @@ func mint{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(to_address : felt, amount : felt):
+  }(account : felt, amount : felt):
     alloc_locals
 
     auth()
     local syscall_ptr : felt* = syscall_ptr
 
-    assert_not_equal(to_address, 0)
-    # assert_not_equal(to_address, this)
+    assert_not_equal(account, 0)
 
-    let (balance) = balances.read(to_address)
-    balances.write(to_address, balance + amount)
+    # update balance
+    let (balance) = _balances.read(account)
+    _balances.write(account, balance + amount)
 
-    let (total) = total_supply.read()
-    total_supply.write(total + amount)
+    # update total supply
+    let (total_supply) = _total_supply.read()
+    _total_supply.write(total_supply + amount)
 
     return ()
 end
@@ -79,25 +107,27 @@ func burn{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(from_address : felt, amount : felt):
+  }(account : felt, amount : felt):
     alloc_locals
 
     let (local caller) = get_caller_address()
     local syscall_ptr_local : felt* = syscall_ptr
 
-    let (balance) = balances.read(from_address)
+    # update balance
+    let (balance) = _balances.read(account)
     assert_nn_le(amount, balance)
-    balances.write(from_address, balance - amount)
+    _balances.write(account, balance - amount)
 
     # decrease supply
-    let (total) = total_supply.read()
-    total_supply.write(total - amount)
+    let (total_supply) = _total_supply.read()
+    _total_supply.write(total_supply - amount)
 
-    if caller != from_address:
-      let (allowance) = allowances.read(from_address, caller)
+    # check allowance
+    if caller != account:
+      let (allowance) = _allowances.read(account, caller)
       if allowance != MAX:
         assert_nn_le(amount, allowance)
-        allowances.write(from_address, caller, allowance - amount)
+        _allowances.write(account, caller, allowance - amount)
         tempvar syscall_ptr : felt* = syscall_ptr_local
         tempvar storage_ptr : Storage* = storage_ptr
         tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
@@ -118,53 +148,6 @@ func burn{
     return ()
 end
 
-
-###################
-# ERC20 Functions #
-###################
-@storage_var
-func balances(user : felt) -> (res : felt):
-end
-
-@storage_var
-func total_supply() -> (res : felt):
-end
-
-@storage_var
-func allowances(owner : felt, spender : felt) -> (res : felt):
-end
-
-
-@view
-func totalSupply{
-    storage_ptr : Storage*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }() -> (res : felt):
-    let (res) = total_supply.read()
-    return (res)
-end
-
-@view
-func balanceOf{
-    storage_ptr : Storage*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(user : felt) -> (res : felt):
-    let (res) = balances.read(user=user)
-    return (res)
-end
-
-@view
-func allowance{
-    storage_ptr : Storage*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(owner : felt, spender : felt) -> (res : felt):
-    let (res) = allowances.read(owner, spender)
-    return (res)
-end
-
 @external
 func rely{
     syscall_ptr : felt*,
@@ -173,7 +156,7 @@ func rely{
     range_check_ptr
   }(user : felt) -> ():
   auth()
-  wards.write(user, 1)
+  _wards.write(user, 1)
   return ()
 end
 
@@ -185,7 +168,7 @@ func deny{
     range_check_ptr
   }(user : felt) -> ():
   auth()
-  wards.write(user, 0)
+  _wards.write(user, 0)
   return ()
 end
 
@@ -222,10 +205,10 @@ func transferFrom{
     _transfer(sender, recipient, amount)
 
     if caller != sender:
-      let (allowance) = allowances.read(sender, caller)
+      let (allowance) = _allowances.read(sender, caller)
       if allowance != MAX:
         assert_nn_le(amount, allowance)
-        allowances.write(sender, caller, allowance - amount)
+        _allowances.write(sender, caller, allowance - amount)
         tempvar syscall_ptr : felt* = syscall_ptr_local
         tempvar storage_ptr : Storage* = storage_ptr
         tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
@@ -246,21 +229,6 @@ func transferFrom{
     return ()
 end
 
-func _transfer{
-    storage_ptr : Storage*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(sender: felt, recipient : felt, amount : felt):
-    let (balance) = balances.read(sender)
-    assert_nn_le(amount, balance)
-    balances.write(sender, balance - amount)
-
-    let (balance) = balances.read(recipient)
-    balances.write(recipient, balance + amount)
-
-    return ()
-end
-
 @external
 func approve{
     syscall_ptr : felt*,
@@ -272,8 +240,7 @@ func approve{
 
     let (caller) = get_caller_address()
     local syscall_ptr : felt* = syscall_ptr
-    allowances.write(caller, spender, amount)
-
+    _allowances.write(caller, spender, amount)
     return ()
 end
 
@@ -285,9 +252,10 @@ func increaseAllowance{
     range_check_ptr
   }(spender : felt, amount : felt):
   let (caller) = get_caller_address()
-  let (allowance) = allowances.read(caller, spender)
+  let (allowance) = _allowances.read(caller, spender)
+  # TODO: fix after uint256
   assert_nn_le(amount, MAX - allowance)
-  allowances.write(caller, spender, allowance + amount)
+  _allowances.write(caller, spender, allowance + amount)
   return ()
 end
 
@@ -299,8 +267,41 @@ func decreaseAllowance{
     range_check_ptr
   }(spender : felt, amount : felt):
   let (caller) = get_caller_address()
-  let (allowance) = allowances.read(caller, spender)
+  let (allowance) = _allowances.read(caller, spender)
   assert_nn_le(amount, allowance)
-  allowances.write(caller, spender, allowance - amount)
+  _allowances.write(caller, spender, allowance - amount)
   return ()
+end
+
+func auth{
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }() -> ():
+  let (caller) = get_caller_address()
+
+  let (ward) = _wards.read(caller)
+  assert ward = 1
+
+  return ()
+end
+
+func _transfer{
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(sender: felt, recipient : felt, amount : felt):
+
+    assert_not_zero(sender)
+    assert_not_zero(recipient)
+
+    let (balance) = _balances.read(sender)
+    assert_nn_le(amount, balance)
+    _balances.write(sender, balance - amount)
+
+    let (balance) = _balances.read(recipient)
+    _balances.write(recipient, balance + amount)
+
+    return ()
 end

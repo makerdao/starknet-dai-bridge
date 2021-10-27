@@ -68,7 +68,7 @@ task('call:l1', 'Call an L1 contract')
     console.log(`Calling on ${NETWORK}`);
 
     const address = getAddress(contract, NETWORK);
-    const contractFactory = await hre.ethers.getContractFactory(contract);
+    const contractFactory = await hre.ethers.getContractFactory(contract) as any;
     const contractInstance = await contractFactory.attach(address);
 
     const _calldata = parseCalldata(calldata, 1, NETWORK);
