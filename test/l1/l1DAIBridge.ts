@@ -469,8 +469,6 @@ async function setupTest() {
 
   const starkNetFake = await smock.fake("StarkNetLike");
 
-  // starkNetFake.sendMessageToL2.returns()
-
   const dai = await simpleDeploy("DAIMock", []);
 
   const escrow = await simpleDeploy("L1Escrow", []);
