@@ -1,17 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.4;
 
-interface StarkNetLike {
-  function sendMessageToL2(
-    uint256 to_address,
-    uint256 selector,
-    uint256[] calldata payload
-  ) external;
-  function consumeMessageFromL2(
-    uint256 from_address,
-    uint256[] calldata payload
-  ) external;
-}
+import "./L1DAIBridge.sol";
 
 contract L1GovernanceRelay {
   // --- Auth ---
