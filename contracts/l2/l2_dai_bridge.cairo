@@ -175,7 +175,6 @@ func finalize_force_withdrawal{
     let (registry) = _registry.read()
     let (_dest) = IRegistry.l1_address(registry, source)
     if _dest != dest:
-      send_finalize_withdraw(dest, 0)
       return()
     end
 
@@ -189,7 +188,6 @@ func finalize_force_withdrawal{
     local range_check_ptr = range_check_ptr
     let (balance_check) = is_le(amount, balance)
     if balance_check == 0:
-      send_finalize_withdraw(dest, 0)
       return()
     end
 
@@ -202,7 +200,6 @@ func finalize_force_withdrawal{
     local range_check_ptr = range_check_ptr
     let (allowance_check) = is_le(amount, allowance)
     if allowance_check == 0:
-      send_finalize_withdraw(dest, 0)
       return()
     end
 
