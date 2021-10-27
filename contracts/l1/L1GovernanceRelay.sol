@@ -16,21 +16,21 @@ interface StarkNetLike {
 contract L1GovernanceRelay {
   // --- Auth ---
   mapping(address => uint256) public wards;
-
   function rely(address usr) external auth {
     wards[usr] = 1;
     emit Rely(usr);
   }
-
   function deny(address usr) external auth {
     wards[usr] = 0;
     emit Deny(usr);
   }
-
   modifier auth() {
     require(wards[msg.sender] == 1, "L1GovernanceRelay/not-authorized");
     _;
   }
+
+  event Rely(address indexed usr);
+  event Deny(address indexed usr);
 
   uint256 constant RELAY_SELECTOR = 300224956480472355485152391090755024345070441743081995053718200325371913697;
 
