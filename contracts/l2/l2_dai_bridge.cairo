@@ -9,7 +9,6 @@ from starkware.cairo.common.math_cmp import is_le
 from starkware.starknet.common.syscalls import get_caller_address
 
 const FINALIZE_WITHDRAW = 0
-const FINALIZE_FORCE_WITHDRAW = 1
 
 @contract_interface
 namespace IDAI:
@@ -53,7 +52,7 @@ func _wards(user : felt) -> (res : felt):
 end
 
 @storage_var
-func _self() -> (res : felt):
+func _this() -> (res : felt):
 end
 
 func auth{
@@ -100,7 +99,7 @@ func initialize{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(dai : felt, bridge : felt, registry : felt, self : felt):
+  }(dai : felt, bridge : felt, registry : felt, this : felt):
     let (initialized) = _initialized.read()
     assert initialized = 0
     _initialized.write(1)
@@ -111,7 +110,7 @@ func initialize{
     _dai.write(dai)
     _bridge.write(bridge)
     _registry.write(registry)
-    _self.write(self)
+    _this.write(this)
 
     return ()
 end
@@ -132,14 +131,7 @@ func withdraw{
 
     IDAI.burn(dai, caller, amount)
 
-    let (payload : felt*) = alloc()
-    assert payload[0] = FINALIZE_WITHDRAW
-    assert payload[1] = dest
-    assert payload[2] = amount
-
-    let (bridge) = _bridge.read()
-
-    send_message_to_l1(bridge, 3, payload)
+    send_finalize_withdraw(dest, amount)
 
     return ()
 end
@@ -147,7 +139,7 @@ end
 # TODO: external is temporary
 @external
 @l1_handler
-func finalizeDeposit{
+func finalize_deposit{
     syscall_ptr : felt*,
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
@@ -167,7 +159,7 @@ end
 # TODO: external is temporary
 @external
 @l1_handler
-func finalizeForceWithdrawal{
+func finalize_force_withdrawal{
     syscall_ptr : felt*,
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
@@ -183,7 +175,7 @@ func finalizeForceWithdrawal{
     let (registry) = _registry.read()
     let (_dest) = IRegistry.l1_address(registry, source)
     if _dest != dest:
-      sendFinalizeForceWithdraw(dest, 0)
+      send_finalize_withdraw(dest, 0)
       return()
     end
 
@@ -197,29 +189,29 @@ func finalizeForceWithdrawal{
     local range_check_ptr = range_check_ptr
     let (balance_check) = is_le(amount, balance)
     if balance_check == 0:
-      sendFinalizeForceWithdraw(dest, 0)
+      send_finalize_withdraw(dest, 0)
       return()
     end
 
     # check allowance
-    let (self) = _self.read()
-    let (allowance) = IDAI.allowance(dai, source, self)
+    let (this) = _this.read()
+    let (allowance) = IDAI.allowance(dai, source, this)
     local syscall_ptr: felt* = syscall_ptr
     local storage_ptr : Storage* = storage_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
     local range_check_ptr = range_check_ptr
     let (allowance_check) = is_le(amount, allowance)
     if allowance_check == 0:
-      sendFinalizeForceWithdraw(dest, 0)
+      send_finalize_withdraw(dest, 0)
       return()
     end
 
     IDAI.burn(dai, source, amount)
-    sendFinalizeForceWithdraw(dest, amount)
+    send_finalize_withdraw(dest, amount)
     return ()
 end
 
-func sendFinalizeForceWithdraw{
+func send_finalize_withdraw{
   syscall_ptr : felt*,
   storage_ptr : Storage*,
   pedersen_ptr : HashBuiltin*,
@@ -228,7 +220,7 @@ func sendFinalizeForceWithdraw{
     alloc_locals
 
     let (payload : felt*) = alloc()
-    assert payload[0] = FINALIZE_FORCE_WITHDRAW
+    assert payload[0] = FINALIZE_WITHDRAW
     assert payload[1] = dest
     assert payload[2] = amount
 

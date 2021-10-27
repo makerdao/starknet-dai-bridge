@@ -17,33 +17,33 @@ MAX = 2**120
 L1_ADDRESS = 0x1
 
 
-class Contract():
-    @classmethod
-    async def before(self, contract_name):
-        self.CONTRACT_FILE = os.path.join(
-            L2_CONTRACTS_DIR, contract_name)
-        await self.before_all(self)
-        return self.contract
-
-    def compile(self):
-        return compile_starknet_files(
-            [self.CONTRACT_FILE], debug_info=True)
-
-    async def before_all(self):
-        await self.deploy(self)
-
-    async def deploy(self):
-        contract_definition = self.compile(self)
-
-        starknet = await Starknet.empty()
-
-        contract_address = await starknet.deploy(
-            contract_definition=contract_definition)
-        self.contract = StarknetContract(
-            starknet=starknet,
-            abi=contract_definition.abi,
-            contract_address=contract_address,
-        )
+# class Contract():
+#     @classmethod
+#     async def before(self, contract_name):
+#         self.CONTRACT_FILE = os.path.join(
+#             L2_CONTRACTS_DIR, contract_name)
+#         await self.before_all(self)
+#         return self.contract
+#
+#     def compile(self):
+#         return compile_starknet_files(
+#             [self.CONTRACT_FILE], debug_info=True)
+#
+#     async def before_all(self):
+#         await self.deploy(self)
+#
+#     async def deploy(self):
+#         contract_definition = self.compile(self)
+#
+#         starknet = await Starknet.empty()
+#
+#         contract_address = await starknet.deploy(
+#             contract_definition=contract_definition)
+#         self.contract = StarknetContract(
+#             starknet=starknet,
+#             abi=contract_definition.abi,
+#             contract_address=contract_address,
+#         )
 
 
 async def initialize():
@@ -145,12 +145,18 @@ async def before_all():
     bridge_contract = await deploy("l2_dai_bridge.cairo")
     dai_contract = await deploy("dai.cairo")
 
+
+
+    print("-------------------------------------------")
+    print(bridge_contract.contract_address)
+    print("-------------------------------------------")
+
     # TODO: replace starknet_contract_address with L1 bridge address
     call = bridge_contract.initialize(
-        dai=dai_contract.contract_address,
-        bridge=int(starknet_contract_address),
-        registry=registry_contract.contract_address,
-        self=bridge_contract.contract_address,
+        dai_contract.contract_address,
+        int(starknet_contract_address),
+        registry_contract.contract_address,
+        bridge_contract.contract_address,
     )
     await call_from(call, auth_user)
 
@@ -554,7 +560,7 @@ async def test_withdraw_insufficient_funds():
 @pytest.mark.asyncio
 async def test_finalize_deposit():
     # TODO: replace starknet_contract_address with L1 bridge address
-    call = bridge_contract.finalizeDeposit(
+    call = bridge_contract.finalize_deposit(
         sender=int(starknet_contract_address),
         dest=user2.contract_address,
         amount=10)
@@ -568,7 +574,7 @@ async def test_finalize_force_withdrawal():
     # TODO: replace starknet_contract_address with L1 bridge address
     call = dai_contract.approve(bridge_contract.contract_address, 10)
     await call_from(call, user1)
-    call = bridge_contract.finalizeForceWithdrawal(
+    call = bridge_contract.finalize_force_withdrawal(
         sender=int(starknet_contract_address),
         source=user1.contract_address,
         dest=int(L1_ADDRESS),
@@ -583,7 +589,7 @@ async def test_finalize_force_withdrawal_insufficient_funds():
     # TODO: replace starknet_contract_address with L1 bridge address
     call = dai_contract.approve(bridge_contract.contract_address, 10)
     await call_from(call, user3)
-    call = bridge_contract.finalizeForceWithdrawal(
+    call = bridge_contract.finalize_force_withdrawal(
         sender=int(starknet_contract_address),
         source=user3.contract_address,
         dest=int(L1_ADDRESS),
@@ -596,7 +602,7 @@ async def test_finalize_force_withdrawal_insufficient_funds():
 @pytest.mark.asyncio
 async def test_finalize_Force_withdrawal_insufficient_allowance():
     # TODO: replace starknet_contract_address with L1 bridge address
-    call = bridge_contract.finalizeForceWithdrawal(
+    call = bridge_contract.finalize_force_withdrawal(
         sender=int(starknet_contract_address),
         source=user1.contract_address,
         dest=int(L1_ADDRESS),

@@ -12,8 +12,8 @@ import hre from "hardhat";
 chai.use(smock.matchers);
 
 const MAX_UINT256 = hre.ethers.constants.MaxUint256;
-const DEPOSIT = parseFixed('1719001440962431497946253267335313592375607408367068470900111420804409451977');
-const FORCE_WITHDRAW = parseFixed('855858504913659940327667045659575078143338465596943247368797815565006091899');
+const DEPOSIT = parseFixed('1523838171560039099257556432344066729220707462881094726430257427074598770742');
+const FORCE_WITHDRAW = parseFixed('564231610187525314777546578127020298415997786138103002442821814044854275916');
 
 const WITHDRAW = 0;
 const FINALIZE_FORCE_WITHDRAW = 1;
@@ -38,7 +38,6 @@ describe("L1DAIBridge", function () {
       "deposit(address,uint256,uint256)",
       "finalizeWithdrawal(address,uint256)",
       "forceWithdrawal(uint256,uint256)",
-      "finalizeForceWithdrawal(uint256)",
       "setCeiling(uint256)",
     ]);
   });
@@ -448,178 +447,6 @@ describe("L1DAIBridge", function () {
           .connect(l1Alice)
           .forceWithdrawal(l2User, amount)
       ).to.be.revertedWith("L1DAIBridge/closed");
-    });
-  });
-  describe("finalizeForceWithdrawal", function () {
-    it("sends funds from the escrow", async () => {
-      const {
-        admin,
-        l1Alice,
-        dai,
-        starkNetFake,
-        escrow,
-        l1Bridge,
-        l2BridgeAddress,
-      } = await setupTest();
-
-      const withdrawalAmount = eth("333");
-
-      await escrow.approve(dai.address, l1Bridge.address, MAX_UINT256);
-      await dai.connect(admin).transfer(escrow.address, withdrawalAmount);
-
-      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(0);
-      expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
-      expect(await dai.balanceOf(escrow.address)).to.be.eq(withdrawalAmount);
-
-      await expect(
-        l1Bridge
-          .connect(l1Alice)
-          .finalizeForceWithdrawal(withdrawalAmount)
-      )
-        .to.emit(l1Bridge, "FinalizeForceWithdrawal")
-        .withArgs(l1Alice.address, withdrawalAmount);
-
-      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(withdrawalAmount);
-      expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
-      expect(await dai.balanceOf(escrow.address)).to.be.eq(0);
-
-      expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
-      expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
-        l2BridgeAddress,
-        [FINALIZE_FORCE_WITHDRAW, l1Alice.address, withdrawalAmount]
-      );
-    });
-    it("sends funds from the escrow, even when closed", async () => {
-      const {
-        admin,
-        l1Alice,
-        dai,
-        starkNetFake,
-        escrow,
-        l1Bridge,
-        l2BridgeAddress,
-      } = await setupTest();
-
-      const withdrawalAmount = eth("333");
-
-      await escrow.approve(dai.address, l1Bridge.address, MAX_UINT256);
-
-      await dai.connect(admin).transfer(escrow.address, withdrawalAmount);
-
-      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(0);
-      expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
-      expect(await dai.balanceOf(escrow.address)).to.be.eq(withdrawalAmount);
-
-      await l1Bridge.close();
-      await l1Bridge
-        .connect(l1Alice)
-        .finalizeForceWithdrawal(withdrawalAmount);
-
-      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(withdrawalAmount);
-      expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
-      expect(await dai.balanceOf(escrow.address)).to.be.eq(0);
-
-      expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
-      expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
-        l2BridgeAddress,
-        [FINALIZE_FORCE_WITHDRAW, l1Alice.address, withdrawalAmount]
-      );
-    });
-    it("reverts when called by not a withdrawal recipient", async () => {
-      const {
-        admin,
-        l1Alice,
-        l1Bob,
-        dai,
-        starkNetFake,
-        escrow,
-        l1Bridge,
-        l2BridgeAddress,
-      } = await setupTest();
-
-      const withdrawalAmount = eth("333");
-
-      await escrow.approve(dai.address, l1Bridge.address, MAX_UINT256);
-
-      await dai.connect(admin).transfer(escrow.address, withdrawalAmount);
-
-      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(0);
-      expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
-      expect(await dai.balanceOf(escrow.address)).to.be.eq(withdrawalAmount);
-
-      starkNetFake.consumeMessageFromL2
-        .whenCalledWith(l2BridgeAddress, [
-          FINALIZE_FORCE_WITHDRAW,
-          l1Bob.address,
-          withdrawalAmount,
-        ])
-        .reverts();
-
-      await expect(
-        l1Bridge
-          .connect(l1Bob)
-          .finalizeForceWithdrawal(withdrawalAmount)
-      ).to.be.reverted;
-
-      expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
-        l2BridgeAddress,
-        [FINALIZE_FORCE_WITHDRAW, l1Bob.address, withdrawalAmount]
-      );
-    });
-    it("reverts when called with wrong amount", async () => {
-      const {
-        admin,
-        l1Alice,
-        dai,
-        starkNetFake,
-        escrow,
-        l1Bridge,
-        l2BridgeAddress,
-      } = await setupTest();
-
-      const withdrawalAmount = eth("333");
-
-      await escrow.approve(dai.address, l1Bridge.address, MAX_UINT256);
-
-      await dai.connect(admin).transfer(escrow.address, withdrawalAmount);
-
-      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(0);
-      expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
-      expect(await dai.balanceOf(escrow.address)).to.be.eq(withdrawalAmount);
-
-      const wrongAmount = withdrawalAmount.sub(1);
-      starkNetFake.consumeMessageFromL2
-        .whenCalledWith(l2BridgeAddress, [
-          FINALIZE_FORCE_WITHDRAW,
-          l1Alice.address,
-          wrongAmount,
-        ])
-        .reverts();
-
-      await expect(
-        l1Bridge
-          .connect(l1Alice)
-          .finalizeForceWithdrawal(wrongAmount)
-      ).to.be.reverted;
-
-      expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
-        l2BridgeAddress,
-        [FINALIZE_FORCE_WITHDRAW, l1Alice.address, wrongAmount]
-      );
-    });
-    it("reverts when escrow access was revoked", async () => {
-      const { admin, l1Alice, dai, escrow, l1Bridge } = await setupTest();
-
-      const withdrawalAmount = eth("333");
-
-      await escrow.approve(dai.address, l1Bridge.address, 0);
-      await dai.connect(admin).transfer(escrow.address, withdrawalAmount);
-
-      await expect(
-        l1Bridge
-          .connect(l1Alice)
-          .finalizeForceWithdrawal(withdrawalAmount)
-      ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
     });
   });
   testAuth({

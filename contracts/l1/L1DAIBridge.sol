@@ -71,15 +71,15 @@ contract L1DAIBridge {
     uint256 public ceiling = 0;
 
     uint256 constant FINALIZE_WITHDRAW = 0;
-    uint256 constant FINALIZE_FORCE_WITHDRAW = 1;
 
     //  from starkware.starknet.compiler.compile import get_selector_from_name
-    //  print(get_selector_from_name('finalizeDeposit'))
+    //  print(get_selector_from_name('finalize_deposit'))
     uint256 constant DEPOSIT =
-        1719001440962431497946253267335313592375607408367068470900111420804409451977;
-    //  print(get_selector_from_name('finalizeForceWithdrawal'))
+        1523838171560039099257556432344066729220707462881094726430257427074598770742;
+
+    //  print(get_selector_from_name('finalize_force_withdrawal'))
     uint256 constant FORCE_WITHDRAW =
-        855858504913659940327667045659575078143338465596943247368797815565006091899;
+        564231610187525314777546578127020298415997786138103002442821814044854275916;
 
     event Ceiling(uint256 ceiling);
     event Deposit(address indexed from, uint256 indexed to, uint256 amount);
@@ -150,24 +150,8 @@ contract L1DAIBridge {
         payload[1] = uint256(uint160(msg.sender));
         payload[2] = amount;
 
-        StarkNetLike(starkNet).sendMessageToL2(
-            l2DaiBridge,
-            FORCE_WITHDRAW,
-            payload
-        );
+        StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, FORCE_WITHDRAW, payload);
 
         emit ForceWithdrawal(msg.sender, from, amount);
-    }
-
-    function finalizeForceWithdrawal(uint256 amount) external {
-        uint256[] memory payload = new uint256[](3);
-        payload[0] = FINALIZE_FORCE_WITHDRAW;
-        payload[1] = uint256(uint160(msg.sender));
-        payload[2] = amount;
-
-        StarkNetLike(starkNet).consumeMessageFromL2(l2DaiBridge, payload);
-        TokenLike(dai).transferFrom(escrow, msg.sender, amount);
-
-        emit FinalizeForceWithdrawal(msg.sender, amount);
     }
 }
