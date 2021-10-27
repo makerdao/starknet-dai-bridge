@@ -148,7 +148,7 @@ async def before_all():
     await call_from(call, auth_user)
 
     global l2_governance_relay
-    l2_governance_relay = await deploy("L2GovernanceRelay.cairo")
+    l2_governance_relay = await deploy("l2_governance_relay.cairo")
     await l2_governance_relay.initialize(
         _l1_governance_relay=int(starknet_contract_address, 16),
         _dai=dai_contract.contract_address,
@@ -161,7 +161,8 @@ async def before_all():
     await call_from(call, auth_user)
 
     global spell
-    spell = await deploy("Spell.cairo")
+    spell = await deploy("spell.cairo")
+    await spell.initialize(dai_contract.contract_address, user2.contract_address).invoke()
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -572,20 +573,16 @@ async def test_finalize_deposit():
 
 @pytest.mark.asyncio
 async def test_governance_relay():
-    l2_governance_relay.rely(
-        from_address=int(starknet_contract_address, 16),
-        target=spell.contract_address).invoke()
-
     selector = get_selector_from_name('execute')
-    l2_governance_relay.relay(
+    await l2_governance_relay.relay(
         int(starknet_contract_address, 16),
         spell.contract_address,
-        selector,
-        2,
-        dai_contract.address,
-        user2).invoke()
-
-    call = dai_contract.mint(user2.contract_address, 10)
-    await call_from(call, user2)
+        selector).invoke()
 
     await check_balances(user1_balance, user2_balance+10)
+
+
+@pytest.mark.asyncio
+async def test_governance_relay_revoke_auth():
+    with pytest.raises(StarkException):
+        await spell.execute().invoke()

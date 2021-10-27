@@ -72,6 +72,7 @@ task('call:l1', 'Call an L1 contract')
     const contractInstance = await contractFactory.attach(address);
 
     const _calldata = parseCalldata(calldata, 1, NETWORK);
+    // @ts-ignore
     const res = await contractInstance[func](..._calldata);
     console.log('Response:', res);
 });
