@@ -64,7 +64,7 @@ func auth{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }() -> ():
+  }():
     let (caller) = get_caller_address()
     let (ward) = _wards.read(caller)
     assert ward = 1
@@ -77,7 +77,7 @@ func rely{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(user : felt) -> ():
+  }(user : felt):
     auth()
     _wards.write(user, 1)
     return ()
@@ -89,7 +89,7 @@ func deny{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(user : felt) -> ():
+  }(user : felt):
     auth()
     _wards.write(user, 0)
     return ()
@@ -101,7 +101,7 @@ func close{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }() -> ():
+  }():
     _is_open.write(0)
     return ()
 end
