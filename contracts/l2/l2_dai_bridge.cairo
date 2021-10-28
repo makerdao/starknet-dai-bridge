@@ -3,7 +3,6 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
-from starkware.starknet.common.storage import Storage
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math_cmp import is_le
 from starkware.starknet.common.syscalls import get_caller_address
@@ -61,7 +60,6 @@ end
 
 func auth{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }():
@@ -74,7 +72,6 @@ end
 @external
 func rely{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt):
@@ -86,7 +83,6 @@ end
 @external
 func deny{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt):
@@ -98,7 +94,6 @@ end
 @external
 func close{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }():
@@ -109,7 +104,6 @@ end
 @external
 func initialize{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(dai : felt, bridge : felt, registry : felt, this : felt):
@@ -132,7 +126,6 @@ end
 @external
 func withdraw{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(dest : felt, amount : felt):
@@ -156,7 +149,6 @@ end
 @l1_handler
 func finalize_deposit{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(sender : felt, dest : felt, amount : felt):
@@ -175,7 +167,6 @@ end
 @l1_handler
 func finalize_force_withdrawal{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(sender : felt, source : felt, dest : felt, amount : felt):
@@ -197,7 +188,6 @@ func finalize_force_withdrawal{
     # check l2 DAI balance
     let (balance) = IDAI.balanceOf(dai, source)
     local syscall_ptr : felt* = syscall_ptr
-    local storage_ptr : Storage* = storage_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
     local range_check_ptr = range_check_ptr
     let (balance_check) = is_le(amount, balance)
@@ -209,7 +199,6 @@ func finalize_force_withdrawal{
     let (this) = _this.read()
     let (allowance) = IDAI.allowance(dai, source, this)
     local syscall_ptr : felt* = syscall_ptr
-    local storage_ptr : Storage* = storage_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
     local range_check_ptr = range_check_ptr
     let (allowance_check) = is_le(amount, allowance)
@@ -224,7 +213,6 @@ end
 
 func send_finalize_withdraw{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(dest : felt, amount : felt):

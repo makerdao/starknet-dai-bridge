@@ -1,7 +1,6 @@
 %lang starknet
 %builtins pedersen range_check
 
-from starkware.starknet.common.storage import Storage
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_nn_le, assert_not_equal, assert_not_zero
 from starkware.starknet.common.syscalls import get_caller_address
@@ -31,7 +30,7 @@ end
 
 @view
 func totalSupply{
-    storage_ptr : Storage*,
+    syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> (res : felt):
@@ -41,7 +40,7 @@ end
 
 @view
 func balanceOf{
-    storage_ptr : Storage*,
+    syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt) -> (res : felt):
@@ -51,7 +50,7 @@ end
 
 @view
 func allowance{
-    storage_ptr : Storage*,
+    syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(owner : felt, spender : felt) -> (res : felt):
@@ -62,7 +61,6 @@ end
 @external
 func initialize{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }():
@@ -79,7 +77,6 @@ end
 @external
 func mint{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(account : felt, amount : felt):
@@ -104,14 +101,12 @@ end
 @external
 func burn{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(account : felt, amount : felt):
     alloc_locals
 
     let (local caller) = get_caller_address()
-    local syscall_ptr_local : felt* = syscall_ptr
 
     # update balance
     let (balance) = _balances.read(account)
@@ -128,19 +123,16 @@ func burn{
       if allowance != MAX:
         assert_nn_le(amount, allowance)
         _allowances.write(account, caller, allowance - amount)
-        tempvar syscall_ptr : felt* = syscall_ptr_local
-        tempvar storage_ptr : Storage* = storage_ptr
+        tempvar syscall_ptr : felt* = syscall_ptr
         tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
       else:
-        tempvar syscall_ptr : felt* = syscall_ptr_local
-        tempvar storage_ptr : Storage* = storage_ptr
+        tempvar syscall_ptr : felt* = syscall_ptr
         tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
       end
     else:
-      tempvar syscall_ptr : felt* = syscall_ptr_local
-      tempvar storage_ptr : Storage* = storage_ptr
+      tempvar syscall_ptr : felt* = syscall_ptr
       tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
       tempvar range_check_ptr = range_check_ptr
     end
@@ -151,7 +143,6 @@ end
 @external
 func rely{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt):
@@ -163,7 +154,6 @@ end
 @external
 func deny{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt):
@@ -175,7 +165,6 @@ end
 @external
 func transfer{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(recipient : felt, amount : felt):
@@ -193,14 +182,12 @@ end
 @external
 func transferFrom{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(sender : felt, recipient : felt, amount : felt):
     alloc_locals
 
     let (local caller) = get_caller_address()
-    local syscall_ptr_local : felt* = syscall_ptr
 
     _transfer(sender, recipient, amount)
 
@@ -209,19 +196,16 @@ func transferFrom{
       if allowance != MAX:
         assert_nn_le(amount, allowance)
         _allowances.write(sender, caller, allowance - amount)
-        tempvar syscall_ptr : felt* = syscall_ptr_local
-        tempvar storage_ptr : Storage* = storage_ptr
+        tempvar syscall_ptr : felt* = syscall_ptr
         tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
       else:
-        tempvar syscall_ptr : felt* = syscall_ptr_local
-        tempvar storage_ptr : Storage* = storage_ptr
+        tempvar syscall_ptr : felt* = syscall_ptr
         tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
       end
     else:
-      tempvar syscall_ptr : felt* = syscall_ptr_local
-      tempvar storage_ptr : Storage* = storage_ptr
+      tempvar syscall_ptr : felt* = syscall_ptr
       tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
       tempvar range_check_ptr = range_check_ptr
     end
@@ -232,7 +216,6 @@ end
 @external
 func approve{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(spender: felt, amount : felt):
@@ -247,7 +230,6 @@ end
 @external
 func increaseAllowance{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(spender : felt, amount : felt):
@@ -262,7 +244,6 @@ end
 @external
 func decreaseAllowance{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(spender : felt, amount : felt):
@@ -275,7 +256,6 @@ end
 
 func auth{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }():
@@ -288,7 +268,7 @@ func auth{
 end
 
 func _transfer{
-    storage_ptr : Storage*,
+    syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(sender: felt, recipient : felt, amount : felt):
