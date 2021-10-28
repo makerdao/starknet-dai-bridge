@@ -16,36 +16,6 @@ L2_CONTRACTS_DIR = os.path.join(
 MAX = 2**120
 L1_ADDRESS = 0x1
 
-
-# class Contract():
-#     @classmethod
-#     async def before(self, contract_name):
-#         self.CONTRACT_FILE = os.path.join(
-#             L2_CONTRACTS_DIR, contract_name)
-#         await self.before_all(self)
-#         return self.contract
-#
-#     def compile(self):
-#         return compile_starknet_files(
-#             [self.CONTRACT_FILE], debug_info=True)
-#
-#     async def before_all(self):
-#         await self.deploy(self)
-#
-#     async def deploy(self):
-#         contract_definition = self.compile(self)
-#
-#         starknet = await Starknet.empty()
-#
-#         contract_address = await starknet.deploy(
-#             contract_definition=contract_definition)
-#         self.contract = StarknetContract(
-#             starknet=starknet,
-#             abi=contract_definition.abi,
-#             contract_address=contract_address,
-#         )
-
-
 async def initialize():
     global starknet
     starknet = await Starknet.empty()
@@ -545,6 +515,17 @@ async def test_withdraw():
 
     await check_balances(user1_balance-10, user2_balance)
 
+@pytest.mark.asyncio
+async def test_withdraw_should_fail_when_closed():
+    call = dai_contract.approve(bridge_contract.contract_address, 10)
+    await call_from(call, user1)
+
+    call = bridge_contract.close()
+    await call_from(call, auth_user)
+
+    with pytest.raises(Exception):
+        call = bridge_contract.withdraw(dest=user2.contract_address, amount=10)
+        await call_from(call, user1)
 
 @pytest.mark.asyncio
 async def test_withdraw_insufficient_funds():
@@ -600,7 +581,7 @@ async def test_finalize_force_withdrawal_insufficient_funds():
 
 
 @pytest.mark.asyncio
-async def test_finalize_Force_withdrawal_insufficient_allowance():
+async def test_finalize_force_withdrawal_insufficient_allowance():
     # TODO: replace starknet_contract_address with L1 bridge address
     call = bridge_contract.finalize_force_withdrawal(
         sender=int(starknet_contract_address),

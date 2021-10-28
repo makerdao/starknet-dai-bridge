@@ -15,7 +15,7 @@ func register{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(l1_user : felt) -> ():
+  }(l1_user : felt):
 
   let (caller) = get_caller_address()
   _l1_addresses.write(caller, l1_user)
