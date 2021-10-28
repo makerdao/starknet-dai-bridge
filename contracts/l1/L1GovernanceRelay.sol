@@ -27,7 +27,6 @@ contract L1GovernanceRelay {
   address public immutable starkNet;
   uint256 public immutable l2GovernanceRelay;
 
-
   constructor(address _starkNet, uint256 _l2GovernanceRelay) {
     wards[msg.sender] = 1;
     emit Rely(msg.sender);

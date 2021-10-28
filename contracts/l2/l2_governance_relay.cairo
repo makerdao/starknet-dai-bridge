@@ -51,35 +51,7 @@ func initialize{
     return ()
 end
 
-func rely{
-    syscall_ptr : felt*,
-    storage_ptr : Storage*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  } (target : felt):
-    let (dai) = _dai.read()
-    let (bridge) = _bridge.read()
-    IAuth.rely(dai, target)
-    IAuth.rely(bridge, target)
-
-    return ()
-end
-
-func deny{
-    syscall_ptr : felt*,
-    storage_ptr : Storage*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  } (target : felt):
-    let (dai) = _dai.read()
-    let (bridge) = _bridge.read()
-    IAuth.deny(dai, target)
-    IAuth.deny(bridge, target)
-
-    return ()
-end
-
-# external is temporary
+# TODO: external is temporary
 @external
 @l1_handler
 func relay{
@@ -95,12 +67,18 @@ func relay{
     let (l1_governance_relay) = _l1_governance_relay.read()
     assert l1_governance_relay = from_address
 
-    rely(target)
+    let (dai) = _dai.read()
+    let (bridge) = _bridge.read()
+    IAuth.rely(dai, target)
+    IAuth.rely(bridge, target)
 
     let (calldata) = alloc()
     call_contract(target, selector, 0, calldata)
 
-    deny(target)
+    let (dai) = _dai.read()
+    let (bridge) = _bridge.read()
+    IAuth.deny(dai, target)
+    IAuth.deny(bridge, target)
 
     return ()
 end
