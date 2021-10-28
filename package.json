@@ -71,12 +71,12 @@
     "typescript": "^4.4.2"
   },
   "dependencies": {
-    "@makerdao/hardhat-utils": "^0.1.3",
-    "@shardlabs/starknet-hardhat-plugin": "^0.2.0",
     "@eth-optimism/smock": "^1.1.10",
     "@ethersproject/abstract-provider": "^5.4.1",
+    "@makerdao/hardhat-utils": "^0.1.3",
     "@nomiclabs/ethereumjs-vm": "^4.2.2",
     "@openzeppelin/contracts": "^4.3.2",
+    "@shardlabs/starknet-hardhat-plugin": "^0.2.0",
     "eslint-config-typestrict": "^1.0.2",
     "eslint-plugin-no-only-tests": "^2.6.0",
     "eslint-plugin-simple-import-sort": "^7.0.0",
