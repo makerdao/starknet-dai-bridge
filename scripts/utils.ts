@@ -21,17 +21,10 @@ export function getAccounts(network: string) {
   });
 }
 
-export function parseCalldata(calldata: string, layer: number, network: string): any[] {
-  const _calldata: any[] = [];
-  calldata.split(';').forEach(input => {
-    if (input[0] === '[' && input[input.length-1] === ']') {
-      _calldata.push(input);
-    } else {
-      _calldata.push(...input.split(','));
-    }
-  });
+export function parseCalldata(calldata: string, layer: number, network: string) {
+  const _calldata = calldata ? calldata.split(',') : [];
   const accounts = getAccounts(network);
-  return _calldata.map(input => {
+  return _calldata.map((input: string) => {
     if (accounts.includes(input)) {
       return BigInt(getAddress(`Account-${input}`, network)).toString();
     } else if (input === 'l2_dai_bridge') {
@@ -40,20 +33,12 @@ export function parseCalldata(calldata: string, layer: number, network: string):
       } else {
         return BigInt(getAddress('l2_dai_bridge', network)).toString();
       }
-    } else if (input === 'dai') {
-      if (layer === 1) {
-        return getAddress('dai', network);
-      } else {
-        return BigInt(getAddress('dai', network)).toString();
-      }
     } else if (input === 'L1DAIBridge') {
       if (layer === 1) {
         return getAddress('L1DAIBridge', network);
       } else {
         return BigInt(getAddress('L1DAIBridge', network)).toString();
       }
-    } else if (input[0] === '[' && input[input.length-1] === ']') {
-      return parseCalldata(input.slice(1, input.length-1), layer, network);
     } else {
       return input;
     }
