@@ -150,9 +150,9 @@ async def before_all():
     global l2_governance_relay
     l2_governance_relay = await deploy("l2_governance_relay.cairo")
     await l2_governance_relay.initialize(
-        _l1_governance_relay=int(starknet_contract_address, 16),
-        _dai=dai_contract.contract_address,
-        _bridge=bridge_contract.contract_address,
+        int(starknet_contract_address, 16),
+        dai_contract.contract_address,
+        bridge_contract.contract_address,
     ).invoke()
 
     call = dai_contract.rely(l2_governance_relay.contract_address)
