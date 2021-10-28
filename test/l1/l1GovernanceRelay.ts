@@ -40,7 +40,7 @@ describe("L1GovernanceRelay", function () {
 
       await l1GovernanceRelay
         .connect(admin)
-        .relay(spellAddress, EXECUTE_SELECTOR)
+        .relay(spellAddress, EXECUTE_SELECTOR);
 
       expect(starkNetFake.sendMessageToL2).to.have.been.calledOnce;
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
@@ -56,11 +56,11 @@ describe("L1GovernanceRelay", function () {
         spellAddress,
       } = await setupTest();
 
-      await l1GovernanceRelay
-        .connect(l1Alice)
-        .relay(spellAddress, EXECUTE_SELECTOR)
-
-      await expect(l1GovernanceRelay.connect(l1Alice).relay(spellAddress, EXECUTE_SELECTOR)).to.be.revertedWith("L1GovernanceRelay/not-authorized");
+      await expect(
+        l1GovernanceRelay
+          .connect(l1Alice)
+          .relay(spellAddress, EXECUTE_SELECTOR)
+      ).to.be.revertedWith("L1GovernanceRelay/not-authorized");
     });
   });
 });
@@ -73,7 +73,7 @@ async function setupTest() {
   const L2_GOVERNANCE_RELAY_ADDRESS = 31415;
   const SPELL_ADDRESS = 31416;
 
-  const l2GovernanceRelay = await simpleDeploy("L2GovernanceRelay", [
+  const l1GovernanceRelay = await simpleDeploy("L1GovernanceRelay", [
     starkNetFake.address,
     L2_GOVERNANCE_RELAY_ADDRESS,
   ]);
@@ -83,7 +83,7 @@ async function setupTest() {
     l1Alice: l1Alice as any,
     l1Bob: l1Bob as any,
     starkNetFake: starkNetFake as any,
-    l1GovernanceRelay: l2GovernanceRelay as any,
+    l1GovernanceRelay: l1GovernanceRelay as any,
     l2GovernanceRelayAddress: L2_GOVERNANCE_RELAY_ADDRESS,
     spellAddress: SPELL_ADDRESS,
   };
