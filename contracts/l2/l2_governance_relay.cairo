@@ -10,11 +10,11 @@ from starkware.cairo.common.alloc import alloc
 
 @contract_interface
 namespace IAuth:
-  func rely(user : felt) -> ():
-  end
+    func rely(user : felt) -> ():
+    end
 
-  func deny(user : felt) -> ():
-  end
+    func deny(user : felt) -> ():
+    end
 end
 
 @storage_var
@@ -59,7 +59,7 @@ func relay{
     storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  } (
+  }(
     from_address : felt,
     target : felt,
     selector : felt
