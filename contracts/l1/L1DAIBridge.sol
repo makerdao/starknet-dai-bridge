@@ -4,116 +4,154 @@ pragma solidity >=0.8.4;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface TokenLike {
-  function transferFrom(
-    address _from, address _to, uint256 _value
-  ) external returns (bool success);
-  function balanceOf(
-    address account
-  ) external view returns (uint256);
+    function transferFrom(
+        address _from,
+        address _to,
+        uint256 _value
+    ) external returns (bool success);
+
+    function balanceOf(address account) external view returns (uint256);
 }
 
 interface StarkNetLike {
-  function sendMessageToL2(
-    uint256 to_address,
-    uint256 selector,
-    uint256[] calldata payload
-  ) external;
-  function consumeMessageFromL2(
-    uint256 from_address,
-    uint256[] calldata payload
-  ) external;
+    function sendMessageToL2(
+        uint256 to_address,
+        uint256 selector,
+        uint256[] calldata payload
+    ) external;
+
+    function consumeMessageFromL2(
+        uint256 from_address,
+        uint256[] calldata payload
+    ) external;
 }
 
 contract L1DAIBridge {
-   // --- Auth ---
-  mapping (address => uint256) public wards;
-  function rely(address usr) external auth {
-    wards[usr] = 1;
-    emit Rely(usr);
-  }
-  function deny(address usr) external auth {
-    wards[usr] = 0;
-    emit Deny(usr);
-  }
-  modifier auth {
-    require(wards[msg.sender] == 1, "L1DAIBridge/not-authorized");
-    _;
-  }
+    // --- Auth ---
+    mapping(address => uint256) public wards;
 
-  event Rely(address indexed usr);
-  event Deny(address indexed usr);
+    function rely(address usr) external auth {
+        wards[usr] = 1;
+        emit Rely(usr);
+    }
+
+    function deny(address usr) external auth {
+        wards[usr] = 0;
+        emit Deny(usr);
+    }
+
+    modifier auth() {
+        require(wards[msg.sender] == 1, "L1DAIBridge/not-authorized");
+        _;
+    }
+
+    event Rely(address indexed usr);
+    event Deny(address indexed usr);
 
 
-  address public immutable starkNet;
-  address public immutable dai;
-  address public immutable escrow;
-  uint256 public immutable l2DaiBridge;
+    uint256 public isOpen = 1;
 
-  uint256 public isOpen = 1;
-  uint256 public ceiling = 0;
+    modifier whenOpen() {
+        require(isOpen == 1, "L1DAIBridge/closed");
+        _;
+    }
 
-  uint256 constant MESSAGE_WITHDRAW = 0;
+    function close() external auth {
+        isOpen = 0;
+        emit Closed();
+    }
 
-  //  from starkware.starknet.compiler.compile import get_selector_from_name
-  //  print(get_selector_from_name('finalizeDeposit'))
-  uint256 constant DEPOSIT_SELECTOR = 1719001440962431497946253267335313592375607408367068470900111420804409451977;
+    event Closed();
 
-  event Closed();
-  event Deposit(address indexed from, uint256 indexed to, uint256 amount);
-  event FinalizeWithdrawal(address indexed to, uint256 amount);
+    address public immutable starkNet;
+    address public immutable dai;
+    address public immutable escrow;
+    uint256 public immutable l2DaiBridge;
 
-  event Ceiling(uint256 ceiling);
+    uint256 public ceiling = 0;
 
-  constructor(address _starkNet, address _dai, address _escrow, uint256 _l2DaiBridge) {
-    wards[msg.sender] = 1;
-    emit Rely(msg.sender);
+    uint256 constant FINALIZE_WITHDRAW = 0;
 
-    starkNet = _starkNet;
-    dai = _dai;
-    escrow = _escrow;
-    l2DaiBridge = _l2DaiBridge;
-  }
+    //  from starkware.starknet.compiler.compile import get_selector_from_name
+    //  print(get_selector_from_name('finalize_deposit'))
+    uint256 constant DEPOSIT =
+        1523838171560039099257556432344066729220707462881094726430257427074598770742;
 
-  function close() external auth {
-    isOpen = 0;
-    emit Closed();
-  }
+    //  print(get_selector_from_name('finalize_force_withdrawal'))
+    uint256 constant FORCE_WITHDRAW =
+        564231610187525314777546578127020298415997786138103002442821814044854275916;
 
-  function setCeiling(uint256 _ceiling) external auth {
-    ceiling = _ceiling;
-    emit Ceiling(_ceiling);
-  }
+    event Ceiling(uint256 ceiling);
+    event Deposit(address indexed from, uint256 indexed to, uint256 amount);
+    event FinalizeWithdrawal(address indexed to, uint256 amount);
+    event ForceWithdrawal(
+        address indexed to,
+        uint256 indexed from,
+        uint256 amount
+    );
+    event FinalizeForceWithdrawal(address indexed to, uint256 amount);
 
-  function deposit(
-    address from,
-    uint256 to,
-    uint256 amount
-  ) external {
-    require(isOpen == 1, "L1DAIBridge/closed");
+    constructor(
+        address _starkNet,
+        address _dai,
+        address _escrow,
+        uint256 _l2DaiBridge
+    ) {
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
 
-    TokenLike(dai).transferFrom(from, escrow, amount);
+        starkNet = _starkNet;
+        dai = _dai;
+        escrow = _escrow;
+        l2DaiBridge = _l2DaiBridge;
+    }
 
-    require(TokenLike(dai).balanceOf(escrow) <= ceiling, "L1DAIBridge/above-ceiling");
+    function setCeiling(uint256 _ceiling) external auth whenOpen {
+        ceiling = _ceiling;
+        emit Ceiling(_ceiling);
+    }
 
-    uint256[] memory payload = new uint256[](2);
-    payload[0] = to;
-    payload[1] = amount;
+    function deposit(
+        address from,
+        uint256 to,
+        uint256 amount
+    ) external whenOpen {
+        TokenLike(dai).transferFrom(from, escrow, amount);
 
-    StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, DEPOSIT_SELECTOR, payload);
+        require(
+            TokenLike(dai).balanceOf(escrow) <= ceiling,
+            "L1DAIBridge/above-ceiling"
+        );
 
-    emit Deposit(from, to, amount);
-  }
+        uint256[] memory payload = new uint256[](2);
+        payload[0] = to;
+        payload[1] = amount;
 
-  function finalizeWithdrawal(address to, uint256 amount) external {
+        StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, DEPOSIT, payload);
 
-    uint256[] memory payload = new uint256[](3);
-    payload[0] = MESSAGE_WITHDRAW;
-    payload[1] = uint256(uint160(msg.sender));
-    payload[2] = amount;
+        emit Deposit(from, to, amount);
+    }
 
-    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiBridge, payload);
-    TokenLike(dai).transferFrom(escrow, to, amount);
+    function finalizeWithdrawal(address to, uint256 amount) external {
+        uint256[] memory payload = new uint256[](3);
+        payload[0] = FINALIZE_WITHDRAW;
+        payload[1] = uint256(uint160(msg.sender));
+        payload[2] = amount;
 
-    emit FinalizeWithdrawal(to, amount);
-  }
+        StarkNetLike(starkNet).consumeMessageFromL2(l2DaiBridge, payload);
+        TokenLike(dai).transferFrom(escrow, to, amount);
+
+        emit FinalizeWithdrawal(to, amount);
+    }
+
+    function forceWithdrawal(uint256 from, uint256 amount) external whenOpen {
+        uint256[] memory payload = new uint256[](3);
+        payload[0] = from;
+        payload[1] = uint256(uint160(msg.sender));
+        payload[2] = amount;
+
+        StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, FORCE_WITHDRAW, payload);
+
+        emit ForceWithdrawal(msg.sender, from, amount);
+    }
 }
