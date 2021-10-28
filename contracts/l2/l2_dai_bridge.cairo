@@ -32,6 +32,10 @@ namespace IRegistry:
 end
 
 @storage_var
+func _is_open() -> (res : felt):
+end
+
+@storage_var
 func _dai() -> (res : felt):
 end
 
@@ -61,12 +65,10 @@ func auth{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> ():
-  let (caller) = get_caller_address()
-
-  let (ward) = _wards.read(caller)
-  assert ward = 1
-
-  return ()
+    let (caller) = get_caller_address()
+    let (ward) = _wards.read(caller)
+    assert ward = 1
+    return ()
 end
 
 @external
@@ -76,9 +78,9 @@ func rely{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt) -> ():
-  auth()
-  _wards.write(user, 1)
-  return ()
+    auth()
+    _wards.write(user, 1)
+    return ()
 end
 
 @external
@@ -88,9 +90,20 @@ func deny{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt) -> ():
-  auth()
-  _wards.write(user, 0)
-  return ()
+    auth()
+    _wards.write(user, 0)
+    return ()
+end
+
+@external
+func close{
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }() -> ():
+    _is_open.write(0)
+    return ()
 end
 
 @external
@@ -107,6 +120,7 @@ func initialize{
     let (caller) = get_caller_address()
     _wards.write(caller, 1)
 
+    _is_open.write(1)
     _dai.write(dai)
     _bridge.write(bridge)
     _registry.write(registry)
@@ -124,7 +138,8 @@ func withdraw{
   }(dest : felt, amount : felt):
     alloc_locals
 
-    # TODO: revert when closed
+    let (is_open) = _is_open.read()
+    assert is_open = 1
 
     let (dai) = _dai.read()
     let (caller) = get_caller_address()
@@ -145,7 +160,6 @@ func finalize_deposit{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(sender : felt, dest : felt, amount : felt):
-
     # check l1 message sender
     let (bridge) = _bridge.read()
     assert sender = bridge
@@ -175,7 +189,7 @@ func finalize_force_withdrawal{
     let (registry) = _registry.read()
     let (_dest) = IRegistry.l1_address(registry, source)
     if _dest != dest:
-      return()
+        return ()
     end
 
     let (local dai) = _dai.read()
@@ -188,19 +202,19 @@ func finalize_force_withdrawal{
     local range_check_ptr = range_check_ptr
     let (balance_check) = is_le(amount, balance)
     if balance_check == 0:
-      return()
+        return ()
     end
 
     # check allowance
     let (this) = _this.read()
     let (allowance) = IDAI.allowance(dai, source, this)
-    local syscall_ptr: felt* = syscall_ptr
+    local syscall_ptr : felt* = syscall_ptr
     local storage_ptr : Storage* = storage_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
     local range_check_ptr = range_check_ptr
     let (allowance_check) = is_le(amount, allowance)
     if allowance_check == 0:
-      return()
+        return ()
     end
 
     IDAI.burn(dai, source, amount)
@@ -209,11 +223,11 @@ func finalize_force_withdrawal{
 end
 
 func send_finalize_withdraw{
-  syscall_ptr : felt*,
-  storage_ptr : Storage*,
-  pedersen_ptr : HashBuiltin*,
-  range_check_ptr
-}(dest : felt, amount : felt):
+    syscall_ptr : felt*,
+    storage_ptr : Storage*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(dest : felt, amount : felt):
     alloc_locals
 
     let (payload : felt*) = alloc()
