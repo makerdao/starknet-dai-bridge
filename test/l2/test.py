@@ -141,7 +141,7 @@ async def before_all():
     global l2_governance_relay
     l2_governance_relay = await deploy("l2_governance_relay.cairo")
     await l2_governance_relay.initialize(
-        int(starknet_contract_address, 16),
+        int(starknet_contract_address),
         dai_contract.contract_address,
         bridge_contract.contract_address,
     ).invoke()
@@ -573,7 +573,7 @@ async def test_finalize_deposit():
 async def test_governance_relay():
     selector = get_selector_from_name('execute')
     await l2_governance_relay.relay(
-        int(starknet_contract_address, 16),
+        int(starknet_contract_address),
         spell.contract_address,
         selector).invoke()
 
