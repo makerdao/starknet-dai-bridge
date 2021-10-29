@@ -139,7 +139,7 @@ async def test_second_initialize(
     contract: StarknetContract,
 ):
     with pytest.raises(StarkException):
-        await contract.initialize(3, 4).invoke()
+        await contract.initialize(3, 4, 5, 6).invoke()
 
 
 @pytest.mark.asyncio
