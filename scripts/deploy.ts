@@ -3,7 +3,7 @@
  */
 import { task } from 'hardhat/config';
 import fs from 'fs';
-import { save, callFrom, getSelectorFromName, getAddress } from './utils';
+import { save, callFrom, getAddress } from './utils';
 
 const L1_GOERLI_DAI_ADDRESS = '0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844';
 const L1_GOERLI_STARKNET_ADDRESS = '0x5e6229F2D4d977d20A50219E521dE6Dd694d45cc';

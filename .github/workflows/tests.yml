@@ -58,4 +58,4 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - run: pytest ./test/l2/test.py --disable-pytest-warnings
+      - run: pytest ./test/l2/* --disable-pytest-warnings
