@@ -152,7 +152,7 @@ async def before_all():
     await call_from(call, auth_user)
 
     global spell
-    spell = await deploy("spell.cairo")
+    spell = await deploy("sample_spell.cairo")
     await spell.initialize(dai_contract.contract_address, user2.contract_address).invoke()
 
 
@@ -567,6 +567,16 @@ async def test_finalize_deposit():
     await call_from(call, user2)
 
     await check_balances(user1_balance, user2_balance+10)
+
+
+@pytest.mark.asyncio
+async def test_governance_relay_second_initialize():
+    with pytest.raises(StarkException):
+        await l2_governance_relay.initialize(
+            int(starknet_contract_address),
+            dai_contract.contract_address,
+            bridge_contract.contract_address,
+        ).invoke()
 
 
 @pytest.mark.asyncio
