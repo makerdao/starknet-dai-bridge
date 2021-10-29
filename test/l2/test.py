@@ -581,11 +581,9 @@ async def test_governance_relay_second_initialize():
 
 @pytest.mark.asyncio
 async def test_governance_relay():
-    selector = get_selector_from_name('execute')
     await l2_governance_relay.relay(
         int(starknet_contract_address),
-        spell.contract_address,
-        selector).invoke()
+        spell.contract_address).invoke()
 
     await check_balances(user1_balance, user2_balance+10)
 

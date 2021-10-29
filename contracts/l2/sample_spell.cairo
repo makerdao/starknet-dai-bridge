@@ -20,6 +20,10 @@ end
 func _user() -> (res : felt):
 end
 
+@storage_var
+func _initialized() -> (res : felt):
+end
+
 @external
 func initialize{
     syscall_ptr : felt*,
@@ -27,8 +31,11 @@ func initialize{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(dai : felt, user : felt):
+    let (initialized) = _initialized.read()
+    assert initialized = 0
     _dai.write(dai)
     _user.write(user)
+    _initialized.write(1)
 
     return ()
 end

@@ -7,6 +7,7 @@ from starkware.cairo.common.math import assert_nn_le, assert_not_equal
 from starkware.starknet.common.syscalls import call_contract
 from starkware.cairo.common.alloc import alloc
 
+const EXECUTE_SELECTOR = 1017745666394979726211766185068760164586829337678283062942418931026954492996
 
 @contract_interface
 namespace IAuth:
@@ -61,8 +62,7 @@ func relay{
     range_check_ptr
   }(
     from_address : felt,
-    target : felt,
-    selector : felt
+    target : felt
   ):
     let (l1_governance_relay) = _l1_governance_relay.read()
     assert l1_governance_relay = from_address
@@ -73,7 +73,7 @@ func relay{
     IAuth.rely(bridge, target)
 
     let (calldata) = alloc()
-    call_contract(target, selector, 0, calldata)
+    call_contract(target, EXECUTE_SELECTOR, 0, calldata)
 
     let (dai) = _dai.read()
     let (bridge) = _bridge.read()
