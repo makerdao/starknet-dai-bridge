@@ -20,7 +20,7 @@
     "call:l2": "hardhat call:l2 --network goerli",
     "invoke:l2": "hardhat invoke:l2 --network goerli",
     "test:l1": "hardhat test",
-    "test:l2": "pytest ./test/l2/test.py --disable-pytest-warnings",
+    "test:l2": "pytest ./test/l2/* --disable-pytest-warnings",
     "test:fix": "yarn lint:fix && yarn format:fix && yarn test:l1 && yarn typecheck"
   },
   "devDependencies": {

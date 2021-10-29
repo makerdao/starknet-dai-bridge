@@ -4,7 +4,6 @@ import asyncio
 
 from starkware.starknet.testing.starknet import Starknet
 from starkware.starkware_utils.error_handling import StarkException
-from starkware.starknet.public.abi import get_selector_from_name
 
 # The path to the contract source code.
 L2_CONTRACTS_DIR = os.path.join(
