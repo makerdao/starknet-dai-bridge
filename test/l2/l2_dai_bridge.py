@@ -63,7 +63,10 @@ def event_loop():
 
 
 @pytest.fixture(autouse=True)
-async def before_all(contract: StarknetContract):
+async def before_all(
+    starknet: Starknet,
+    contract: StarknetContract,
+):
     global registry_contract
     REGISTRY_FILE = os.path.join(L2_CONTRACTS_DIR, "registry.cairo")
     registry_contract = await starknet.deploy(source=REGISTRY_FILE)
