@@ -82,7 +82,6 @@
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "eslint-plugin-sonarjs": "^0.10.0",
     "eslint-plugin-unused-imports": "^1.1.5",
-    "keccak256": "^1.0.3",
     "lodash": "^4.17.21"
   }
 }

@@ -16,7 +16,7 @@ export function getAddress(contract: string, network: string) {
 
 export function getAccounts(network: string) {
   const files = fs.readdirSync(`./deployments/${network}`);
-  return files.filter(file => file.slice(0, 7) === 'Account').map(file => {
+  return files.filter(file => file.slice(0, 7) === 'account').map(file => {
     return file.split('-')[1].split('.')[0];
   });
 }
@@ -26,7 +26,7 @@ export function parseCalldata(calldata: string, layer: number, network: string) 
   const accounts = getAccounts(network);
   return _calldata.map((input: string) => {
     if (accounts.includes(input)) {
-      return BigInt(getAddress(`Account-${input}`, network)).toString();
+      return BigInt(getAddress(`account-${input}`, network)).toString();
     } else if (input === 'l2_dai_bridge') {
       if (layer === 1) {
         return getAddress('l2_dai_bridge', network);

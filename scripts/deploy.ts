@@ -24,7 +24,7 @@ task('deploy', 'Full deployment', async (_taskArgs, hre) => {
 
   const l1Escrow = await deploy(hre, 'L1Escrow', 1, []);
 
-  const account = await deploy(hre, 'Account', 2, [], 'Account-auth');
+  const account = await deploy(hre, 'account', 2, [], 'account-auth');
 
   const l2DAIBridge = await deploy(hre, 'l2_dai_bridge', 2, []);
 
@@ -52,14 +52,14 @@ task('deploy', 'Full deployment', async (_taskArgs, hre) => {
   const MAX = BigInt(2**256)-BigInt(1);
   await l1Escrow.approve(DAIAddress, l1DAIBridge.address, MAX);
 
-  const l2GovernanceRelay = await deploy(hre, 'L2GovernanceRelay', 2, []);
+  const l2GovernanceRelay = await deploy(hre, 'l2_governance_relay', 2, []);
 
   const l1GovernanceRelay = await deploy(hre, 'L1GovernanceRelay', 1, [
     L1_GOERLI_STARKNET_ADDRESS,
     l2GovernanceRelay.address,
   ]);
 
-  console.log('Initializing L2GovernanceRelay');
+  console.log('Initializing l2_governance_relay');
   await l2GovernanceRelay.invoke('initialize', [
     l1GovernanceRelay.address,
     l2DAI.address,
