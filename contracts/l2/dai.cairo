@@ -7,6 +7,7 @@ from starkware.starknet.common.syscalls import get_caller_address
 
 # change value
 const MAX = 2**120
+const DECIMALS = 18
 
 @storage_var
 func _wards(user : felt) -> (res : felt):
@@ -26,6 +27,21 @@ end
 
 @storage_var
 func _allowances(owner : felt, spender : felt) -> (res : felt):
+end
+
+@view
+func decimals{} () -> (res: felt):
+    return (18)
+end
+
+@view
+func name{} () -> (res: felt):
+    return ('Dai Stablecoin')
+end
+
+@view
+func symbol{} () -> (res: felt):
+    return ('DAI')
 end
 
 @view

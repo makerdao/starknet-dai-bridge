@@ -513,3 +513,18 @@ async def test_does_not_decrease_allowance_using_burn(
         user1.contract_address,
         user3.contract_address).call()
     assert allowance.result == (MAX,)
+
+@pytest.mark.asyncio
+async def test_has_metadata(
+    starknet: Starknet,
+    contract: StarknetContract,
+):
+
+    name = await contract.name().call()
+    assert name.result == (1386921519817957956156419516361070,)
+
+    symbol = await contract.symbol().call()
+    assert symbol.result == (4473161,)
+
+    decimals = await contract.decimals().call()
+    assert decimals.result == (18,)
