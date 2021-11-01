@@ -7,7 +7,6 @@ from starkware.starknet.common.syscalls import get_caller_address
 
 # change value
 const MAX = 2**120
-const DECIMALS = 18
 
 @storage_var
 func _wards(user : felt) -> (res : felt):
