@@ -20,7 +20,7 @@ namespace IDAI:
     func allowance(owner : felt, spender : felt) -> (res : felt):
     end
 
-    func balanceOf(user : felt) -> (res : felt):
+    func balance_of(user : felt) -> (res : felt):
     end
 end
 
@@ -186,7 +186,7 @@ func finalize_force_withdrawal{
     let (local dai) = _dai.read()
 
     # check l2 DAI balance
-    let (balance) = IDAI.balanceOf(dai, source)
+    let (balance) = IDAI.balance_of(dai, source)
     local syscall_ptr : felt* = syscall_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
     local range_check_ptr = range_check_ptr
