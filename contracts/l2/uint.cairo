@@ -1,13 +1,9 @@
-%lang starknet
-%builtins range_check bitwise
-
 from starkware.cairo.common.math import assert_le
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.bitwise import (bitwise_and, bitwise_xor)
 
 const MAX_SPLIT = 2**128-1
-# const MAX_SPLIT = 340282366920938463463374607431768211455
 
 struct uint256:
   member low : felt
@@ -19,6 +15,18 @@ func assert_uint{range_check_ptr} (value : uint256):
   assert_le(value.high, MAX_SPLIT)
   
   return ()
+end
+
+func is_eq{range_check_ptr} (a : uint256, b : uint256) -> (res : felt):
+  if a.low != b.low:
+    return (res=0)
+  end
+
+  if a.high != b.high:
+    return (res=0)
+  end
+
+  return (res=1)
 end
 
 func _add{
@@ -142,26 +150,4 @@ func sub{
     let res = uint256(low=low, high=high)
     assert_uint(res)
     return (res)
-end
-
-@external
-func add_ext{
-    range_check_ptr,
-    bitwise_ptr: BitwiseBuiltin*
-  }(a_low : felt, a_high : felt, b_low : felt, b_high : felt) -> (low : felt, high : felt):
-    let a = uint256(low=a_low, high=a_high)
-    let b = uint256(low=b_low, high=b_high)
-    let (res : uint256) = add(a, b)
-    return (low=res.low, high=res.high)
-end
-
-@external
-func sub_ext{
-    range_check_ptr,
-    bitwise_ptr: BitwiseBuiltin*
-  }(a_low : felt, a_high : felt, b_low : felt, b_high : felt) -> (low : felt, high : felt):
-    let a = uint256(low=a_low, high=a_high)
-    let b = uint256(low=b_low, high=b_high)
-    let (res : uint256) = sub(a, b)
-    return (low=res.low, high=res.high)
 end

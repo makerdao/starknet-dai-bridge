@@ -5,12 +5,10 @@ from starkware.cairo.common.hash import hash2
 from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin
 from starkware.starknet.common.syscalls import call_contract
-from starkware.starknet.common.storage import Storage
 
 
 @external
 func execute{
-        storage_ptr: Storage*,
         pedersen_ptr: HashBuiltin*,
         syscall_ptr: felt*,
         range_check_ptr

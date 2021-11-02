@@ -1,10 +1,10 @@
 %lang starknet
-%builtins pedersen range_check
+%builtins pedersen range_check bitwise
 
-from starkware.starknet.common.storage import Storage
-from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math import assert_nn_le, assert_not_equal
+from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
+from starkware.cairo.common.math import (assert_nn_le, assert_not_equal, split_felt)
 from starkware.starknet.common.syscalls import get_caller_address
+from contracts.l2.uint import (uint256, add, sub, is_eq)
 
 # change value
 const MAX = 2**120
@@ -20,7 +20,6 @@ end
 
 func auth{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> ():
@@ -35,7 +34,6 @@ end
 @external
 func initialize{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> ():
@@ -52,23 +50,31 @@ end
 @external
 func mint{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(to_address : felt, amount : felt):
+    range_check_ptr,
+    bitwise_ptr : BitwiseBuiltin*
+  }(to_address : felt, amount : uint256):
     alloc_locals
 
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     auth()
     local syscall_ptr : felt* = syscall_ptr
 
     assert_not_equal(to_address, 0)
     # assert_not_equal(to_address, this)
 
-    let (balance) = balances.read(to_address)
-    balances.write(to_address, balance + amount)
+    let (local balance : uint256) = balances.read(to_address)
+    let (local total : uint256) = total_supply.read()
 
-    let (total) = total_supply.read()
-    total_supply.write(total + amount)
+    local syscall_ptr : felt* = syscall_ptr 
+    local pedersen_ptr : HashBuiltin* = pedersen_ptr
+
+    let (local sum1 : uint256) = add(balance, amount)
+    let (local sum2 : uint256) = add(total, amount)
+
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+    balances.write(to_address, sum1)
+    total_supply.write(sum2)
 
     return ()
 end
@@ -76,43 +82,52 @@ end
 @external
 func burn{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(from_address : felt, amount : felt):
+    range_check_ptr,
+    bitwise_ptr : BitwiseBuiltin*
+  }(from_address : felt, amount : uint256):
     alloc_locals
 
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     let (local caller) = get_caller_address()
-    local syscall_ptr_local : felt* = syscall_ptr
+    local syscall_ptr : felt* = syscall_ptr
 
-    let (balance) = balances.read(from_address)
-    assert_nn_le(amount, balance)
-    balances.write(from_address, balance - amount)
+    let (local balance : uint256) = balances.read(from_address)
+    let (local total) = total_supply.read()
+    let (local allowance : uint256) = allowances.read(from_address, caller)
 
-    # decrease supply
-    let (total) = total_supply.read()
-    total_supply.write(total - amount)
+    local syscall_ptr : felt* = syscall_ptr
+    local pedersen_ptr : HashBuiltin* = pedersen_ptr
+    
+    let (local diff1 : uint256) = sub(balance, amount)
+    let (local diff2 : uint256) = sub(total, amount)
+    let (local diff3 : uint256) = sub(allowance, amount)
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+    let (low, high) = split_felt(MAX)
+    let split_max = uint256(low=low, high=high)
+    let (local eq) = is_eq(allowance, split_max)
+    
+    balances.write(from_address, diff1)
+    total_supply.write(diff2)
 
     if caller != from_address:
-      let (allowance) = allowances.read(from_address, caller)
-      if allowance != MAX:
-        assert_nn_le(amount, allowance)
-        allowances.write(from_address, caller, allowance - amount)
-        tempvar syscall_ptr : felt* = syscall_ptr_local
-        tempvar storage_ptr : Storage* = storage_ptr
+      if eq == 0:
+        allowances.write(from_address, caller, diff3)
+        tempvar syscall_ptr : felt* = syscall_ptr
         tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
+        tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
       else:
-        tempvar syscall_ptr : felt* = syscall_ptr_local
-        tempvar storage_ptr : Storage* = storage_ptr
+        tempvar syscall_ptr : felt* = syscall_ptr
         tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
+        tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
       end
     else:
-      tempvar syscall_ptr : felt* = syscall_ptr_local
-      tempvar storage_ptr : Storage* = storage_ptr
+      tempvar syscall_ptr : felt* = syscall_ptr
       tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
       tempvar range_check_ptr = range_check_ptr
+      tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     end
 
     return ()
@@ -123,52 +138,51 @@ end
 # ERC20 Functions #
 ###################
 @storage_var
-func balances(user : felt) -> (res : felt):
+func balances(user : felt) -> (res : uint256):
 end
 
 @storage_var
-func total_supply() -> (res : felt):
+func total_supply() -> (res : uint256):
 end
 
 @storage_var
-func allowances(owner : felt, spender : felt) -> (res : felt):
+func allowances(owner : felt, spender : felt) -> (res : uint256):
 end
 
 
 @view
 func totalSupply{
-    storage_ptr : Storage*,
+    syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }() -> (res : felt):
-    let (res) = total_supply.read()
-    return (res)
+  }() -> (low : felt, high : felt):
+    let (res : uint256) = total_supply.read()
+    return (low=res.low, high=res.high)
 end
 
 @view
 func balanceOf{
-    storage_ptr : Storage*,
+    syscall_ptr: felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(user : felt) -> (res : felt):
-    let (res) = balances.read(user=user)
-    return (res)
+  }(user : felt) -> (low : felt, high : felt):
+    let (res : uint256) = balances.read(user=user)
+    return (low=res.low, high=res.high)
 end
 
 @view
 func allowance{
-    storage_ptr : Storage*,
+    syscall_ptr: felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(owner : felt, spender : felt) -> (res : felt):
-    let (res) = allowances.read(owner, spender)
-    return (res)
+  }(owner : felt, spender : felt) -> (low : felt, high : felt):
+    let (res : uint256) = allowances.read(owner, spender)
+    return (low=res.low, high=res.high)
 end
 
 @external
 func rely{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt) -> ():
@@ -180,7 +194,6 @@ end
 @external
 func deny{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt) -> ():
@@ -192,14 +205,15 @@ end
 @external
 func transfer{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(recipient : felt, amount : felt):
+    range_check_ptr,
+    bitwise_ptr : BitwiseBuiltin*
+  }(recipient : felt, amount : uint256):
     alloc_locals
 
     assert_not_equal(recipient, 0)
 
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     let (caller) = get_caller_address()
     local syscall_ptr : felt* = syscall_ptr
     _transfer(caller, recipient, amount)
@@ -210,53 +224,71 @@ end
 @external
 func transferFrom{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(sender : felt, recipient : felt, amount : felt):
+    range_check_ptr,
+    bitwise_ptr : BitwiseBuiltin*
+  }(sender : felt, recipient : felt, amount : uint256):
     alloc_locals
 
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     let (local caller) = get_caller_address()
     local syscall_ptr_local : felt* = syscall_ptr
 
     _transfer(sender, recipient, amount)
+    let (local allowance : uint256) = allowances.read(sender, caller)
+    local syscall_ptr : felt* = syscall_ptr
+    local pedersen_ptr : HashBuiltin* = pedersen_ptr
+
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+    let (low, high) = split_felt(MAX)
+    let split_max = uint256(low=low, high=high)
+    let (local eq) = is_eq(allowance, split_max)
+    let (diff : uint256) = sub(allowance, amount)
 
     if caller != sender:
-      let (allowance) = allowances.read(sender, caller)
-      if allowance != MAX:
-        assert_nn_le(amount, allowance)
-        allowances.write(sender, caller, allowance - amount)
+      if eq == 0:
+        allowances.write(sender, caller, diff)
         tempvar syscall_ptr : felt* = syscall_ptr_local
-        tempvar storage_ptr : Storage* = storage_ptr
         tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
+        tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
       else:
         tempvar syscall_ptr : felt* = syscall_ptr_local
-        tempvar storage_ptr : Storage* = storage_ptr
         tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
+        tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
       end
     else:
       tempvar syscall_ptr : felt* = syscall_ptr_local
-      tempvar storage_ptr : Storage* = storage_ptr
       tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
       tempvar range_check_ptr = range_check_ptr
+      tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     end
 
     return ()
 end
 
 func _transfer{
-    storage_ptr : Storage*,
+    syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(sender: felt, recipient : felt, amount : felt):
-    let (balance) = balances.read(sender)
-    assert_nn_le(amount, balance)
-    balances.write(sender, balance - amount)
+    range_check_ptr,
+    bitwise_ptr : BitwiseBuiltin*
+  }(sender: felt, recipient : felt, amount : uint256):
+    alloc_locals
 
-    let (balance) = balances.read(recipient)
-    balances.write(recipient, balance + amount)
+    let (local sender_balance : uint256) = balances.read(sender)
+    let (local recipient_balance : uint256) = balances.read(recipient)
+    
+    local syscall_ptr : felt* = syscall_ptr
+    local pedersen_ptr : HashBuiltin* = pedersen_ptr
+
+    let (local diff : uint256) = sub(sender_balance, amount)
+    let (local sum : uint256) = add(recipient_balance, amount)
+    
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+
+    balances.write(sender, diff)
+    balances.write(recipient, sum)
 
     return ()
 end
@@ -264,10 +296,9 @@ end
 @external
 func approve{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(spender: felt, amount : felt):
+  }(spender: felt, amount : uint256):
     alloc_locals
 
     let (caller) = get_caller_address()
@@ -280,27 +311,39 @@ end
 @external
 func increaseAllowance{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(spender : felt, amount : felt):
-  let (caller) = get_caller_address()
-  let (allowance) = allowances.read(caller, spender)
-  assert_nn_le(amount, MAX - allowance)
-  allowances.write(caller, spender, allowance + amount)
-  return ()
+    range_check_ptr,
+    bitwise_ptr : BitwiseBuiltin*
+  }(spender : felt, amount : uint256):
+    alloc_locals
+
+    let (local caller) = get_caller_address()
+    local syscall_ptr : felt* = syscall_ptr
+    let (allowance : uint256) = allowances.read(caller, spender)
+    local syscall_ptr : felt* = syscall_ptr
+    local pedersen_ptr : HashBuiltin* = pedersen_ptr
+    let (sum : uint256) = add(amount, allowance)
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+    allowances.write(caller, spender, sum)
+    return ()
 end
 
 @external
 func decreaseAllowance{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(spender : felt, amount : felt):
-  let (caller) = get_caller_address()
-  let (allowance) = allowances.read(caller, spender)
-  assert_nn_le(amount, allowance)
-  allowances.write(caller, spender, allowance - amount)
-  return ()
+    range_check_ptr,
+    bitwise_ptr : BitwiseBuiltin*
+  }(spender : felt, amount : uint256):
+    alloc_locals
+
+    let (local caller) = get_caller_address()
+    local syscall_ptr : felt* = syscall_ptr
+    let (allowance : uint256) = allowances.read(caller, spender)
+    local syscall_ptr : felt* = syscall_ptr
+    local pedersen_ptr : HashBuiltin* = pedersen_ptr
+    let (diff : uint256) = sub(allowance, amount)
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+    allowances.write(caller, spender, diff)
+    return ()
 end

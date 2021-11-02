@@ -1,21 +1,21 @@
 %lang starknet
-%builtins pedersen range_check
+%builtins pedersen range_check bitwise
 
 from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
-from starkware.starknet.common.storage import Storage
-from starkware.cairo.common.cairo_builtins import HashBuiltin
+from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
 from starkware.cairo.common.math import assert_le
 from starkware.starknet.common.syscalls import get_caller_address
+from contracts.l2.uint import (uint256, add, sub)
 
 const MESSAGE_WITHDRAW = 0
 
 @contract_interface
 namespace IDAI:
-    func mint(to_address : felt, value : felt):
+    func mint(to_address : felt, value : uint256):
     end
 
-    func burn(from_address : felt, value : felt):
+    func burn(from_address : felt, value : uint256):
     end
 end
 
@@ -37,7 +37,6 @@ end
 
 func auth{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> ():
@@ -52,7 +51,6 @@ end
 @external
 func rely{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt) -> ():
@@ -64,7 +62,6 @@ end
 @external
 func deny{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt) -> ():
@@ -76,7 +73,6 @@ end
 @external
 func initialize{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(_dai : felt, _bridge : felt):
@@ -98,10 +94,9 @@ end
 @external
 func withdraw{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(l1_address : felt, amount : felt):
+  }(l1_address : felt, amount : uint256):
     alloc_locals
 
     let (dai_address) = dai.read()
@@ -112,10 +107,11 @@ func withdraw{
     let (payload : felt*) = alloc()
     assert payload[0] = MESSAGE_WITHDRAW
     assert payload[1] = l1_address
-    assert payload[2] = amount
+    assert payload[2] = amount.low
+    assert payload[3] = amount.high
     let (bridge_address) = bridge.read()
 
-    send_message_to_l1(to_address=bridge_address, payload_size=3, payload=payload)
+    send_message_to_l1(to_address=bridge_address, payload_size=4, payload=payload)
     return ()
 end
 
@@ -124,10 +120,9 @@ end
 @l1_handler
 func finalizeDeposit{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(from_address : felt, l2_address : felt, amount : felt):
+  }(from_address : felt, l2_address : felt, amount : uint256):
 
     # check message was sent by L1 contract
     let (bridge_address) = bridge.read()
