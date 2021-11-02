@@ -49,10 +49,13 @@ jobs:
       - name: Set up python
         uses: actions/setup-python@v2
         with:
-          node-version: 3.8
+          python-version: 3.7
+
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
 
       - run: cp .env.ci .env
 
       - run: pip install -r requirements.txt
 
-      - run: pytest ./test/l2/test.py --disable-pytest-warnings
+      - run: pytest ./test/l2/* --disable-pytest-warnings

@@ -10,7 +10,7 @@ from starkware.starknet.common.syscalls import call_contract
 @external
 func execute{
         pedersen_ptr: HashBuiltin*,
-        syscall_ptr: felt*,
+        syscall_ptr : felt*,
         range_check_ptr
     } (
         to: felt,
