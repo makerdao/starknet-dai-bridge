@@ -55,7 +55,7 @@ async def uint_add(a, b):
         b_low,
         b_high,
     ).invoke()
-    assert split_uint == to_split_uint(a+b)
+    assert split_uint.result == to_split_uint(a+b)
 
 
 @pytest.mark.asyncio
@@ -68,7 +68,7 @@ async def uint_sub(a, b):
         b_low,
         b_high,
     ).invoke()
-    assert split_uint == to_split_uint(a-b)
+    assert split_uint.result == to_split_uint(a-b)
 
 
 async def check_balances(
@@ -137,9 +137,9 @@ async def before_each(
     global user2_balance
 
     await contract.mint(
-            user1.contract_address, 100).invoke(auth_user.contract_address)
+            user1.contract_address, (100, 0)).invoke(auth_user.contract_address)
     await contract.mint(
-            user2.contract_address, 100).invoke(auth_user.contract_address)
+            user2.contract_address, (100, 0)).invoke(auth_user.contract_address)
 
     balance = await contract.balanceOf(user1.contract_address).call()
     user1_balance = balance.result[0]
@@ -266,7 +266,7 @@ async def test_should_not_transfer_to_dai_address(
 @pytest.mark.asyncio
 async def test_mint(starknet: Starknet, contract: StarknetContract):
     await contract.mint(
-            user1.contract_address, 10).invoke(auth_user.contract_address)
+            user1.contract_address, (10, 0)).invoke(auth_user.contract_address)
 
     await check_balances(user1_balance+10, user2_balance)
 
@@ -277,7 +277,7 @@ async def test_should_not_allow_minting_to_zero_address(
     contract: StarknetContract,
 ):
     with pytest.raises(StarkException):
-        await contract.mint(burn, 10).invoke(auth_user.contract_address)
+        await contract.mint(burn, (10, 0)).invoke(auth_user.contract_address)
 
     await check_balances(user1_balance, user2_balance)
 
@@ -291,7 +291,7 @@ async def test_should_not_allow_minting_to_dai_address(
     with pytest.raises(StarkException):
         await contract.mint(
                 contract.contract_address,
-                10,
+                (10, 0),
             ).invoke(auth_user.contract_address)
 
     await check_balances(user1_balance, user2_balance)
