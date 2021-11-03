@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.4;
-
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+pragma solidity >=0.7.6;
 
 interface TokenLike {
     function transferFrom(
-        address _from,
-        address _to,
-        uint256 _value
+        address from,
+        address to,
+        uint256 value
     ) external returns (bool success);
 
     function balanceOf(address account) external view returns (uint256);
@@ -15,13 +13,13 @@ interface TokenLike {
 
 interface StarkNetLike {
     function sendMessageToL2(
-        uint256 to_address,
+        uint256 to,
         uint256 selector,
         uint256[] calldata payload
     ) external;
 
     function consumeMessageFromL2(
-        uint256 from_address,
+        uint256 from,
         uint256[] calldata payload
     ) external;
 }
@@ -116,6 +114,8 @@ contract L1DAIBridge {
         uint256 to,
         uint256 amount
     ) external whenOpen {
+        emit Deposit(from, to, amount);
+
         TokenLike(dai).transferFrom(from, escrow, amount);
 
         require(
@@ -128,11 +128,12 @@ contract L1DAIBridge {
         payload[1] = amount;
 
         StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, DEPOSIT, payload);
-
-        emit Deposit(from, to, amount);
     }
 
     function finalizeWithdrawal(address to, uint256 amount) external {
+
+        emit FinalizeWithdrawal(to, amount);
+
         uint256[] memory payload = new uint256[](3);
         payload[0] = FINALIZE_WITHDRAW;
         payload[1] = uint256(uint160(msg.sender));
@@ -140,18 +141,15 @@ contract L1DAIBridge {
 
         StarkNetLike(starkNet).consumeMessageFromL2(l2DaiBridge, payload);
         TokenLike(dai).transferFrom(escrow, to, amount);
-
-        emit FinalizeWithdrawal(to, amount);
     }
 
     function forceWithdrawal(uint256 from, uint256 amount) external whenOpen {
+        emit ForceWithdrawal(msg.sender, from, amount);
         uint256[] memory payload = new uint256[](3);
         payload[0] = from;
         payload[1] = uint256(uint160(msg.sender));
         payload[2] = amount;
 
         StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, FORCE_WITHDRAW, payload);
-
-        emit ForceWithdrawal(msg.sender, from, amount);
     }
 }
