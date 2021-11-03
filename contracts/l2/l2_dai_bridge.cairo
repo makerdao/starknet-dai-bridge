@@ -152,11 +152,12 @@ func finalize_deposit{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(sender : felt, dest : felt, amount : Uint256):
+  }(sender : felt, dest : felt, amount_low : felt, amount_high : felt):
     # check l1 message sender
     let (bridge) = _bridge.read()
     assert sender = bridge
 
+    let amount = Uint256(low=amount_low, high=amount_high)
     let (dai) = _dai.read()
     IDAI.mint(dai, dest, amount)
 
@@ -170,7 +171,13 @@ func finalize_force_withdrawal{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(sender : felt, source : felt, dest : felt, amount : Uint256):
+  }(
+    sender : felt,
+    source : felt,
+    dest : felt,
+    amount_low : felt,
+    amount_high : felt,
+  ):
     alloc_locals
 
     # check l1 message sender
@@ -187,6 +194,7 @@ func finalize_force_withdrawal{
     let (local dai) = _dai.read()
 
     # check l2 DAI balance
+    let amount = Uint256(low=amount_low, high=amount_high)
     let (balance : Uint256) = IDAI.balance_of(dai, source)
     local syscall_ptr : felt* = syscall_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr

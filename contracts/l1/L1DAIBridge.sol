@@ -132,11 +132,24 @@ contract L1DAIBridge {
         emit Deposit(from, to, amount);
     }
 
+    struct SplitUint256 {
+      uint256 low;
+      uint256 high;
+    }
+
+    function toSplitUint(uint256 value) internal pure returns (SplitUint256 memory) {
+      uint256 low = value & ((1 << 128) - 1);
+      uint256 high = value >> 128;
+      return SplitUint256(low, high);
+    }
+
     function finalizeWithdrawal(address to, uint256 amount) external {
-        uint256[] memory payload = new uint256[](3);
+        SplitUint256 memory amount_split = toSplitUint(amount);
+        uint256[] memory payload = new uint256[](4);
         payload[0] = FINALIZE_WITHDRAW;
         payload[1] = uint256(uint160(msg.sender));
-        payload[2] = amount;
+        payload[2] = amount_split.low;
+        payload[3] = amount_split.high;
 
         StarkNetLike(starkNet).consumeMessageFromL2(l2DaiBridge, payload);
         TokenLike(dai).transferFrom(escrow, to, amount);
@@ -145,10 +158,12 @@ contract L1DAIBridge {
     }
 
     function forceWithdrawal(uint256 from, uint256 amount) external whenOpen {
-        uint256[] memory payload = new uint256[](3);
+        SplitUint256 memory amount_split = toSplitUint(amount);
+        uint256[] memory payload = new uint256[](4);
         payload[0] = from;
         payload[1] = uint256(uint160(msg.sender));
-        payload[2] = amount;
+        payload[2] = amount_split.low;
+        payload[3] = amount_split.high;
 
         StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, FORCE_WITHDRAW, payload);
 

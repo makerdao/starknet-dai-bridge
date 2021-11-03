@@ -230,7 +230,7 @@ async def test_finalize_force_withdrawal(
             int(starknet_contract_address),
             user1.contract_address,
             int(L1_ADDRESS),
-            (10, 0),
+            10, 0,
         ).invoke(user1.contract_address)
 
     await check_balances(user1_balance-10, user2_balance)
@@ -254,7 +254,7 @@ async def test_finalize_force_withdrawal_insufficient_funds(
             int(starknet_contract_address),
             user3.contract_address,
             int(L1_ADDRESS),
-            (10, 0),
+            10, 0,
         ).invoke(user3.contract_address)
 
     await check_balances(user1_balance, user2_balance)
@@ -274,7 +274,7 @@ async def test_finalize_force_withdrawal_insufficient_allowance(
             int(starknet_contract_address),
             user1.contract_address,
             int(L1_ADDRESS),
-            (10, 0),
+            10, 0,
         ).invoke(user1.contract_address)
 
     await check_balances(user1_balance, user2_balance)
