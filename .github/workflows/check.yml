@@ -45,5 +45,9 @@ jobs:
       - name: Install slither
         run: |
           pip3 install slither-analyzer
+
+      - name: Set up CI env
+      - run: cp .env.ci .env
+
       - name: Run Slither
         run: slither .
