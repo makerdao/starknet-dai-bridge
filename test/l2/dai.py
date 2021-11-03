@@ -7,7 +7,7 @@ from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
 
 
-MAX = 2**120
+MAX = (2**128, 2**128)
 L1_ADDRESS = 0x1
 
 L2_CONTRACTS_DIR = os.path.join(os.getcwd(), "contracts/l2")
@@ -25,7 +25,6 @@ async def contract(starknet: Starknet) -> StarknetContract:
 
 dai_contract = None
 l2_bridge_contract = None
-uint_contract = None
 
 burn = 0
 no_funds = 1
@@ -45,30 +44,8 @@ def to_split_uint(a):
     return (a & ((1 << 128) - 1), a >> 128)
 
 
-@pytest.mark.asyncio
-async def uint_add(a, b):
-    (a_low, a_high) = to_split_uint(a)
-    (b_low, b_high) = to_split_uint(b)
-    split_uint = await uint_contract.add_ext(
-        a_low,
-        a_high,
-        b_low,
-        b_high,
-    ).invoke()
-    assert split_uint.result == to_split_uint(a+b)
-
-
-@pytest.mark.asyncio
-async def uint_sub(a, b):
-    (a_low, a_high) = to_split_uint(a)
-    (b_low, b_high) = to_split_uint(b)
-    split_uint = await uint_contract.sub_ext(
-        a_low,
-        a_high,
-        b_low,
-        b_high,
-    ).invoke()
-    assert split_uint.result == to_split_uint(a-b)
+def to_uint(a):
+    return a[0] + (a[1] << 128)
 
 
 async def check_balances(
@@ -80,11 +57,11 @@ async def check_balances(
     user3_balance = await dai_contract.balanceOf(user3.contract_address).call()
     total_supply = await dai_contract.totalSupply().call()
 
-    assert user1_balance.result == (expected_user1_balance,)
-    assert user2_balance.result == (expected_user2_balance,)
-    assert user3_balance.result == (0,)
+    assert user1_balance.result == (to_split_uint(expected_user1_balance),)
+    assert user2_balance.result == (to_split_uint(expected_user2_balance),)
+    assert user3_balance.result == ((0, 0),)
     assert total_supply.result == (
-            expected_user1_balance+expected_user2_balance,)
+            to_split_uint(expected_user1_balance+expected_user2_balance),)
 
 
 @pytest.fixture
@@ -137,14 +114,16 @@ async def before_each(
     global user2_balance
 
     await contract.mint(
-            user1.contract_address, (100, 0)).invoke(auth_user.contract_address)
+            user1.contract_address,
+            (100, 0)).invoke(auth_user.contract_address)
     await contract.mint(
-            user2.contract_address, (100, 0)).invoke(auth_user.contract_address)
+            user2.contract_address,
+            (100, 0)).invoke(auth_user.contract_address)
 
     balance = await contract.balanceOf(user1.contract_address).call()
-    user1_balance = balance.result[0]
+    user1_balance = to_uint(balance.result[0])
     balance = await contract.balanceOf(user2.contract_address).call()
-    user2_balance = balance.result[0]
+    user2_balance = to_uint(balance.result[0])
 
 
 #########
@@ -157,7 +136,7 @@ async def test_total_supply(
 ):
     total_supply = await contract.totalSupply().call()
 
-    assert total_supply.result == (200,)
+    assert total_supply.result == ((200, 0),)
 
 
 @pytest.mark.asyncio
@@ -167,7 +146,7 @@ async def test_balance_of(
 ):
     balance = await contract.balanceOf(user1.contract_address).call()
 
-    assert balance.result == (user1_balance,)
+    assert balance.result == (to_split_uint(user1_balance),)
 
 
 @pytest.mark.asyncio
@@ -176,7 +155,7 @@ async def test_transfer(
     contract: StarknetContract,
 ):
     await contract.transfer(
-            user2.contract_address, 10).invoke(user1.contract_address)
+            user2.contract_address, (10, 0)).invoke(user1.contract_address)
 
     await check_balances(
         user1_balance-10,
@@ -189,7 +168,7 @@ async def test_transfer_to_yourself(
     contract: StarknetContract,
 ):
     await contract.transfer(
-            user1.contract_address, 10).invoke(user1.contract_address)
+            user1.contract_address, (10, 0)).invoke(user1.contract_address)
 
     await check_balances(user1_balance, user2_balance)
 
@@ -200,11 +179,11 @@ async def test_transfer_from(
     contract: StarknetContract,
 ):
     await contract.approve(
-            user3.contract_address, 10).invoke(user1.contract_address)
+            user3.contract_address, (10, 0)).invoke(user1.contract_address)
     await contract.transferFrom(
         user1.contract_address,
         user2.contract_address,
-        10).invoke(user3.contract_address)
+        (10, 0)).invoke(user3.contract_address)
 
     await check_balances(
         user1_balance-10,
@@ -219,7 +198,7 @@ async def test_transfer_to_yourself_using_transfer_from(
     await contract.transferFrom(
         user1.contract_address,
         user1.contract_address,
-        10).invoke(user1.contract_address)
+        (10, 0)).invoke(user1.contract_address)
 
     await check_balances(user1_balance, user2_balance)
 
@@ -232,7 +211,7 @@ async def test_should_not_transfer_beyond_balance(
     with pytest.raises(StarkException):
         await contract.transfer(
                 user2.contract_address,
-                user1_balance+1,
+                to_split_uint(user1_balance+1),
             ).invoke(user1.contract_address)
 
     await check_balances(user1_balance, user2_balance)
@@ -244,7 +223,7 @@ async def test_should_not_transfer_to_zero_address(
     contract: StarknetContract,
 ):
     with pytest.raises(StarkException):
-        await contract.transfer(burn, 10).invoke()
+        await contract.transfer(burn, (10, 0)).invoke()
 
     await check_balances(user1_balance, user2_balance)
 
@@ -256,7 +235,7 @@ async def test_should_not_transfer_to_dai_address(
 ):
     '''
     with pytest.raises(StarkException):
-        await contract.transfer(contract.contract_address, 10).invoke()
+        await contract.transfer(contract.contract_address, (10, 0)).invoke()
 
     await check_balances(user1_balance, user2_balance)
     '''
@@ -311,7 +290,7 @@ async def test_should_not_allow_minting_to_address_beyond_max(
 @pytest.mark.asyncio
 async def test_burn(starknet: Starknet, contract: StarknetContract):
     await contract.burn(
-            user1.contract_address, 10).invoke(user1.contract_address)
+            user1.contract_address, (10, 0)).invoke(user1.contract_address)
 
     await check_balances(user1_balance-10, user2_balance)
 
@@ -324,7 +303,7 @@ async def test_should_not_burn_beyond_balance(
     with pytest.raises(StarkException):
         await contract.burn(
                 user1.contract_address,
-                user1_balance+1,
+                to_split_uint(user1_balance+1),
             ).invoke(user1.contract_address)
 
     await check_balances(user1_balance, user2_balance)
@@ -338,7 +317,7 @@ async def test_should_not_burn_other(
     with pytest.raises(StarkException):
         await contract.burn(
                 user1.contract_address,
-                10,
+                (10, 0),
             ).invoke(user2.contract_address)
 
     await check_balances(user1_balance, user2_balance)
@@ -356,13 +335,13 @@ async def test_deployer_can_burn_other(
 @pytest.mark.asyncio
 async def test_approve(starknet: Starknet, contract: StarknetContract):
     await contract.approve(
-            user2.contract_address, 10).invoke(user1.contract_address)
+            user2.contract_address, (10, 0)).invoke(user1.contract_address)
 
     allowance = await contract.allowance(
         user1.contract_address,
         user2.contract_address).call()
 
-    assert allowance.result == (10,)
+    assert allowance.result == ((10, 0),)
 
 
 @pytest.mark.asyncio
@@ -371,10 +350,10 @@ async def test_can_burn_other_if_approved(
     contract: StarknetContract,
 ):
     await contract.approve(
-            user2.contract_address, 10).invoke(user1.contract_address)
+            user2.contract_address, (10, 0)).invoke(user1.contract_address)
 
     await contract.burn(
-            user1.contract_address, 10).invoke(user2.contract_address)
+            user1.contract_address, (10, 0)).invoke(user2.contract_address)
 
     await check_balances(user1_balance-10, user2_balance)
 
@@ -413,12 +392,12 @@ async def test_transfer_using_transfer_from_and_allowance(
     contract: StarknetContract,
 ):
     await contract.approve(
-            user3.contract_address, 10).invoke(user1.contract_address)
+            user3.contract_address, (10, 0)).invoke(user1.contract_address)
 
     await contract.transferFrom(
             user1.contract_address,
             user2.contract_address,
-            10,
+            (10, 0),
         ).invoke(user3.contract_address)
 
     await check_balances(user1_balance-10, user2_balance+10)
@@ -430,7 +409,7 @@ async def test_should_not_transfer_beyond_allowance(
     contract: StarknetContract,
 ):
     await contract.approve(
-            user3.contract_address, 10).invoke(user1.contract_address)
+            user3.contract_address, (10, 0)).invoke(user1.contract_address)
 
     allowance = await contract.allowance(
         user1.contract_address,
@@ -440,7 +419,8 @@ async def test_should_not_transfer_beyond_allowance(
         await contract.transferFrom(
             user1.contract_address,
             user2.contract_address,
-            allowance.result[0]+1).invoke(user3.contract_address)
+            to_split_uint(to_uint(allowance.result[0])+1),
+        ).invoke(user3.contract_address)
 
     await check_balances(user1_balance, user2_balance)
 
@@ -451,10 +431,10 @@ async def test_burn_using_burn_and_allowance(
     contract: StarknetContract,
 ):
     await contract.approve(
-            user2.contract_address, 10).invoke(user1.contract_address)
+            user2.contract_address, (10, 0)).invoke(user1.contract_address)
 
     await contract.burn(
-            user1.contract_address, 10).invoke(user2.contract_address)
+            user1.contract_address, (10, 0)).invoke(user2.contract_address)
 
     await check_balances(user1_balance-10, user2_balance)
 
@@ -465,7 +445,7 @@ async def test_should_not_burn_beyond_allowance(
     contract: StarknetContract,
 ):
     await contract.approve(
-            user2.contract_address, 10).invoke(user1.contract_address)
+            user2.contract_address, (10, 0)).invoke(user1.contract_address)
 
     allowance = await contract.allowance(
         user1.contract_address,
@@ -474,7 +454,7 @@ async def test_should_not_burn_beyond_allowance(
     with pytest.raises(StarkException):
         await contract.burn(
                 user1.contract_address,
-                allowance.result[0]+1,
+                to_split_uint(to_uint(allowance.result[0])+1),
             ).invoke(user2.contract_address)
 
     await check_balances(user1_balance, user2_balance)
@@ -486,14 +466,14 @@ async def test_increase_allowance(
     contract: StarknetContract,
 ):
     await contract.approve(
-            user2.contract_address, 10).invoke(user1.contract_address)
+            user2.contract_address, (10, 0)).invoke(user1.contract_address)
     await contract.increaseAllowance(
-            user2.contract_address, 10).invoke(user1.contract_address)
+            user2.contract_address, (10, 0)).invoke(user1.contract_address)
 
     allowance = await contract.allowance(
         user1.contract_address,
         user2.contract_address).call()
-    assert allowance.result == (20,)
+    assert allowance.result == ((20, 0),)
 
 
 @pytest.mark.asyncio
@@ -502,7 +482,7 @@ async def test_should_not_increase_allowance_beyond_max(
     contract: StarknetContract,
 ):
     await contract.approve(
-            user2.contract_address, 10).invoke(user1.contract_address)
+            user2.contract_address, (10, 0)).invoke(user1.contract_address)
     with pytest.raises(StarkException):
         await contract.increaseAllowance(
                 user2.contract_address, MAX).invoke(user1.contract_address)
@@ -514,14 +494,14 @@ async def test_decrease_allowance(
     contract: StarknetContract,
 ):
     await contract.approve(
-            user2.contract_address, 10).invoke(user1.contract_address)
+            user2.contract_address, (10, 0)).invoke(user1.contract_address)
     await contract.decreaseAllowance(
-            user2.contract_address, 1).invoke(user1.contract_address)
+            user2.contract_address, (1, 0)).invoke(user1.contract_address)
 
     allowance = await contract.allowance(
         user1.contract_address,
         user2.contract_address).call()
-    assert allowance.result == (9,)
+    assert allowance.result == ((9, 0),)
 
 
 @pytest.mark.asyncio
@@ -530,7 +510,7 @@ async def test_should_not_decrease_allowance_beyond_allowance(
     contract: StarknetContract,
 ):
     await contract.approve(
-            user2.contract_address, 10).invoke(user1.contract_address)
+            user2.contract_address, (10, 0)).invoke(user1.contract_address)
 
     allowance = await contract.allowance(
         user1.contract_address,
@@ -539,7 +519,8 @@ async def test_should_not_decrease_allowance_beyond_allowance(
     with pytest.raises(StarkException):
         await contract.decreaseAllowance(
             user2.contract_address,
-            allowance.result[0] + 1).invoke(user1.contract_address)
+            to_split_uint(to_uint(allowance.result[0]) + 1),
+        ).invoke(user1.contract_address)
 
 
 # MAXIMUM ALLOWANCE
@@ -553,7 +534,7 @@ async def test_does_not_decrease_allowance_using_transfer_from(
     await contract.transferFrom(
             user1.contract_address,
             user2.contract_address,
-            10,
+            (10, 0),
         ).invoke(user3.contract_address)
 
     allowance = await contract.allowance(
@@ -570,115 +551,9 @@ async def test_does_not_decrease_allowance_using_burn(
     await contract.approve(
             user3.contract_address, MAX).invoke(user1.contract_address)
     await contract.burn(
-            user1.contract_address, 10).invoke(user3.contract_address)
+            user1.contract_address, (10, 0)).invoke(user3.contract_address)
 
     allowance = await contract.allowance(
         user1.contract_address,
         user3.contract_address).call()
     assert allowance.result == (MAX,)
-
-########
-# uint #
-########
-@pytest.mark.asyncio
-async def test_uint_add_under_split():
-    a = 1
-    b = 2
-    await uint_add(a, b)
-
-
-@pytest.mark.asyncio
-async def test_uint_add_over_split():
-    a = 2**128 - 1
-    b = 2**128 - 1
-    await uint_add(a, b)
-
-
-@pytest.mark.asyncio
-async def test_uint_add_over_split_2():
-    a = 2**130
-    b = 2**128 - 1
-    await uint_add(a, b)
-
-
-@pytest.mark.asyncio
-async def test_uint_add_overflow():
-    a = 2**256-1
-    b = 2**256-1
-    with pytest.raises(StarkException):
-        await uint_add(a, b)
-
-
-@pytest.mark.asyncio
-async def test_uint_add_bad_input():
-    a_low = 2**128
-    a_high = 0
-    b_low = 0
-    b_high = 0
-    with pytest.raises(StarkException):
-        await uint_contract.add_ext(
-            a_low,
-            a_high,
-            b_low,
-            b_high,
-        ).invoke()
-
-
-@pytest.mark.asyncio
-async def test_uint_sub_1():
-    a = 2
-    b = 1
-    await uint_sub(a, b)
-
-
-@pytest.mark.asyncio
-async def test_uint_sub_2():
-    a = 2**128
-    b = 1
-    await uint_sub(a, b)
-
-
-@pytest.mark.asyncio
-async def test_uint_sub_3():
-    a = 2**128+2
-    b = 2**128+1
-    await uint_sub(a, b)
-
-
-@pytest.mark.asyncio
-async def test_uint_sub_negative_1():
-    a = 1
-    b = 2
-    with pytest.raises(StarkException):
-        await uint_sub(a, b)
-
-
-@pytest.mark.asyncio
-async def test_uint_sub_negative_2():
-    a = 2**128+1
-    b = 2**129+1
-    with pytest.raises(StarkException):
-        await uint_sub(a, b)
-
-
-@pytest.mark.asyncio
-async def test_uint_sub_negative_3():
-    a = 2**128-1
-    b = 2**129+1
-    with pytest.raises(StarkException):
-        await uint_sub(a, b)
-
-
-@pytest.mark.asyncio
-async def test_uint_sub_bad_input():
-    a_low = 2**128
-    a_high = 0
-    b_low = 0
-    b_high = 0
-    with pytest.raises(StarkException):
-        await uint_contract.sub_ext(
-            a_low,
-            a_high,
-            b_low,
-            b_high,
-        ).invoke()
