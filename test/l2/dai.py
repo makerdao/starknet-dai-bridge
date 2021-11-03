@@ -98,11 +98,6 @@ async def before_all(
             l2_bridge_contract.contract_address,
         ).invoke(auth_user.contract_address)
 
-    # temporary uint tester
-    global uint_contract
-    UINT_FILE = os.path.join(L2_CONTRACTS_DIR, "uint_contract.cairo")
-    uint_contract = await starknet.deploy(UINT_FILE)
-
 
 @pytest.fixture(scope="function", autouse=True)
 async def before_each(
