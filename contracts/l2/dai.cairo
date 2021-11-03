@@ -29,7 +29,22 @@ func _allowances(owner : felt, spender : felt) -> (res : Uint256):
 end
 
 @view
-func totalSupply{
+func decimals{} () -> (res: felt):
+    return (18)
+end
+
+@view
+func name{} () -> (res: felt):
+    return ('Dai Stablecoin')
+end
+
+@view
+func symbol{} () -> (res: felt):
+    return ('DAI')
+end
+
+@view
+func total_supply{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
@@ -39,7 +54,7 @@ func totalSupply{
 end
 
 @view
-func balanceOf{
+func balance_of{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
@@ -224,7 +239,7 @@ func transfer{
 end
 
 @external
-func transferFrom{
+func transfer_from{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
@@ -241,6 +256,7 @@ func transferFrom{
 
     local syscall_ptr : felt* = syscall_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
 
     if caller != sender:
       let MAX = Uint256(low=MAX_SPLIT, high=MAX_SPLIT)
@@ -287,7 +303,7 @@ func approve{
 end
 
 @external
-func increaseAllowance{
+func increase_allowance{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
@@ -310,7 +326,7 @@ func increaseAllowance{
 end
 
 @external
-func decreaseAllowance{
+func decrease_allowance{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
