@@ -22,7 +22,7 @@ const FORCE_WITHDRAW = parseFixed(
 const WITHDRAW = 0;
 
 function toSplitUint(value: any) {
-  const bits = value.toBigInt().toString(16).padStart(64, '0');
+  const bits = value.toBigInt().toString(16).padStart(64, "0");
   return [BigInt(`0x${bits.slice(32)}`), BigInt(`0x${bits.slice(0, 32)}`)];
 }
 
