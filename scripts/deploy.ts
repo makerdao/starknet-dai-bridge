@@ -19,7 +19,7 @@ task("deploy", "Full deployment", async (_taskArgs, hre) => {
   console.log(`Deploying on ${NETWORK}`);
 
   if (!fs.existsSync(`./deployments/${NETWORK}`)) {
-    fs.mkdirSync(`./deployments/${NETWORK}`);
+    fs.mkdirSync(`./deployments/${NETWORK}`, { recursive: true });
   }
   save("DAI", { address: L1_GOERLI_DAI_ADDRESS }, NETWORK);
 
