@@ -60,7 +60,7 @@ async def check_balances(
 
     assert user1_balance.result == (to_split_uint(expected_user1_balance),)
     assert user2_balance.result == (to_split_uint(expected_user2_balance),)
-    assert user3_balance.result == ((0, 0),)
+    assert user3_balance.result == (to_split_uint(0),)
     assert total_supply.result == (
             to_split_uint(expected_user1_balance+expected_user2_balance),)
 
@@ -129,10 +129,10 @@ async def before_each():
 
     await dai_contract.mint(
             user1.contract_address,
-            (100, 0)).invoke(auth_user.contract_address)
+            to_split_uint(100)).invoke(auth_user.contract_address)
     await dai_contract.mint(
             user2.contract_address,
-            (100, 0)).invoke(auth_user.contract_address)
+            to_split_uint(100)).invoke(auth_user.contract_address)
 
     balance = await dai_contract.balance_of(user1.contract_address).call()
     user1_balance = to_uint(balance.result[0])
@@ -157,10 +157,10 @@ async def test_withdraw(starknet: Starknet, contract: StarknetContract):
     '''
     await dai_contract.approve(
             contract.contract_address,
-            (10, 0),
+            to_split_uint(10),
         ).invoke(user1.contract_address)
     await contract.withdraw(
-            user2.contract_address, (10, 0)).invoke(user1.contract_address)
+            user2.contract_address, to_split_uint(10)).invoke(user1.contract_address)
 
     await check_balances(user1_balance-10, user2_balance)
     '''
@@ -175,14 +175,14 @@ async def test_withdraw_should_fail_when_closed(
 ):
     await dai_contract.approve(
             contract.contract_address,
-            (10, 0),
+            to_split_uint(10),
         ).invoke(user1.contract_address)
 
     await contract.close().invoke(auth_user.contract_address)
 
     with pytest.raises(Exception):
         await contract.withdraw(
-                user2.contract_address, (10, 0)).invoke(user1.contract_address)
+                user2.contract_address, to_split_uint(10)).invoke(user1.contract_address)
 
 
 @pytest.mark.asyncio
@@ -192,7 +192,7 @@ async def test_withdraw_insufficient_funds(
 ):
     with pytest.raises(StarkException):
         await contract.withdraw(
-                user2.contract_address, (10, 0)).invoke(user3.contract_address)
+                user2.contract_address, to_split_uint(10)).invoke(user3.contract_address)
     await check_balances(user1_balance, user2_balance)
 
 
@@ -206,7 +206,7 @@ async def test_finalize_deposit(
     await contract.finalize_deposit(
             int(starknet_contract_address),
             user2.contract_address,
-            (10, 0),
+            to_split_uint(10),
         ).invoke(user2.contract_address)
 
     await check_balances(user1_balance, user2_balance+10)
@@ -224,7 +224,7 @@ async def test_finalize_force_withdrawal(
     '''
     await dai_contract.approve(
             contract.contract_address,
-            (10, 0),
+            to_split_uint(10),
         ).invoke(user1.contract_address)
     await contract.finalize_force_withdrawal(
             int(starknet_contract_address),
@@ -248,7 +248,7 @@ async def test_finalize_force_withdrawal_insufficient_funds(
     '''
     await dai_contract.approve(
             contract.contract_address,
-            (10, 0),
+            to_split_uint(10),
         ).invoke(user3.contract_address)
     await contract.finalize_force_withdrawal(
             int(starknet_contract_address),

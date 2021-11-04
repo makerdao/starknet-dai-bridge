@@ -82,7 +82,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
         l2BridgeAddress,
         DEPOSIT,
-        [l2User, depositAmount]
+        [l2User, ...toSplitUint(depositAmount)]
       );
     });
     it("reverts when approval is too low", async () => {
@@ -188,10 +188,9 @@ describe("L1DAIBridge", function () {
       expect(await dai.balanceOf(escrow.address)).to.be.eq(0);
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
-      const [withdrawalAmountLow, withdrawalAmountHigh] = toSplitUint(withdrawalAmount);
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, withdrawalAmountLow, withdrawalAmountHigh]
+        [WITHDRAW, l1Alice.address, ...toSplitUint(withdrawalAmount)]
       );
     });
     it("sends funds from the escrow to the 3rd party", async () => {
@@ -227,10 +226,9 @@ describe("L1DAIBridge", function () {
       expect(await dai.balanceOf(escrow.address)).to.be.eq(0);
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
-      const [withdrawalAmountLow, withdrawalAmountHigh] = toSplitUint(withdrawalAmount);
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, withdrawalAmountLow, withdrawalAmountHigh]
+        [WITHDRAW, l1Alice.address, ...toSplitUint(withdrawalAmount)]
       );
     });
     it("sends funds from the escrow, even when closed", async () => {
@@ -264,10 +262,9 @@ describe("L1DAIBridge", function () {
       expect(await dai.balanceOf(escrow.address)).to.be.eq(0);
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
-      const [withdrawalAmountLow, withdrawalAmountHigh] = toSplitUint(withdrawalAmount);
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, withdrawalAmountLow, withdrawalAmountHigh]
+        [WITHDRAW, l1Alice.address, ...toSplitUint(withdrawalAmount)]
       );
     });
     it("reverts when called by not a withdrawal recipient", async () => {
@@ -292,13 +289,11 @@ describe("L1DAIBridge", function () {
       expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
       expect(await dai.balanceOf(escrow.address)).to.be.eq(withdrawalAmount);
 
-      const [withdrawalAmountLow, withdrawalAmountHigh] = toSplitUint(withdrawalAmount);
       starkNetFake.consumeMessageFromL2
         .whenCalledWith(l2BridgeAddress, [
           WITHDRAW,
           l1Bob.address,
-          withdrawalAmountLow,
-          withdrawalAmountHigh,
+          ...toSplitUint(withdrawalAmount),
         ])
         .reverts();
 
@@ -310,7 +305,7 @@ describe("L1DAIBridge", function () {
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Bob.address, withdrawalAmountLow, withdrawalAmountHigh]
+        [WITHDRAW, l1Bob.address, ...toSplitUint(withdrawalAmount)]
       );
     });
     it("reverts when called with wrong amount", async () => {
@@ -335,13 +330,11 @@ describe("L1DAIBridge", function () {
       expect(await dai.balanceOf(escrow.address)).to.be.eq(withdrawalAmount);
 
       const wrongAmount = withdrawalAmount.sub(1);
-      const [wrongAmountLow, wrongAmountHigh] = toSplitUint(wrongAmount);
       starkNetFake.consumeMessageFromL2
         .whenCalledWith(l2BridgeAddress, [
           WITHDRAW,
           l1Alice.address,
-          wrongAmountLow,
-          wrongAmountHigh,
+          ...toSplitUint(wrongAmount),
         ])
         .reverts();
 
@@ -353,7 +346,7 @@ describe("L1DAIBridge", function () {
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, wrongAmountLow, wrongAmountHigh]
+        [WITHDRAW, l1Alice.address, ...toSplitUint(wrongAmount)]
       );
     });
     it("reverts when escrow access was revoked", async () => {
@@ -436,11 +429,10 @@ describe("L1DAIBridge", function () {
         .withArgs(l1Alice.address, l2User, amount);
 
       expect(starkNetFake.sendMessageToL2).to.have.been.calledOnce;
-      const [amountLow, amountHigh] = toSplitUint(amount);
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
         l2BridgeAddress,
         FORCE_WITHDRAW,
-        [l2User, l1Alice.address, amountLow, amountHigh]
+        [l2User, l1Alice.address, ...toSplitUint(amount)]
       );
     });
     it("reverts when bridge is closed", async () => {
