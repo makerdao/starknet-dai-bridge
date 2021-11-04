@@ -1,5 +1,8 @@
 # StarkNet DAI Bridge
 
+[![Tests](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/tests.yml/badge.svg)](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/tests.yml)
+
+
 ## Setup
 
 Create and open a Python3.7 virtual environment. Run the following to install the Python dependencies.

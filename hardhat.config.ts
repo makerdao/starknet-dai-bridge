@@ -1,19 +1,17 @@
 import "@nomiclabs/hardhat-waffle";
-import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
+import "./scripts/deploy";
+import "./scripts/interact";
+import "./scripts/account";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
-
-import "./scripts/deploy";
-import "./scripts/interact";
-import "./scripts/account";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
@@ -75,7 +73,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.7",
+        version: "0.7.6",
         settings: {
           metadata: {
             // Not including the metadata hash
@@ -111,12 +109,6 @@ const config: HardhatUserConfig = {
   cairo: {
     version: "0.5.1",
   },
-  /*
-  typechain: {
-    outDir: "typechain",
-    target: "ethers-v5",
-  },
-  */
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },

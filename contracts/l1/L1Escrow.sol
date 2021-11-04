@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.4;
+pragma solidity ^0.7.6;
 
 interface ApproveLike {
-  function approve(address, uint256) external;
+  function approve(address, uint256) external returns (bool success);
 }
 
 // Escrow funds on L1, manage approval rights
