@@ -1,61 +1,65 @@
-# StarkNet DAI Bridge
+# Starknet DAI Bridge
 
-## Setup
+## Overview
+![Architecture](./docs/architecture.png?raw=true)
 
-Create and open a Python3.7 virtual environment. Run the following to install the Python dependencies.
-```
-pip install -r requirements.txt
-```
+## Additional Documentation
+[Development documentation](./docs/development.md)
 
-Install the Node.js dependencies.
-```
-yarn install
-```
+### Contracts
+#### L1
+* L1DAIBridge
+* L1Escrow
+* L1GovernanceRelay
+#### L2
+* dai
+* l2_dai_bridge
+* l2_governance_delay
+* registry
 
-Setup environment variables.
-```
-cp .env.example .env
-```
+## Starknet DAI
+ERC-20 interpretation in Cairo
+* snake case
+* uint256 for compatibility with L1
+* no permit function - account abstraction
+* increase_allowance, decrease_allowance
 
-In `.env` set the `INFURA_API_KEY` and `MNEMONIC` variables.
+## Upgrade procedure
+* state in escrow contract
+* messages in transit
+* to upgrade:
+    * deploy new bridge
+    * setup auth
+    * new bridge operational
+    * close old one
+    * when no messages in transit revoke auth for old bridge
 
+## Governance relay
+* L2Governance relay design temporary until delegate calls are available on starknet!
 
-## Run goerli environment
-Deploy the contracts
-```
-yarn compile
-yarn deploy:goerli
-```
+## Risks
+### StarkNet Bugs
 
-The deploy contracts and abi are stored in a json in `./deployments/NETWORK/CONTRACT_NAME.json`.
+#### L1 -> L2
 
-## Interactions
+#### L2 -> L1
 
-### Create Account
-```
-yarn account:create --name ACCOUNT_NAME
-```
+### Censorship
 
-### Get Account address
-```
-yarn account:get --name ACCOUNT_NAME
-```
+#### Deposit
 
-### Deposit
-```
-yarn call:l1 --contract DAI --func approve --calldata L1DAIBridge,AMOUNT
-yarn call:l1 --contract L1DAIBridge --func deposit --calldata L1_ADDRESS,ACCOUNT_NAME,AMOUNT
-```
+#### Withdrawal
 
-### Withdraw
-```
-yarn invoke:l2 --contract dai --func approve --calldata l2_dai_bridge,AMOUNT
-yarn invoke:l2 --contract l2_dai_bridge --func withdraw --calldata L1_ADDRESS,AMOUNT
-yarn call:l1 --contract L1DAIBridge --func finalizeWithdrawal --calldata L1_ADDRESS,AMOUNT
-```
+### Configuration mistake
 
-### L2 Transfers
-```
-yarn account:get --name user
-yarn invoke:l2 --contract dai --func transfer --calldata ACCOUNT_NAME,AMOUNT
-```
+## Escape hatch
+Temporary solution until StarkNet is decentralized.
+
+### Censorship detection
+* if user belives she is censored she can request withdrawal from l1, for request to work allowance needs to be set, and L1 address needs to be registered in registry contract
+* if withdrawal request is not handled then user might request DAO initiate an exit procedure, L1 address needs to be registered in registry contract
+
+### Exit procedure
+* state reconstruction from state diffs available on L1
+* only L2 addresses that registered L1 address in L2 registry contract will be included
+* pending deposits that have not reached L2 will be returned based on state on L1toL2 message mapping
