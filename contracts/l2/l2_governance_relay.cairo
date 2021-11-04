@@ -1,7 +1,6 @@
 %lang starknet
 %builtins pedersen range_check
 
-from starkware.starknet.common.storage import Storage
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_nn_le, assert_not_equal
 from starkware.starknet.common.syscalls import call_contract
@@ -37,7 +36,6 @@ end
 @external
 func initialize{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(l1_governance_relay : felt, dai : felt, bridge : felt):
@@ -57,7 +55,6 @@ end
 @l1_handler
 func relay{
     syscall_ptr : felt*,
-    storage_ptr : Storage*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(
