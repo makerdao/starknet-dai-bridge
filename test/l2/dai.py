@@ -59,7 +59,7 @@ async def check_balances(
 
     assert user1_balance.result == (to_split_uint(expected_user1_balance),)
     assert user2_balance.result == (to_split_uint(expected_user2_balance),)
-    assert user3_balance.result == ((0, 0),)
+    assert user3_balance.result == (to_split_uint(0),)
     assert total_supply.result == (
             to_split_uint(expected_user1_balance+expected_user2_balance),)
 
@@ -178,7 +178,7 @@ async def test_transfer_from(
     await contract.transfer_from(
         user1.contract_address,
         user2.contract_address,
-        (10, 0)).invoke(user3.contract_address)
+        to_split_uint(10)).invoke(user3.contract_address)
 
     await check_balances(
         user1_balance-10,
@@ -365,7 +365,7 @@ async def test_transfer_using_transfer_from_and_allowance(
     await contract.transfer_from(
             user1.contract_address,
             user2.contract_address,
-            (10, 0),
+            to_split_uint(10),
         ).invoke(user3.contract_address)
 
     await check_balances(user1_balance-10, user2_balance+10)
