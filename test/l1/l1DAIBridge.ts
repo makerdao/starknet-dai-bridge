@@ -18,6 +18,11 @@ const FORCE_WITHDRAW = parseFixed('564231610187525314777546578127020298415997786
 const WITHDRAW = 0;
 const FINALIZE_FORCE_WITHDRAW = 1;
 
+function toSplitUint(value: any) {
+  const bits = value.toBigInt().toString(16).padStart(64, '0');
+  return [BigInt(`0x${bits.slice(32)}`), BigInt(`0x${bits.slice(0, 32)}`)];
+}
+
 describe("L1DAIBridge", function () {
   it("initializes properly", async () => {
     const { admin, dai, starkNetFake, escrow, l1Bridge, l2BridgeAddress } =
@@ -77,7 +82,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
         l2BridgeAddress,
         DEPOSIT,
-        [l2User, depositAmount]
+        [l2User, ...toSplitUint(depositAmount)]
       );
     });
     it("reverts when approval is too low", async () => {
@@ -185,7 +190,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, withdrawalAmount]
+        [WITHDRAW, l1Alice.address, ...toSplitUint(withdrawalAmount)]
       );
     });
     it("sends funds from the escrow to the 3rd party", async () => {
@@ -223,7 +228,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, withdrawalAmount]
+        [WITHDRAW, l1Alice.address, ...toSplitUint(withdrawalAmount)]
       );
     });
     it("sends funds from the escrow, even when closed", async () => {
@@ -259,7 +264,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, withdrawalAmount]
+        [WITHDRAW, l1Alice.address, ...toSplitUint(withdrawalAmount)]
       );
     });
     it("reverts when called by not a withdrawal recipient", async () => {
@@ -288,7 +293,7 @@ describe("L1DAIBridge", function () {
         .whenCalledWith(l2BridgeAddress, [
           WITHDRAW,
           l1Bob.address,
-          withdrawalAmount,
+          ...toSplitUint(withdrawalAmount),
         ])
         .reverts();
 
@@ -300,7 +305,7 @@ describe("L1DAIBridge", function () {
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Bob.address, withdrawalAmount]
+        [WITHDRAW, l1Bob.address, ...toSplitUint(withdrawalAmount)]
       );
     });
     it("reverts when called with wrong amount", async () => {
@@ -329,7 +334,7 @@ describe("L1DAIBridge", function () {
         .whenCalledWith(l2BridgeAddress, [
           WITHDRAW,
           l1Alice.address,
-          wrongAmount,
+          ...toSplitUint(wrongAmount),
         ])
         .reverts();
 
@@ -341,7 +346,7 @@ describe("L1DAIBridge", function () {
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, wrongAmount]
+        [WITHDRAW, l1Alice.address, ...toSplitUint(wrongAmount)]
       );
     });
     it("reverts when escrow access was revoked", async () => {
@@ -427,7 +432,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
         l2BridgeAddress,
         FORCE_WITHDRAW,
-        [l2User, l1Alice.address, amount]
+        [l2User, l1Alice.address, ...toSplitUint(amount)]
       );
     });
     it("reverts when bridge is closed", async () => {
