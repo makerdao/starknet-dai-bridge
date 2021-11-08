@@ -1,12 +1,11 @@
-import fs from 'fs';
-import { task } from 'hardhat/config';
-import { save, getAddress } from './utils';
+import { task } from "hardhat/config";
 
+import { getAddress, save } from "./utils";
 
 let NETWORK: string;
 
-task('account:get', 'Get L2 account information')
-  .addOptionalParam('name', 'Account name')
+task("account:get", "Get L2 account information")
+  .addOptionalParam("name", "Account name")
   .setAction(async ({ name }, hre) => {
     const [signer] = await hre.ethers.getSigners();
     if (signer.provider) {
@@ -15,13 +14,13 @@ task('account:get', 'Get L2 account information')
     }
     console.log(`Calling on ${NETWORK}`);
 
-    const _name = name ? name : 'auth';
+    const _name = name || "auth";
     const accountAddress = getAddress(`Account-${_name}`, NETWORK);
     console.log(`Account-${_name} L2 address:`, accountAddress);
-});
+  });
 
-task('account:create', 'Create new L2 account')
-  .addParam('name', 'Name of account')
+task("account:create", "Create new L2 account")
+  .addParam("name", "Name of account")
   .setAction(async ({ name }, hre) => {
     const [signer] = await hre.ethers.getSigners();
     if (signer.provider) {
@@ -30,10 +29,9 @@ task('account:create', 'Create new L2 account')
     }
     console.log(`Deploying on ${NETWORK}`);
 
-    console.log('Deploying Account');
-    const AccountFactory = await hre.starknet.getContractFactory('Account');
+    console.log("Deploying Account");
+    const AccountFactory = await hre.starknet.getContractFactory("Account");
     const Account = await AccountFactory.deploy();
     save(`Account-${name}`, Account, NETWORK);
     console.log(`Account-${name} L2 address:`, Account.address);
-});
-
+  });

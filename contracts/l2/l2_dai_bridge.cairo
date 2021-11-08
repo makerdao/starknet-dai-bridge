@@ -1,26 +1,27 @@
 %lang starknet
-%builtins pedersen range_check
+%builtins pedersen range_check bitwise
 
 from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
-from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math_cmp import is_le
+from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
+from starkware.cairo.common.math import assert_le
 from starkware.starknet.common.syscalls import get_caller_address
+from starkware.cairo.common.uint256 import (Uint256, uint256_le)
 
 const FINALIZE_WITHDRAW = 0
 
 @contract_interface
 namespace IDAI:
-    func mint(to_address : felt, value : felt):
+    func mint(to_address : felt, value : Uint256):
     end
 
-    func burn(from_address : felt, value : felt):
+    func burn(from_address : felt, value : Uint256):
     end
 
-    func allowance(owner : felt, spender : felt) -> (res : felt):
+    func allowance(owner : felt, spender : felt) -> (res : Uint256):
     end
 
-    func balance_of(user : felt) -> (res : felt):
+    func balance_of(user : felt) -> (res : Uint256):
     end
 end
 
@@ -128,7 +129,7 @@ func withdraw{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(dest : felt, amount : felt):
+  }(dest : felt, amount : Uint256):
     alloc_locals
 
     let (is_open) = _is_open.read()
@@ -151,11 +152,12 @@ func finalize_deposit{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(sender : felt, dest : felt, amount : felt):
+  }(sender : felt, dest : felt, amount_low : felt, amount_high : felt):
     # check l1 message sender
     let (bridge) = _bridge.read()
     assert sender = bridge
 
+    let amount = Uint256(low=amount_low, high=amount_high)
     let (dai) = _dai.read()
     IDAI.mint(dai, dest, amount)
 
@@ -169,7 +171,13 @@ func finalize_force_withdrawal{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(sender : felt, source : felt, dest : felt, amount : felt):
+  }(
+    sender : felt,
+    source : felt,
+    dest : felt,
+    amount_low : felt,
+    amount_high : felt,
+  ):
     alloc_locals
 
     # check l1 message sender
@@ -186,22 +194,23 @@ func finalize_force_withdrawal{
     let (local dai) = _dai.read()
 
     # check l2 DAI balance
-    let (balance) = IDAI.balance_of(dai, source)
+    let amount = Uint256(low=amount_low, high=amount_high)
+    let (balance : Uint256) = IDAI.balance_of(dai, source)
     local syscall_ptr : felt* = syscall_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
     local range_check_ptr = range_check_ptr
-    let (balance_check) = is_le(amount, balance)
+    let (balance_check) = uint256_le(amount, balance)
     if balance_check == 0:
         return ()
     end
 
     # check allowance
     let (this) = _this.read()
-    let (allowance) = IDAI.allowance(dai, source, this)
+    let (allowance : Uint256) = IDAI.allowance(dai, source, this)
     local syscall_ptr : felt* = syscall_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
     local range_check_ptr = range_check_ptr
-    let (allowance_check) = is_le(amount, allowance)
+    let (allowance_check) = uint256_le(amount, allowance)
     if allowance_check == 0:
         return ()
     end
@@ -215,16 +224,17 @@ func send_finalize_withdraw{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(dest : felt, amount : felt):
+  }(dest : felt, amount : Uint256):
     alloc_locals
 
     let (payload : felt*) = alloc()
     assert payload[0] = FINALIZE_WITHDRAW
     assert payload[1] = dest
-    assert payload[2] = amount
+    assert payload[2] = amount.low
+    assert payload[3] = amount.high
 
     let (bridge) = _bridge.read()
 
-    send_message_to_l1(bridge, 3, payload)
+    send_message_to_l1(bridge, 4, payload)
     return ()
 end
