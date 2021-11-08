@@ -1,7 +1,7 @@
 # Starknet DAI Bridge
-[[!Tests](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/tests.yml/badge.svg)]
-[[!Check](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/check.yml/badge.svg)]
-[[!Lint](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/lint.yml/badge.svg)]
+[![Lint](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/lint.yml/badge.svg)](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/lint.yml)
+[![Check](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/check.yml/badge.svg)](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/check.yml)
+[![Tests](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/tests.yml/badge.svg)](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/tests.yml)
 
 StarkNet interpretation of DAI token and basic DAI bridge.
 
