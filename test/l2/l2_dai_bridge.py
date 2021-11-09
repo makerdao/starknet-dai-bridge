@@ -169,6 +169,15 @@ async def test_withdraw(starknet: Starknet, contract: StarknetContract):
 
 
 @pytest.mark.asyncio
+async def test_close_should_fail_when_not_authorized(
+    starknet: Starknet,
+    contract: StarknetContract,
+):
+  with pytest.raises(Exception):
+    await contract.close().invoke(user1.contract_address)
+
+
+@pytest.mark.asyncio
 async def test_withdraw_should_fail_when_closed(
     starknet: Starknet,
     contract: StarknetContract,
