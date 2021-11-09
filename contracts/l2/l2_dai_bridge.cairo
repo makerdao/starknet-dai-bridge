@@ -98,6 +98,7 @@ func close{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }():
+    auth()
     _is_open.write(0)
     return ()
 end
