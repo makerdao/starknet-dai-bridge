@@ -92,9 +92,6 @@ no_funds = 1
 
 starknet_contract_address = 0x0
 
-expected_user1_balance = None
-expected_user2_balance = None
-
 
 ###########
 # HELPERS #

@@ -94,9 +94,6 @@ no_funds = 1
 
 starknet_contract_address = 0x0
 
-expected_user1_balance = None
-expected_user2_balance = None
-
 
 ###########
 # HELPERS #
@@ -213,7 +210,6 @@ async def test_withdraw(
             to_split_uint(10)).invoke(user1.contract_address)
 
     payload = [FINALIZE_WITHDRAW, user2.contract_address, *to_split_uint(10)]
-    print(payload)
     starknet.consume_message_from_l2(
         from_address=l2_bridge.contract_address,
         to_address=L1_BRIDGE_ADDRESS,
