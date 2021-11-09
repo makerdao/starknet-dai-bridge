@@ -186,7 +186,6 @@ async def before_each(
 #########
 @pytest.mark.asyncio
 async def test_total_supply(
-    starknet: Starknet,
     dai: StarknetContract,
 ):
     total_supply = await dai.total_supply().call()
@@ -423,6 +422,8 @@ async def test_approve(
         user2.contract_address).call()
 
     assert allowance.result == (to_split_uint(10),)
+
+    set_expected_balances(user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio

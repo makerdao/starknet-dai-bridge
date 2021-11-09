@@ -231,11 +231,13 @@ async def test_withdraw(
 
 @pytest.mark.asyncio
 async def test_close_should_fail_when_not_authorized(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
 ):
-  with pytest.raises(Exception):
-    await contract.close().invoke(user1.contract_address)
+    with pytest.raises(Exception):
+        await dai.close().invoke(user1.contract_address)
+
+    set_expected_balances(user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio
