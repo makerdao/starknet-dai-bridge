@@ -8,12 +8,14 @@ from starkware.cairo.common.uint256 import (Uint256, uint256_add, uint256_sub, u
 
 const MAX_SPLIT = 2**128
 
-@storage_var
-func _wards(user : felt) -> (res : felt):
+@contract_interface
+namespace IThis:
+  func get_this() -> (res : felt):
+  end
 end
 
 @storage_var
-func _initialized() -> (res : felt):
+func _wards(user : felt) -> (res : felt):
 end
 
 @storage_var
@@ -26,6 +28,10 @@ end
 
 @storage_var
 func _allowances(owner : felt, spender : felt) -> (res : Uint256):
+end
+
+@storage_var
+func _this() -> (res : felt):
 end
 
 @view
@@ -73,18 +79,15 @@ func allowance{
     return (res)
 end
 
-@external
-func initialize{
+@constructor
+func constructor{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }():
-    let (initialized) = _initialized.read()
-    assert initialized = 0
-    _initialized.write(1)
-
-    let (caller) = get_caller_address()
+  }(caller : felt, get_this : felt):
     _wards.write(caller, 1)
+    let (this) = IThis.get_this(get_this)
+    _this.write(this)
 
     return ()
 end
@@ -103,6 +106,8 @@ func mint{
     local syscall_ptr : felt* = syscall_ptr
 
     assert_not_equal(account, 0)
+    let (this) = _this.read()
+    assert_not_equal(account, this)
 
     # update balance
     let (local balance : Uint256) = _balances.read(account)
@@ -227,8 +232,6 @@ func transfer{
     bitwise_ptr : BitwiseBuiltin*
   }(recipient : felt, amount : Uint256):
     alloc_locals
-
-    assert_not_equal(recipient, 0)
 
     local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     let (caller) = get_caller_address()
@@ -368,6 +371,10 @@ func _transfer{
     bitwise_ptr : BitwiseBuiltin*
   }(sender : felt, recipient : felt, amount : Uint256):
     alloc_locals
+
+    assert_not_equal(recipient, 0)
+    let (this) = _this.read()
+    assert_not_equal(recipient, this)
 
     # decrease sender balance
     let (local sender_balance : Uint256) = _balances.read(sender)
