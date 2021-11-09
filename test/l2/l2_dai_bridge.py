@@ -109,36 +109,29 @@ def to_uint(a):
     return a[0] + (a[1] << 128)
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture
 async def check_balances(
     dai: StarknetContract,
     user1: StarknetContract,
     user2: StarknetContract,
     user3: StarknetContract,
 ):
-    yield
+    async def internal_check_balances(
+        expected_user1_balance,
+        expected_user2_balance,
+    ):
+        user1_balance = await dai.balance_of(user1.contract_address).call()
+        user2_balance = await dai.balance_of(user2.contract_address).call()
+        user3_balance = await dai.balance_of(user3.contract_address).call()
+        total_supply = await dai.total_supply().call()
 
-    user1_balance = await dai.balance_of(user1.contract_address).call()
-    user2_balance = await dai.balance_of(user2.contract_address).call()
-    user3_balance = await dai.balance_of(user3.contract_address).call()
-    total_supply = await dai.total_supply().call()
+        assert user1_balance.result == (to_split_uint(expected_user1_balance),)
+        assert user2_balance.result == (to_split_uint(expected_user2_balance),)
+        assert user3_balance.result == (to_split_uint(0),)
+        assert total_supply.result == (
+                to_split_uint(expected_user1_balance+expected_user2_balance),)
 
-    assert user1_balance.result == (to_split_uint(expected_user1_balance),)
-    assert user2_balance.result == (to_split_uint(expected_user2_balance),)
-    assert user3_balance.result == (to_split_uint(0),)
-    assert total_supply.result == (
-            to_split_uint(expected_user1_balance+expected_user2_balance),)
-
-
-def set_expected_balances(
-    _expected_user1_balance,
-    _expected_user2_balance,
-):
-    global expected_user1_balance
-    global expected_user2_balance
-
-    expected_user1_balance = _expected_user1_balance
-    expected_user2_balance = _expected_user2_balance
+    return internal_check_balances
 
 
 @pytest.fixture
@@ -209,6 +202,7 @@ async def test_withdraw(
     dai: StarknetContract,
     user1: StarknetContract,
     user2: StarknetContract,
+    check_balances,
 ):
     await dai.approve(
             l2_bridge.contract_address,
@@ -226,7 +220,7 @@ async def test_withdraw(
         payload=payload,
     )
 
-    set_expected_balances(user1_balance-10, user2_balance)
+    await check_balances(user1_balance-10, user2_balance)
 
 
 @pytest.mark.asyncio
@@ -236,8 +230,6 @@ async def test_close_should_fail_when_not_authorized(
 ):
     with pytest.raises(Exception):
         await dai.close().invoke(user1.contract_address)
-
-    set_expected_balances(user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio
@@ -269,8 +261,6 @@ async def test_withdraw_should_fail_when_closed(
             payload=payload,
         )
 
-    set_expected_balances(user1_balance, user2_balance)
-
 
 @pytest.mark.asyncio
 async def test_withdraw_insufficient_funds(
@@ -292,14 +282,13 @@ async def test_withdraw_insufficient_funds(
             payload=payload,
         )
 
-    set_expected_balances(user1_balance, user2_balance)
-
 
 @pytest.mark.asyncio
 async def test_finalize_deposit(
     starknet: Starknet,
     l2_bridge: StarknetContract,
     user2: StarknetContract,
+    check_balances,
 ):
     await starknet.send_message_to_l2(
         from_address=L1_BRIDGE_ADDRESS,
@@ -311,7 +300,7 @@ async def test_finalize_deposit(
         ],
     )
 
-    set_expected_balances(user1_balance, user2_balance+10)
+    await check_balances(user1_balance, user2_balance+10)
 
 
 @pytest.mark.asyncio
@@ -320,6 +309,7 @@ async def test_finalize_force_withdrawal(
     l2_bridge: StarknetContract,
     dai: StarknetContract,
     user1: StarknetContract,
+    check_balances,
 ):
     await dai.approve(
             l2_bridge.contract_address,
@@ -343,7 +333,7 @@ async def test_finalize_force_withdrawal(
         payload=payload,
     )
 
-    set_expected_balances(user1_balance-10, user2_balance)
+    await check_balances(user1_balance-10, user2_balance)
 
 
 @pytest.mark.asyncio
@@ -376,8 +366,6 @@ async def test_finalize_force_withdrawal_insufficient_funds(
             payload=payload,
         )
 
-    set_expected_balances(user1_balance, user2_balance)
-
 
 @pytest.mark.asyncio
 async def test_finalize_force_withdrawal_insufficient_allowance(
@@ -403,5 +391,3 @@ async def test_finalize_force_withdrawal_insufficient_allowance(
             to_address=L1_BRIDGE_ADDRESS,
             payload=payload,
         )
-
-    set_expected_balances(user1_balance, user2_balance)
