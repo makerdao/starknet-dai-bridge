@@ -3,8 +3,17 @@
 
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
 from starkware.cairo.common.math import (assert_nn_le, assert_not_equal, assert_not_zero)
+from starkware.cairo.common.math_cmp import is_not_zero
 from starkware.starknet.common.syscalls import get_caller_address
-from starkware.cairo.common.uint256 import (Uint256, uint256_add, uint256_sub, uint256_eq, uint256_le)
+from starkware.cairo.common.bitwise import (bitwise_not, bitwise_and)
+from starkware.cairo.common.uint256 import (
+  Uint256,
+  uint256_add,
+  uint256_sub,
+  uint256_eq,
+  uint256_le,
+  uint256_check
+)
 
 const MAX_SPLIT = 2**128
 
@@ -105,9 +114,13 @@ func mint{
     auth()
     local syscall_ptr : felt* = syscall_ptr
 
+    # check valid recipient
     assert_not_equal(account, 0)
     let (this) = _this.read()
     assert_not_equal(account, this)
+
+    # check valid amount
+    uint256_check(amount)
 
     # update balance
     let (local balance : Uint256) = _balances.read(account)
@@ -145,6 +158,9 @@ func burn{
     local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     let (local caller) = get_caller_address()
 
+    # check valid amount
+    uint256_check(amount)
+
     # update balance
     let (local balance : Uint256) = _balances.read(account)
 
@@ -173,7 +189,18 @@ func burn{
     local syscall_ptr : felt* = syscall_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
 
-    if caller != account:
+    let (not_caller) = is_not_zero(caller - account)
+    let (is_auth) = _wards.read(caller)
+
+    local syscall_ptr : felt* = syscall_ptr
+    local pedersen_ptr : HashBuiltin* = pedersen_ptr
+
+    let (not_auth) = bitwise_not(is_auth)
+    let (check_allowances) = bitwise_and(not_caller, not_auth)
+
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+
+    if check_allowances == 1:
       let MAX = Uint256(low=MAX_SPLIT, high=MAX_SPLIT)
       let (local eq) = uint256_eq(allowance, MAX)
       if eq == 0:

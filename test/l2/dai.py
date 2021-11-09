@@ -341,9 +341,15 @@ async def test_should_not_allow_minting_to_dai_address(
 @pytest.mark.asyncio
 async def test_should_not_allow_minting_to_address_beyond_max(
     dai: StarknetContract,
+    auth_user: StarknetContract,
+    user3: StarknetContract,
 ):
-    # not implemented
-    pass
+    with pytest.raises(StarkException):
+        await dai.mint(
+                user3.contract_address,
+                to_split_uint(2**256)).invoke(auth_user.contract_address)
+
+    set_expected_balances(user1_balance, user2_balance)
 
 
 @pytest.mark.asyncio
@@ -389,9 +395,17 @@ async def test_should_not_burn_other(
 
 
 @pytest.mark.asyncio
-async def test_deployer_can_burn_other(dai: StarknetContract):
-    # not implemented
-    pass
+async def test_deployer_can_burn_other(
+    dai: StarknetContract,
+    auth_user: StarknetContract,
+    user1: StarknetContract,
+):
+    await dai.burn(
+        user1.contract_address,
+        to_split_uint(10),
+    ).invoke(auth_user.contract_address)
+
+    set_expected_balances(user1_balance-10, user2_balance)
 
 
 @pytest.mark.asyncio
