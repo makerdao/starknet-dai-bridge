@@ -74,7 +74,7 @@ In case of rollup emergency that would result in funds being frozen governance a
 * governance assisted evacuation procedure is initiated, DAI escrowed in the `L1Escrow` is distributed on L1 back to users, effectively L2 DAI is abandoned
 
 ##### Emergency detection
-In the case that a user believes she is censored, there is a `forceWithdraw` helper method on `L1DAIBridge` that initiates withdrawal from L1. If the withdrawal request is not handled, then the user might request the DAO to initiate an evacuation procedure. The DAO can verify the withdrawal request was not fulfilled by checking the L1toL2 message queue.
+In the case that a user believes they are censored, there is a `forceWithdraw` helper method on `L1DAIBridge` that initiates withdrawal from L1. If the withdrawal request is not handled, then the user might request the DAO to initiate an evacuation procedure. The DAO can verify the withdrawal request was not fulfilled by checking the L1toL2 message queue.
 
 ##### Evacuation procedure
 To reimburse L2 DAI users on L1, the last valid L2 state of DAI balances needs to be calculated. Since at that moment rollup data might be unavailable, L2 state needs to be reconstructed from state diffs available on L1. It is important to note that there is no general way to map StarkNet addresses to Ethereum addresses and that only L2 addresses that registered an L1 reimburse address in the L2 registry contract will be included in the evacuation procedure. What is more there might be pending deposits that have not reached L2. Those should also be included in evacuation and returned based on state of L1toL2 message queue.
