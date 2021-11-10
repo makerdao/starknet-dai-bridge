@@ -136,8 +136,6 @@ func withdraw{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(dest : felt, amount : Uint256):
-    alloc_locals
-
     let (is_open) = _is_open.read()
     assert is_open = 1
 
@@ -203,9 +201,6 @@ func finalize_force_withdrawal{
     # check l2 DAI balance
     let amount = Uint256(low=amount_low, high=amount_high)
     let (balance : Uint256) = IDAI.balance_of(dai, source)
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
-    local range_check_ptr = range_check_ptr
     let (balance_check) = uint256_le(amount, balance)
     if balance_check == 0:
         return ()
@@ -214,9 +209,6 @@ func finalize_force_withdrawal{
     # check allowance
     let (this) = _this.read()
     let (allowance : Uint256) = IDAI.allowance(dai, source, this)
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
-    local range_check_ptr = range_check_ptr
     let (allowance_check) = uint256_le(amount, allowance)
     if allowance_check == 0:
         return ()
@@ -232,8 +224,6 @@ func send_finalize_withdraw{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(dest : felt, amount : Uint256):
-    alloc_locals
-
     let (payload : felt*) = alloc()
     assert payload[0] = FINALIZE_WITHDRAW
     assert payload[1] = dest

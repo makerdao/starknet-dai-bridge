@@ -110,9 +110,7 @@ func mint{
   }(account : felt, amount : Uint256):
     alloc_locals
 
-    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     auth()
-    local syscall_ptr : felt* = syscall_ptr
 
     # check valid recipient
     assert_not_equal(account, 0)
@@ -124,19 +122,12 @@ func mint{
 
     # update balance
     let (local balance : Uint256) = _balances.read(account)
-
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
-
     let (local new_balance : Uint256, balance_carry : felt) = uint256_add(balance, amount)
     assert balance_carry = 0
     _balances.write(account, new_balance)
 
     # update total supply
     let (local total : Uint256) = _total_supply.read()
-
-    local syscall_ptr : felt* = syscall_ptr 
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
 
     let (local new_total : Uint256, total_carry : felt) = uint256_add(total, amount)
     assert total_carry = 0
@@ -155,7 +146,6 @@ func burn{
   }(account : felt, amount : Uint256):
     alloc_locals
 
-    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     let (local caller) = get_caller_address()
 
     # check valid amount
@@ -163,9 +153,6 @@ func burn{
 
     # update balance
     let (local balance : Uint256) = _balances.read(account)
-
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
 
     let (is_le) = uint256_le(amount, balance)
     assert is_le = 1
@@ -175,9 +162,6 @@ func burn{
     # decrease supply
     let (local total_supply : Uint256) = _total_supply.read()
 
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
-
     let (is_le) = uint256_le(amount, total_supply)
     assert is_le = 1
     let (new_total_supply : Uint256) = uint256_sub(total_supply, amount)
@@ -186,19 +170,11 @@ func burn{
     # check allowance
     let (local allowance : Uint256) = _allowances.read(account, caller)
 
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
-
     let (not_caller) = is_not_zero(caller - account)
     let (is_auth) = _wards.read(caller)
 
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
-
     let (not_auth) = bitwise_not(is_auth)
     let (check_allowances) = bitwise_and(not_caller, not_auth)
-
-    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
 
     if check_allowances == 1:
       let MAX = Uint256(low=MAX_SPLIT, high=MAX_SPLIT)
@@ -258,11 +234,7 @@ func transfer{
     range_check_ptr,
     bitwise_ptr : BitwiseBuiltin*
   }(recipient : felt, amount : Uint256):
-    alloc_locals
-
-    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     let (caller) = get_caller_address()
-    local syscall_ptr : felt* = syscall_ptr
     _transfer(caller, recipient, amount)
 
     return ()
@@ -277,16 +249,11 @@ func transfer_from{
   }(sender : felt, recipient : felt, amount : Uint256):
     alloc_locals
 
-    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     let (local caller) = get_caller_address()
 
     _transfer(sender, recipient, amount)
 
     let (local allowance : Uint256) = _allowances.read(sender, caller)
-
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
-    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
 
     if caller != sender:
       let MAX = Uint256(low=MAX_SPLIT, high=MAX_SPLIT)
@@ -324,11 +291,9 @@ func approve{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(spender: felt, amount : Uint256):
-    alloc_locals
-
     let (caller) = get_caller_address()
-    local syscall_ptr : felt* = syscall_ptr
     _allowances.write(caller, spender, amount)
+
     return ()
 end
 
@@ -342,15 +307,11 @@ func increase_allowance{
     alloc_locals
 
     let (local caller) = get_caller_address()
-    local syscall_ptr : felt* = syscall_ptr
 
     let (allowance : Uint256) = _allowances.read(caller, spender)
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
     let (new_allowance: Uint256, carry : felt) = uint256_add(amount, allowance)
     # check overflow
     assert carry = 0
-    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     _allowances.write(caller, spender, new_allowance)
     return ()
 end
@@ -365,15 +326,11 @@ func decrease_allowance{
     alloc_locals
 
     let (local caller) = get_caller_address()
-    local syscall_ptr : felt* = syscall_ptr
 
     let (local allowance : Uint256) = _allowances.read(caller, spender)
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
     let (is_le) = uint256_le(amount, allowance)
     assert is_le = 1
     let (new_allowance : Uint256) = uint256_sub(allowance, amount)
-    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     _allowances.write(caller, spender, new_allowance)
     return ()
 end
@@ -405,8 +362,6 @@ func _transfer{
 
     # decrease sender balance
     let (local sender_balance : Uint256) = _balances.read(sender)
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
     let (is_le) = uint256_le(amount, sender_balance)
     assert is_le = 1
     let (local new_balance: Uint256) = uint256_sub(sender_balance, amount)
@@ -417,9 +372,6 @@ func _transfer{
     let (local sum : Uint256, carry : felt) = uint256_add(recipient_balance, amount)
     assert carry = 0
     _balances.write(recipient, sum)
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
-    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
 
     return ()
 end
