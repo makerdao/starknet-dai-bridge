@@ -60,7 +60,7 @@ Note that due to the unavailability of delagate call on StarkNet L2 Relay design
 In this section, we describe various risks caused by software bugs.
 
 #### Minting uncollateralized L2 DAI
-Bug allowing direct access to `mint` method on L2 `dai` or to `finalize_deposit` on `l2_dai_bridge` will result in a creation of uncollateralized L2 DAI. Withdrawal finalization to L1 is expected to take several hours on StarkNet. Maker governance with its 2 day delay won't be able to respond in time to coordinate preventive action.
+Bug allowing direct access to `mint` method on L2 `dai` or to `finalize_deposit` on `l2_dai_bridge` will result in a creation of uncollateralized L2 DAI. Withdrawal finalization to L1 is expected to take several hours on StarkNet. Maker governance with its 2 day delay won't be able to respond in time to coordinate preventive action if a malicious user mints uncollateralized DAI on L2 and withdraw DAI on L1.
 
 #### Getting access to `L1Escrow`
 Getting direct access to `L1Escrow` via incorectly assigned allowance or getting indirect access by having fake entry in L2toL1 message queue will allow to immediately drain L1 DAI from `L1Escrow`.
