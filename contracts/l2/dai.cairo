@@ -3,17 +3,28 @@
 
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
 from starkware.cairo.common.math import (assert_nn_le, assert_not_equal, assert_not_zero)
+from starkware.cairo.common.math_cmp import is_not_zero
 from starkware.starknet.common.syscalls import get_caller_address
-from starkware.cairo.common.uint256 import (Uint256, uint256_add, uint256_sub, uint256_eq, uint256_le)
+from starkware.cairo.common.bitwise import (bitwise_not, bitwise_and)
+from starkware.cairo.common.uint256 import (
+  Uint256,
+  uint256_add,
+  uint256_sub,
+  uint256_eq,
+  uint256_le,
+  uint256_check
+)
 
 const MAX_SPLIT = 2**128
 
-@storage_var
-func _wards(user : felt) -> (res : felt):
+@contract_interface
+namespace IThis:
+  func get_this() -> (res : felt):
+  end
 end
 
 @storage_var
-func _initialized() -> (res : felt):
+func _wards(user : felt) -> (res : felt):
 end
 
 @storage_var
@@ -26,6 +37,10 @@ end
 
 @storage_var
 func _allowances(owner : felt, spender : felt) -> (res : Uint256):
+end
+
+@storage_var
+func _this() -> (res : felt):
 end
 
 @view
@@ -73,18 +88,15 @@ func allowance{
     return (res)
 end
 
-@external
-func initialize{
+@constructor
+func constructor{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }():
-    let (initialized) = _initialized.read()
-    assert initialized = 0
-    _initialized.write(1)
-
-    let (caller) = get_caller_address()
+  }(caller : felt, get_this : felt):
     _wards.write(caller, 1)
+    let (this) = IThis.get_this(get_this)
+    _this.write(this)
 
     return ()
 end
@@ -102,7 +114,13 @@ func mint{
     auth()
     local syscall_ptr : felt* = syscall_ptr
 
+    # check valid recipient
     assert_not_equal(account, 0)
+    let (this) = _this.read()
+    assert_not_equal(account, this)
+
+    # check valid amount
+    uint256_check(amount)
 
     # update balance
     let (local balance : Uint256) = _balances.read(account)
@@ -140,6 +158,9 @@ func burn{
     local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     let (local caller) = get_caller_address()
 
+    # check valid amount
+    uint256_check(amount)
+
     # update balance
     let (local balance : Uint256) = _balances.read(account)
 
@@ -168,7 +189,18 @@ func burn{
     local syscall_ptr : felt* = syscall_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
 
-    if caller != account:
+    let (not_caller) = is_not_zero(caller - account)
+    let (is_auth) = _wards.read(caller)
+
+    local syscall_ptr : felt* = syscall_ptr
+    local pedersen_ptr : HashBuiltin* = pedersen_ptr
+
+    let (not_auth) = bitwise_not(is_auth)
+    let (check_allowances) = bitwise_and(not_caller, not_auth)
+
+    local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+
+    if check_allowances == 1:
       let MAX = Uint256(low=MAX_SPLIT, high=MAX_SPLIT)
       let (local eq) = uint256_eq(allowance, MAX)
       if eq == 0:
@@ -227,8 +259,6 @@ func transfer{
     bitwise_ptr : BitwiseBuiltin*
   }(recipient : felt, amount : Uint256):
     alloc_locals
-
-    assert_not_equal(recipient, 0)
 
     local bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     let (caller) = get_caller_address()
@@ -368,6 +398,10 @@ func _transfer{
     bitwise_ptr : BitwiseBuiltin*
   }(sender : felt, recipient : felt, amount : Uint256):
     alloc_locals
+
+    assert_not_equal(recipient, 0)
+    let (this) = _this.read()
+    assert_not_equal(recipient, this)
 
     # decrease sender balance
     let (local sender_balance : Uint256) = _balances.read(sender)

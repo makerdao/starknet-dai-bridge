@@ -11,7 +11,11 @@ MAX = (2**128, 2**128)
 L1_ADDRESS = 0x1
 
 L2_CONTRACTS_DIR = os.path.join(os.getcwd(), "contracts/l2")
-CONTRACT_FILE = os.path.join(L2_CONTRACTS_DIR, "dai.cairo")
+DAI_FILE = os.path.join(L2_CONTRACTS_DIR, "dai.cairo")
+ACCOUNT_FILE = os.path.join(L2_CONTRACTS_DIR, "account.cairo")
+REGISTRY_FILE = os.path.join(L2_CONTRACTS_DIR, "registry.cairo")
+GET_THIS_FILE = os.path.join(L2_CONTRACTS_DIR, "get_this.cairo")
+BRIDGE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_bridge.cairo")
 
 
 @pytest.fixture
@@ -20,19 +24,71 @@ async def starknet() -> Starknet:
 
 
 @pytest.fixture
-async def contract(starknet: Starknet) -> StarknetContract:
-    return await starknet.deploy(source=CONTRACT_FILE)
+async def user1(starknet: Starknet) -> StarknetContract:
+    return await starknet.deploy(source=ACCOUNT_FILE)
 
-dai_contract = None
-l2_bridge_contract = None
+
+@pytest.fixture
+async def user2(starknet: Starknet) -> StarknetContract:
+    return await starknet.deploy(source=ACCOUNT_FILE)
+
+
+@pytest.fixture
+async def user3(starknet: Starknet) -> StarknetContract:
+    return await starknet.deploy(source=ACCOUNT_FILE)
+
+
+@pytest.fixture
+async def auth_user(starknet: Starknet) -> StarknetContract:
+    return await starknet.deploy(source=ACCOUNT_FILE)
+
+
+@pytest.fixture
+async def registry(starknet: Starknet) -> StarknetContract:
+    return await starknet.deploy(source=REGISTRY_FILE)
+
+
+@pytest.fixture
+async def get_this(starknet: Starknet) -> StarknetContract:
+    return await starknet.deploy(source=GET_THIS_FILE)
+
+
+@pytest.fixture
+async def l2_bridge(
+    starknet: Starknet,
+    dai: StarknetContract,
+    auth_user: StarknetContract,
+    registry: StarknetContract,
+    get_this: StarknetContract,
+) -> StarknetContract:
+    return await starknet.deploy(
+        source=BRIDGE_FILE,
+        constructor_calldata=[
+            auth_user.contract_address,
+            dai.contract_address,
+            L1_ADDRESS,
+            registry.contract_address,
+            get_this.contract_address,
+        ],
+    )
+
+
+@pytest.fixture
+async def dai(
+    starknet: Starknet,
+    auth_user: StarknetContract,
+    get_this: StarknetContract,
+) -> StarknetContract:
+    return await starknet.deploy(
+            source=DAI_FILE,
+            constructor_calldata=[
+                auth_user.contract_address,
+                get_this.contract_address
+            ])
+
 
 burn = 0
 no_funds = 1
-
-auth_user = None
-user1 = None
-user2 = None
-user3 = None
 
 starknet_contract_address = 0x0
 
@@ -48,20 +104,29 @@ def to_uint(a):
     return a[0] + (a[1] << 128)
 
 
+@pytest.fixture
 async def check_balances(
-    expected_user1_balance,
-    expected_user2_balance,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+    user3: StarknetContract,
 ):
-    user1_balance = await dai_contract.balance_of(user1.contract_address).call()
-    user2_balance = await dai_contract.balance_of(user2.contract_address).call()
-    user3_balance = await dai_contract.balance_of(user3.contract_address).call()
-    total_supply = await dai_contract.total_supply().call()
+    async def internal_check_balances(
+        expected_user1_balance,
+        expected_user2_balance,
+    ):
+        user1_balance = await dai.balance_of(user1.contract_address).call()
+        user2_balance = await dai.balance_of(user2.contract_address).call()
+        user3_balance = await dai.balance_of(user3.contract_address).call()
+        total_supply = await dai.total_supply().call()
 
-    assert user1_balance.result == (to_split_uint(expected_user1_balance),)
-    assert user2_balance.result == (to_split_uint(expected_user2_balance),)
-    assert user3_balance.result == (to_split_uint(0),)
-    assert total_supply.result == (
-            to_split_uint(expected_user1_balance+expected_user2_balance),)
+        assert user1_balance.result == (to_split_uint(expected_user1_balance),)
+        assert user2_balance.result == (to_split_uint(expected_user2_balance),)
+        assert user3_balance.result == (to_split_uint(0),)
+        assert total_supply.result == (
+                to_split_uint(expected_user1_balance+expected_user2_balance),)
+
+    return internal_check_balances
 
 
 @pytest.fixture
@@ -72,52 +137,37 @@ def event_loop():
 @pytest.fixture(autouse=True)
 async def before_all(
     starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    l2_bridge: StarknetContract,
+    auth_user: StarknetContract,
 ):
-    global dai_contract
-    dai_contract = contract
-
-    ACCOUNT_FILE = os.path.join(L2_CONTRACTS_DIR, "account.cairo")
-    global auth_user
-    global user1
-    global user2
-    global user3
-    auth_user = await starknet.deploy(source=ACCOUNT_FILE)
-    user1 = await starknet.deploy(source=ACCOUNT_FILE)
-    user2 = await starknet.deploy(source=ACCOUNT_FILE)
-    user3 = await starknet.deploy(source=ACCOUNT_FILE)
-
-    global l2_bridge_contract
-    BRIDGE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_bridge.cairo")
-    l2_bridge_contract = await starknet.deploy(BRIDGE_FILE)
-
-    # TODO: replace starknet_contract_address with L1 bridge address
-    await contract.initialize().invoke(auth_user.contract_address)
-
-    await contract.rely(
-            l2_bridge_contract.contract_address,
+    await dai.rely(
+            l2_bridge.contract_address,
         ).invoke(auth_user.contract_address)
 
 
 @pytest.fixture(scope="function", autouse=True)
 async def before_each(
     starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    auth_user: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
 ):
-    # intialize two users with 100 DAI
     global user1_balance
     global user2_balance
 
-    await contract.mint(
+    # intialize two users with 100 DAI
+    await dai.mint(
             user1.contract_address,
             to_split_uint(100)).invoke(auth_user.contract_address)
-    await contract.mint(
+    await dai.mint(
             user2.contract_address,
             to_split_uint(100)).invoke(auth_user.contract_address)
 
-    balance = await contract.balance_of(user1.contract_address).call()
+    balance = await dai.balance_of(user1.contract_address).call()
     user1_balance = to_uint(balance.result[0])
-    balance = await contract.balance_of(user2.contract_address).call()
+    balance = await dai.balance_of(user2.contract_address).call()
     user2_balance = to_uint(balance.result[0])
 
 
@@ -126,31 +176,34 @@ async def before_each(
 #########
 @pytest.mark.asyncio
 async def test_total_supply(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
 ):
-    total_supply = await contract.total_supply().call()
+    total_supply = await dai.total_supply().call()
 
     assert total_supply.result == (to_split_uint(200),)
 
 
 @pytest.mark.asyncio
 async def test_balance_of(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
 ):
-    balance = await contract.balance_of(user1.contract_address).call()
+    balance = await dai.balance_of(user1.contract_address).call()
 
     assert balance.result == (to_split_uint(user1_balance),)
 
 
 @pytest.mark.asyncio
 async def test_transfer(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+    check_balances,
 ):
-    await contract.transfer(
-            user2.contract_address, to_split_uint(10)).invoke(user1.contract_address)
+    await dai.transfer(
+            user2.contract_address,
+            to_split_uint(10),
+        ).invoke(user1.contract_address)
 
     await check_balances(
         user1_balance-10,
@@ -159,23 +212,27 @@ async def test_transfer(
 
 @pytest.mark.asyncio
 async def test_transfer_to_yourself(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
 ):
-    await contract.transfer(
-            user1.contract_address, to_split_uint(10)).invoke(user1.contract_address)
-
-    await check_balances(user1_balance, user2_balance)
+    await dai.transfer(
+            user1.contract_address,
+            to_split_uint(10),
+        ).invoke(user1.contract_address)
 
 
 @pytest.mark.asyncio
 async def test_transfer_from(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+    user3: StarknetContract,
+    check_balances,
 ):
-    await contract.approve(
-            user3.contract_address, to_split_uint(10)).invoke(user1.contract_address)
-    await contract.transfer_from(
+    await dai.approve(
+            user3.contract_address,
+            to_split_uint(10)).invoke(user1.contract_address)
+    await dai.transfer_from(
         user1.contract_address,
         user2.contract_address,
         to_split_uint(10)).invoke(user3.contract_address)
@@ -187,152 +244,153 @@ async def test_transfer_from(
 
 @pytest.mark.asyncio
 async def test_transfer_to_yourself_using_transfer_from(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
 ):
-    await contract.transfer_from(
+    await dai.transfer_from(
         user1.contract_address,
         user1.contract_address,
         to_split_uint(10)).invoke(user1.contract_address)
 
-    await check_balances(user1_balance, user2_balance)
-
 
 @pytest.mark.asyncio
 async def test_should_not_transfer_beyond_balance(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
 ):
     with pytest.raises(StarkException):
-        await contract.transfer(
+        await dai.transfer(
                 user2.contract_address,
                 to_split_uint(user1_balance+1),
             ).invoke(user1.contract_address)
 
-    await check_balances(user1_balance, user2_balance)
-
 
 @pytest.mark.asyncio
-async def test_should_not_transfer_to_zero_address(
-    starknet: Starknet,
-    contract: StarknetContract,
-):
+async def test_should_not_transfer_to_zero_address(dai: StarknetContract):
     with pytest.raises(StarkException):
-        await contract.transfer(burn, to_split_uint(10)).invoke()
-
-    await check_balances(user1_balance, user2_balance)
+        await dai.transfer(burn, to_split_uint(10)).invoke()
 
 
 @pytest.mark.asyncio
-async def test_should_not_transfer_to_dai_address(
-    starknet: Starknet,
-    contract: StarknetContract,
-):
-    '''
+async def test_should_not_transfer_to_dai_address(dai: StarknetContract):
     with pytest.raises(StarkException):
-        await contract.transfer(contract.contract_address, to_split_uint(10)).invoke()
-
-    await check_balances(user1_balance, user2_balance)
-    '''
-    pass
+        await dai.transfer(dai.contract_address, to_split_uint(10)).invoke()
 
 
 @pytest.mark.asyncio
-async def test_mint(starknet: Starknet, contract: StarknetContract):
-    await contract.mint(
-            user1.contract_address, to_split_uint(10)).invoke(auth_user.contract_address)
+async def test_mint(
+    dai: StarknetContract,
+    auth_user: StarknetContract,
+    user1: StarknetContract,
+    check_balances,
+):
+    await dai.mint(
+            user1.contract_address,
+            to_split_uint(10)).invoke(auth_user.contract_address)
 
     await check_balances(user1_balance+10, user2_balance)
 
 
 @pytest.mark.asyncio
 async def test_should_not_allow_minting_to_zero_address(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    auth_user: StarknetContract,
 ):
     with pytest.raises(StarkException):
-        await contract.mint(burn, to_split_uint(10)).invoke(auth_user.contract_address)
-
-    await check_balances(user1_balance, user2_balance)
+        await dai.mint(
+                burn, to_split_uint(10)).invoke(auth_user.contract_address)
 
 
 @pytest.mark.asyncio
 async def test_should_not_allow_minting_to_dai_address(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    auth_user: StarknetContract,
 ):
-    '''
     with pytest.raises(StarkException):
-        await contract.mint(
-                contract.contract_address,
+        await dai.mint(
+                dai.contract_address,
                 to_split_uint(10),
             ).invoke(auth_user.contract_address)
-
-    await check_balances(user1_balance, user2_balance)
-    '''
-    pass
 
 
 @pytest.mark.asyncio
 async def test_should_not_allow_minting_to_address_beyond_max(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    auth_user: StarknetContract,
+    user3: StarknetContract,
 ):
-    # not implemented
-    pass
+    with pytest.raises(StarkException):
+        await dai.mint(
+                user3.contract_address,
+                to_split_uint(2**256)).invoke(auth_user.contract_address)
 
 
 @pytest.mark.asyncio
-async def test_burn(starknet: Starknet, contract: StarknetContract):
-    await contract.burn(
-            user1.contract_address, to_split_uint(10)).invoke(user1.contract_address)
+async def test_burn(
+    dai: StarknetContract,
+    user1: StarknetContract,
+    check_balances,
+):
+    await dai.burn(
+        user1.contract_address,
+        to_split_uint(10),
+    ).invoke(user1.contract_address)
 
     await check_balances(user1_balance-10, user2_balance)
 
 
 @pytest.mark.asyncio
 async def test_should_not_burn_beyond_balance(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
 ):
     with pytest.raises(StarkException):
-        await contract.burn(
+        await dai.burn(
                 user1.contract_address,
                 to_split_uint(user1_balance+1),
             ).invoke(user1.contract_address)
 
-    await check_balances(user1_balance, user2_balance)
-
 
 @pytest.mark.asyncio
 async def test_should_not_burn_other(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
 ):
     with pytest.raises(StarkException):
-        await contract.burn(
+        await dai.burn(
                 user1.contract_address,
                 to_split_uint(10),
             ).invoke(user2.contract_address)
 
-    await check_balances(user1_balance, user2_balance)
-
 
 @pytest.mark.asyncio
 async def test_deployer_can_burn_other(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    auth_user: StarknetContract,
+    user1: StarknetContract,
+    check_balances,
 ):
-    # not implemented
-    pass
+    await dai.burn(
+        user1.contract_address,
+        to_split_uint(10),
+    ).invoke(auth_user.contract_address)
+
+    await check_balances(user1_balance-10, user2_balance)
 
 
 @pytest.mark.asyncio
-async def test_approve(starknet: Starknet, contract: StarknetContract):
-    await contract.approve(
-            user2.contract_address, to_split_uint(10)).invoke(user1.contract_address)
+async def test_approve(
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+):
+    await dai.approve(
+            user2.contract_address,
+            to_split_uint(10)).invoke(user1.contract_address)
 
-    allowance = await contract.allowance(
+    allowance = await dai.allowance(
         user1.contract_address,
         user2.contract_address).call()
 
@@ -341,14 +399,18 @@ async def test_approve(starknet: Starknet, contract: StarknetContract):
 
 @pytest.mark.asyncio
 async def test_can_burn_other_if_approved(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+    check_balances,
 ):
-    await contract.approve(
-            user2.contract_address, to_split_uint(10)).invoke(user1.contract_address)
+    await dai.approve(
+            user2.contract_address,
+            to_split_uint(10)).invoke(user1.contract_address)
 
-    await contract.burn(
-            user1.contract_address, to_split_uint(10)).invoke(user2.contract_address)
+    await dai.burn(
+            user1.contract_address,
+            to_split_uint(10)).invoke(user2.contract_address)
 
     await check_balances(user1_balance-10, user2_balance)
 
@@ -356,13 +418,17 @@ async def test_can_burn_other_if_approved(
 # ALLOWANCE
 @pytest.mark.asyncio
 async def test_transfer_using_transfer_from_and_allowance(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+    user3: StarknetContract,
+    check_balances,
 ):
-    await contract.approve(
-            user3.contract_address, to_split_uint(10)).invoke(user1.contract_address)
+    await dai.approve(
+            user3.contract_address,
+            to_split_uint(10)).invoke(user1.contract_address)
 
-    await contract.transfer_from(
+    await dai.transfer_from(
             user1.contract_address,
             user2.contract_address,
             to_split_uint(10),
@@ -373,72 +439,80 @@ async def test_transfer_using_transfer_from_and_allowance(
 
 @pytest.mark.asyncio
 async def test_should_not_transfer_beyond_allowance(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+    user3: StarknetContract,
 ):
-    await contract.approve(
-            user3.contract_address, to_split_uint(10)).invoke(user1.contract_address)
+    await dai.approve(
+            user3.contract_address,
+            to_split_uint(10)).invoke(user1.contract_address)
 
-    allowance = await contract.allowance(
+    allowance = await dai.allowance(
         user1.contract_address,
         user3.contract_address).call()
 
     with pytest.raises(StarkException):
-        await contract.transfer_from(
+        await dai.transfer_from(
             user1.contract_address,
             user2.contract_address,
             to_split_uint(to_uint(allowance.result[0])+1),
         ).invoke(user3.contract_address)
 
-    await check_balances(user1_balance, user2_balance)
-
 
 @pytest.mark.asyncio
 async def test_burn_using_burn_and_allowance(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+    check_balances,
 ):
-    await contract.approve(
-            user2.contract_address, to_split_uint(10)).invoke(user1.contract_address)
+    await dai.approve(
+            user2.contract_address,
+            to_split_uint(10)).invoke(user1.contract_address)
 
-    await contract.burn(
-            user1.contract_address, to_split_uint(10)).invoke(user2.contract_address)
+    await dai.burn(
+            user1.contract_address,
+            to_split_uint(10)).invoke(user2.contract_address)
 
     await check_balances(user1_balance-10, user2_balance)
 
 
 @pytest.mark.asyncio
 async def test_should_not_burn_beyond_allowance(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
 ):
-    await contract.approve(
-            user2.contract_address, to_split_uint(10)).invoke(user1.contract_address)
+    await dai.approve(
+            user2.contract_address,
+            to_split_uint(10)).invoke(user1.contract_address)
 
-    allowance = await contract.allowance(
+    allowance = await dai.allowance(
         user1.contract_address,
         user2.contract_address).call()
 
     with pytest.raises(StarkException):
-        await contract.burn(
+        await dai.burn(
                 user1.contract_address,
                 to_split_uint(to_uint(allowance.result[0])+1),
             ).invoke(user2.contract_address)
 
-    await check_balances(user1_balance, user2_balance)
-
 
 @pytest.mark.asyncio
 async def test_increase_allowance(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
 ):
-    await contract.approve(
-            user2.contract_address, to_split_uint(10)).invoke(user1.contract_address)
-    await contract.increase_allowance(
-            user2.contract_address, to_split_uint(10)).invoke(user1.contract_address)
+    await dai.approve(
+            user2.contract_address,
+            to_split_uint(10)).invoke(user1.contract_address)
+    await dai.increase_allowance(
+            user2.contract_address,
+            to_split_uint(10)).invoke(user1.contract_address)
 
-    allowance = await contract.allowance(
+    allowance = await dai.allowance(
         user1.contract_address,
         user2.contract_address).call()
     assert allowance.result == (to_split_uint(20),)
@@ -446,27 +520,32 @@ async def test_increase_allowance(
 
 @pytest.mark.asyncio
 async def test_should_not_increase_allowance_beyond_max(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
 ):
-    await contract.approve(
-            user2.contract_address, to_split_uint(10)).invoke(user1.contract_address)
+    await dai.approve(
+            user2.contract_address,
+            to_split_uint(10)).invoke(user1.contract_address)
     with pytest.raises(StarkException):
-        await contract.increase_allowance(
+        await dai.increase_allowance(
                 user2.contract_address, MAX).invoke(user1.contract_address)
 
 
 @pytest.mark.asyncio
 async def test_decrease_allowance(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
 ):
-    await contract.approve(
-            user2.contract_address, to_split_uint(10)).invoke(user1.contract_address)
-    await contract.decrease_allowance(
-            user2.contract_address, to_split_uint(1)).invoke(user1.contract_address)
+    await dai.approve(
+            user2.contract_address,
+            to_split_uint(10)).invoke(user1.contract_address)
+    await dai.decrease_allowance(
+            user2.contract_address,
+            to_split_uint(1)).invoke(user1.contract_address)
 
-    allowance = await contract.allowance(
+    allowance = await dai.allowance(
         user1.contract_address,
         user2.contract_address).call()
     assert allowance.result == (to_split_uint(9),)
@@ -474,18 +553,20 @@ async def test_decrease_allowance(
 
 @pytest.mark.asyncio
 async def test_should_not_decrease_allowance_beyond_allowance(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
 ):
-    await contract.approve(
-            user2.contract_address, to_split_uint(10)).invoke(user1.contract_address)
+    await dai.approve(
+            user2.contract_address,
+            to_split_uint(10)).invoke(user1.contract_address)
 
-    allowance = await contract.allowance(
+    allowance = await dai.allowance(
         user1.contract_address,
         user2.contract_address).call()
 
     with pytest.raises(StarkException):
-        await contract.decrease_allowance(
+        await dai.decrease_allowance(
             user2.contract_address,
             to_split_uint(to_uint(allowance.result[0]) + 1),
         ).invoke(user1.contract_address)
@@ -494,49 +575,55 @@ async def test_should_not_decrease_allowance_beyond_allowance(
 # MAXIMUM ALLOWANCE
 @pytest.mark.asyncio
 async def test_does_not_decrease_allowance_using_transfer_from(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+    user3: StarknetContract,
+    check_balances,
 ):
-    await contract.approve(
+    await dai.approve(
             user3.contract_address, MAX).invoke(user1.contract_address)
-    await contract.transfer_from(
+    await dai.transfer_from(
             user1.contract_address,
             user2.contract_address,
             to_split_uint(10),
         ).invoke(user3.contract_address)
 
-    allowance = await contract.allowance(
+    allowance = await dai.allowance(
         user1.contract_address,
         user3.contract_address).call()
     assert allowance.result == (MAX,)
+    await check_balances(user1_balance-10, user2_balance+10)
 
 
 @pytest.mark.asyncio
 async def test_does_not_decrease_allowance_using_burn(
-    starknet: Starknet,
-    contract: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user3: StarknetContract,
+    check_balances,
 ):
-    await contract.approve(
+    await dai.approve(
             user3.contract_address, MAX).invoke(user1.contract_address)
-    await contract.burn(
-            user1.contract_address, to_split_uint(10)).invoke(user3.contract_address)
+    await dai.burn(
+            user1.contract_address,
+            to_split_uint(10)).invoke(user3.contract_address)
 
-    allowance = await contract.allowance(
+    allowance = await dai.allowance(
         user1.contract_address,
         user3.contract_address).call()
     assert allowance.result == (MAX,)
+    await check_balances(user1_balance-10, user2_balance)
+
 
 @pytest.mark.asyncio
-async def test_has_metadata(
-    starknet: Starknet,
-    contract: StarknetContract,
-):
+async def test_has_metadata(dai: StarknetContract):
 
-    name = await contract.name().call()
+    name = await dai.name().call()
     assert name.result == (1386921519817957956156419516361070,)
 
-    symbol = await contract.symbol().call()
+    symbol = await dai.symbol().call()
     assert symbol.result == (4473161,)
 
-    decimals = await contract.decimals().call()
+    decimals = await dai.decimals().call()
     assert decimals.result == (18,)

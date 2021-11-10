@@ -26,6 +26,12 @@ namespace IDAI:
 end
 
 @contract_interface
+namespace IThis:
+  func get_this() -> (res : felt):
+  end
+end
+
+@contract_interface
 namespace IRegistry:
     func l1_address(l2_address : felt) -> (l1_address : felt):
     end
@@ -45,10 +51,6 @@ end
 
 @storage_var
 func _bridge() -> (res : felt):
-end
-
-@storage_var
-func _initialized() -> (res : felt):
 end
 
 @storage_var
@@ -103,23 +105,26 @@ func close{
     return ()
 end
 
-@external
-func initialize{
+@constructor
+func constructor{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(dai : felt, bridge : felt, registry : felt, this : felt):
-    let (initialized) = _initialized.read()
-    assert initialized = 0
-    _initialized.write(1)
-
-    let (caller) = get_caller_address()
+  }(
+    caller : felt,
+    dai : felt,
+    bridge : felt,
+    registry : felt,
+    get_this : felt
+  ):
     _wards.write(caller, 1)
 
     _is_open.write(1)
     _dai.write(dai)
     _bridge.write(bridge)
     _registry.write(registry)
+
+    let (this) = IThis.get_this(get_this)
     _this.write(this)
 
     return ()
@@ -146,17 +151,20 @@ func withdraw{
     return ()
 end
 
-# TODO: external is temporary
-@external
 @l1_handler
 func finalize_deposit{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(sender : felt, dest : felt, amount_low : felt, amount_high : felt):
+  }(
+    from_address : felt,
+    dest : felt,
+    amount_low : felt,
+    amount_high : felt
+  ):
     # check l1 message sender
     let (bridge) = _bridge.read()
-    assert sender = bridge
+    assert from_address = bridge
 
     let amount = Uint256(low=amount_low, high=amount_high)
     let (dai) = _dai.read()
@@ -165,25 +173,23 @@ func finalize_deposit{
     return ()
 end
 
-# TODO: external is temporary
-@external
 @l1_handler
 func finalize_force_withdrawal{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(
-    sender : felt,
+    from_address : felt,
     source : felt,
     dest : felt,
     amount_low : felt,
-    amount_high : felt,
+    amount_high : felt
   ):
     alloc_locals
 
     # check l1 message sender
     let (bridge) = _bridge.read()
-    assert sender = bridge
+    assert from_address = bridge
 
     # check l1 recipent address
     let (registry) = _registry.read()

@@ -29,20 +29,12 @@ end
 func _bridge() -> (res : felt):
 end
 
-@storage_var
-func _initialized() -> (res : felt):
-end
-
-@external
-func initialize{
+@constructor
+func constructor{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(l1_governance_relay : felt, dai : felt, bridge : felt):
-    let (initialized) = _initialized.read()
-    assert initialized = 0
-    _initialized.write(1)
-
     _l1_governance_relay.write(l1_governance_relay)
     _dai.write(dai)
     _bridge.write(bridge)
