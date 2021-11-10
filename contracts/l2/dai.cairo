@@ -108,8 +108,6 @@ func mint{
     range_check_ptr,
     bitwise_ptr : BitwiseBuiltin*
   }(account : felt, amount : Uint256):
-    alloc_locals
-
     auth()
 
     # check valid recipient
@@ -121,15 +119,15 @@ func mint{
     uint256_check(amount)
 
     # update balance
-    let (local balance : Uint256) = _balances.read(account)
-    let (local new_balance : Uint256, balance_carry : felt) = uint256_add(balance, amount)
+    let (balance : Uint256) = _balances.read(account)
+    let (new_balance : Uint256, balance_carry : felt) = uint256_add(balance, amount)
     assert balance_carry = 0
     _balances.write(account, new_balance)
 
     # update total supply
-    let (local total : Uint256) = _total_supply.read()
+    let (total : Uint256) = _total_supply.read()
 
-    let (local new_total : Uint256, total_carry : felt) = uint256_add(total, amount)
+    let (new_total : Uint256, total_carry : felt) = uint256_add(total, amount)
     assert total_carry = 0
 
     _total_supply.write(new_total)
