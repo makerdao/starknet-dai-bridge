@@ -15,8 +15,8 @@ task("account:get", "Get L2 account information")
     console.log(`Calling on ${NETWORK}`);
 
     const _name = name || "auth";
-    const accountAddress = getAddress(`Account-${_name}`, NETWORK);
-    console.log(`Account-${_name} L2 address:`, accountAddress);
+    const accountAddress = getAddress(`account-${_name}`, NETWORK);
+    console.log(`account-${_name} L2 address:`, accountAddress);
   });
 
 task("account:create", "Create new L2 account")
@@ -29,9 +29,9 @@ task("account:create", "Create new L2 account")
     }
     console.log(`Deploying on ${NETWORK}`);
 
-    console.log("Deploying Account");
-    const AccountFactory = await hre.starknet.getContractFactory("Account");
-    const Account = await AccountFactory.deploy();
-    save(`Account-${name}`, Account, NETWORK);
-    console.log(`Account-${name} L2 address:`, Account.address);
+    console.log("Deploying account");
+    const accountFactory = await hre.starknet.getContractFactory("account");
+    const account = await accountFactory.deploy();
+    save(`account-${name}`, account, NETWORK);
+    console.log(`account-${name} L2 address:`, account.address);
   });
