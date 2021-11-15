@@ -66,6 +66,7 @@ task("call:l1", "Call an L1 contract")
   .addParam("func", "Function to call")
   .addOptionalParam("calldata", "Inputs to the function")
   .setAction(async ({ contract, func, calldata }, hre) => {
+    const contractAbiName = contract === "DAI" ? "DAIMock" : contract;
     const [signer] = await hre.ethers.getSigners();
     if (signer.provider) {
       const network = await signer.provider.getNetwork();
@@ -75,7 +76,7 @@ task("call:l1", "Call an L1 contract")
 
     const address = getAddress(contract, NETWORK);
     const contractFactory = (await hre.ethers.getContractFactory(
-      contract
+      contractAbiName
     )) as any;
     const contractInstance = await contractFactory.attach(address);
 
