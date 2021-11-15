@@ -1,6 +1,11 @@
 import { task } from "hardhat/config";
 
-import { callFrom, getAddress, parseCalldataL1, parseCalldataL2 } from "./utils";
+import {
+  callFrom,
+  getAddress,
+  parseCalldataL1,
+  parseCalldataL2,
+} from "./utils";
 
 let NETWORK: string;
 

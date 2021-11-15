@@ -26,10 +26,7 @@ export function getAccounts(network: string) {
     });
 }
 
-export function parseCalldataL1(
-  calldata: string,
-  network: string,
-) {
+export function parseCalldataL1(calldata: string, network: string) {
   const _calldata = calldata ? calldata.split(",") : [];
   const accounts = getAccounts(network);
   return _calldata.map((input: string) => {
@@ -47,10 +44,12 @@ export function parseCalldataL1(
 
 function getInputAbi(contract: string, func: string) {
   const abi = JSON.parse(
-    fs.readFileSync(
-    `./starknet-artifacts/contracts/l2/${contract}.cairo/${contract}.json`
-    ).toString()
-  )['abi'];
+    fs
+      .readFileSync(
+        `./starknet-artifacts/contracts/l2/${contract}.cairo/${contract}.json`
+      )
+      .toString()
+  )["abi"];
   let res: any[] = [];
   abi.forEach((_: any) => {
     if (_.name === func) {
@@ -64,7 +63,7 @@ export function parseCalldataL2(
   calldata: string,
   network: string,
   contract: any,
-  func: string,
+  func: string
 ) {
   const _calldata = calldata ? calldata.split(",") : [];
   const accounts = getAccounts(network);
@@ -75,18 +74,20 @@ export function parseCalldataL2(
     const inputName: string = inputs[i].name;
     const inputType: string = inputs[i].type;
     if (accounts.includes(input)) {
-      res[inputName] = BigInt(getAddress(`account-${input}`, network)).toString();
+      res[inputName] = BigInt(
+        getAddress(`account-${input}`, network)
+      ).toString();
     } else if (input === "l2_dai_bridge") {
       res[inputName] = BigInt(getAddress("l2_dai_bridge", network)).toString();
     } else if (input === "L1DAIBridge") {
       res[inputName] = BigInt(getAddress("L1DAIBridge", network)).toString();
-    } else if (inputType === 'Uint256') {
-      res[inputName] = [input, _calldata[i+1]];
+    } else if (inputType === "Uint256") {
+      res[inputName] = [input, _calldata[i + 1]];
       i++;
     } else {
       res[inputName] = input;
     }
-  };
+  }
   return res;
 }
 
@@ -123,7 +124,7 @@ export async function callFrom(
 function flatten(calldata: any): any[] {
   const res: any = [];
   Object.values(calldata).forEach((data: any) => {
-    if (typeof data === 'object') {
+    if (typeof data === "object") {
       res.push(...data);
     } else {
       res.push(data);
