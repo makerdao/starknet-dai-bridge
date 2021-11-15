@@ -22,7 +22,7 @@ async function main(): Promise<void> {
   if (!fs.existsSync(`./deployments/${NETWORK}`)) {
     fs.mkdirSync(`./deployments/${NETWORK}`, { recursive: true });
   }
-  save("DAI", { address: L1_GOERLI_DAI_ADDRESS }, NETWORK);
+  save("DAIMock", { address: L1_GOERLI_DAI_ADDRESS }, NETWORK);
 
   const account = await deploy(hre, "account", 2, {}, "account-auth");
   const get_this = await deploy(hre, "get_this", 2, {});
