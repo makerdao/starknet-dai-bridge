@@ -76,10 +76,9 @@ export async function callFrom(
   caller: StarknetContract
 ) {
   const selector = getSelectorFromName(call);
-  return caller.invoke("execute", [
-    contract.address,
+  return caller.invoke("execute", {
+    to: BigInt(contract.address).toString(),
     selector,
-    calldata.length,
-    ...calldata,
-  ]);
+    calldata,
+  });
 }
