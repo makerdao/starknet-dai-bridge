@@ -107,7 +107,7 @@ const config: HardhatUserConfig = {
     ],
   },
   cairo: {
-    version: "0.5.1",
+    version: "0.5.2",
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
