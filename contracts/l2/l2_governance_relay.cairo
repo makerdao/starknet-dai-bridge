@@ -17,6 +17,12 @@ namespace IAuth:
     end
 end
 
+@contract_interface
+namespace ISpell:
+  func execute() -> ():
+  end
+end
+
 @storage_var
 func _l1_governance_relay() -> (res : felt):
 end
@@ -59,8 +65,7 @@ func relay{
     IAuth.rely(dai, target)
     IAuth.rely(bridge, target)
 
-    let (calldata) = alloc()
-    call_contract(target, EXECUTE_SELECTOR, 0, calldata)
+    ISpell.execute(target)
 
     let (dai) = _dai.read()
     let (bridge) = _bridge.read()
