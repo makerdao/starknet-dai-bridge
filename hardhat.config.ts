@@ -1,10 +1,9 @@
-import "@nomiclabs/hardhat-waffle";
 import "hardhat-gas-reporter";
-import "solidity-coverage";
-import "@shardlabs/starknet-hardhat-plugin";
+import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
-import "./scripts/deploy";
+import "solidity-coverage";
+import "@shardlabs/starknet-hardhat-plugin";
 import "./scripts/interact";
 import "./scripts/account";
 
@@ -68,7 +67,7 @@ const config: HardhatUserConfig = {
     sources: "./contracts",
     tests: "./test",
     starknetSources: "./contracts",
-    starknetArtifacts: "./artifacts",
+    starknetArtifacts: "./starknet-artifacts",
   },
   solidity: {
     compilers: [

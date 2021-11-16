@@ -12,4 +12,5 @@ node_modules
 #Hardhat files
 cache
 artifacts
+starknet-artifacts
 deployments/localhost

@@ -26,32 +26,69 @@ export function getAccounts(network: string) {
     });
 }
 
-export function parseCalldata(
-  calldata: string,
-  layer: number,
-  network: string
-) {
+export function parseCalldataL1(calldata: string, network: string) {
   const _calldata = calldata ? calldata.split(",") : [];
   const accounts = getAccounts(network);
   return _calldata.map((input: string) => {
     if (accounts.includes(input)) {
       return BigInt(getAddress(`account-${input}`, network)).toString();
     } else if (input === "l2_dai_bridge") {
-      if (layer === 1) {
-        return getAddress("l2_dai_bridge", network);
-      } else {
-        return BigInt(getAddress("l2_dai_bridge", network)).toString();
-      }
+      return getAddress("l2_dai_bridge", network);
     } else if (input === "L1DAIBridge") {
-      if (layer === 1) {
-        return getAddress("L1DAIBridge", network);
-      } else {
-        return BigInt(getAddress("L1DAIBridge", network)).toString();
-      }
+      return getAddress("L1DAIBridge", network);
     } else {
       return input;
     }
   });
+}
+
+function getInputAbi(contract: string, func: string) {
+  const abi = JSON.parse(
+    fs
+      .readFileSync(
+        `./starknet-artifacts/contracts/l2/${contract}.cairo/${contract}.json`
+      )
+      .toString()
+  )["abi"];
+  let res: any[] = [];
+  abi.forEach((_: any) => {
+    if (_.name === func) {
+      res = _.inputs;
+    }
+  });
+  return res;
+}
+
+export function parseCalldataL2(
+  calldata: string,
+  network: string,
+  contract: any,
+  func: string
+) {
+  const _calldata = calldata ? calldata.split(",") : [];
+  const accounts = getAccounts(network);
+  const res: Record<string, any> = {};
+  const inputs = getInputAbi(contract, func);
+  for (let i = 0; i < _calldata.length; i++) {
+    const input = _calldata[i];
+    const inputName: string = inputs[i].name;
+    const inputType: string = inputs[i].type;
+    if (accounts.includes(input)) {
+      res[inputName] = BigInt(
+        getAddress(`account-${input}`, network)
+      ).toString();
+    } else if (input === "l2_dai_bridge") {
+      res[inputName] = BigInt(getAddress("l2_dai_bridge", network)).toString();
+    } else if (input === "L1DAIBridge") {
+      res[inputName] = BigInt(getAddress("L1DAIBridge", network)).toString();
+    } else if (inputType === "Uint256") {
+      res[inputName] = [input, _calldata[i + 1]];
+      i++;
+    } else {
+      res[inputName] = input;
+    }
+  }
+  return res;
 }
 
 export function save(name: string, contract: any, network: string) {
@@ -72,14 +109,26 @@ export function getSelectorFromName(name: string) {
 export async function callFrom(
   contract: StarknetContract,
   call: string,
-  calldata: any[],
+  calldata: any[] | any,
   caller: StarknetContract
 ) {
   const selector = getSelectorFromName(call);
-  return caller.invoke("execute", [
-    contract.address,
+  const _calldata = flatten(calldata);
+  return caller.invoke("execute", {
+    to: BigInt(contract.address).toString(),
     selector,
-    calldata.length,
-    ...calldata,
-  ]);
+    calldata: _calldata,
+  });
+}
+
+function flatten(calldata: any): any[] {
+  const res: any = [];
+  Object.values(calldata).forEach((data: any) => {
+    if (typeof data === "object") {
+      res.push(...data);
+    } else {
+      res.push(data);
+    }
+  });
+  return res;
 }
