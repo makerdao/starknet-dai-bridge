@@ -7,7 +7,6 @@ from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
 
 
-MAX = 2**120
 L1_ADDRESS = 0x1
 L1_BRIDGE_ADDRESS = 0x1
 FINALIZE_WITHDRAW = 0
@@ -147,13 +146,13 @@ async def before_all(
     user2: StarknetContract,
     user3: StarknetContract,
 ):
-    await registry.register(
+    await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(auth_user.contract_address)
-    await registry.register(
+    await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(user1.contract_address)
-    await registry.register(
+    await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(user2.contract_address)
-    await registry.register(
+    await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(user3.contract_address)
 
     print("-------------------------------------------")

@@ -31,7 +31,7 @@ async function main(): Promise<void> {
     get_this: BigInt(get_this.address).toString(),
   });
   const registry = await deploy(hre, "registry", 2, {});
-  await callFrom(registry, "register", [signer.address], account);
+  await callFrom(registry, "set_L1_address", [signer.address], account);
   const l1Escrow = await deploy(hre, "L1Escrow", 1, []);
 
   const futureL1DAIBridgeAddress = await getAddressOfNextDeployedContract(
