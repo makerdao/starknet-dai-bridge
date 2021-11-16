@@ -7,7 +7,6 @@ from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
 
 
-MAX = 2**120
 L1_ADDRESS = 0x1
 L1_BRIDGE_ADDRESS = 0x1
 FINALIZE_WITHDRAW = 0

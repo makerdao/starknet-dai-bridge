@@ -4,10 +4,11 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import assert_nn_le, assert_not_equal
 from starkware.starknet.common.syscalls import get_caller_address
+from starkware.cairo.common.uint256 import Uint256
 
 @contract_interface
 namespace IDAI:
-  func mint(to_address: felt, amount: felt) -> ():
+  func mint(account: felt, amount: Uint256) -> ():
   end
 end
 
@@ -19,21 +20,14 @@ end
 func _user() -> (res : felt):
 end
 
-@storage_var
-func _initialized() -> (res : felt):
-end
-
-@external
-func initialize{
+@constructor
+func constructor{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(dai : felt, user : felt):
-    let (initialized) = _initialized.read()
-    assert initialized = 0
     _dai.write(dai)
     _user.write(user)
-    _initialized.write(1)
 
     return ()
 end
@@ -46,7 +40,8 @@ func execute{
   }():
     let (dai) = _dai.read()
     let (user) = _user.read()
-    IDAI.mint(contract_address=dai, to_address=user, amount=10)
+    let amount = Uint256(low=10, high=0)
+    IDAI.mint(contract_address=dai, account=user, amount=amount)
 
     return ()
 end

@@ -42,8 +42,6 @@ func constructor{
     return ()
 end
 
-# TODO: external is temporary
-@external
 @l1_handler
 func relay{
     syscall_ptr : felt*,
