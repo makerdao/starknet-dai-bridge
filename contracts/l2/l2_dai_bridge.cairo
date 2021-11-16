@@ -33,7 +33,7 @@ end
 
 @contract_interface
 namespace IRegistry:
-    func l1_address(l2_address : felt) -> (l1_address : felt):
+    func get_L1_address(l2_address : felt) -> (res : felt):
     end
 end
 
@@ -191,7 +191,7 @@ func finalize_force_withdrawal{
 
     # check l1 recipent address
     let (registry) = _registry.read()
-    let (_dest) = IRegistry.l1_address(registry, source)
+    let (_dest) = IRegistry.get_L1_address(registry, source)
     if _dest != dest:
         return ()
     end

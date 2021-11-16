@@ -146,13 +146,13 @@ async def before_all(
     user2: StarknetContract,
     user3: StarknetContract,
 ):
-    await registry.register(
+    await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(auth_user.contract_address)
-    await registry.register(
+    await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(user1.contract_address)
-    await registry.register(
+    await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(user2.contract_address)
-    await registry.register(
+    await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(user3.contract_address)
 
     print("-------------------------------------------")

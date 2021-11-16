@@ -9,7 +9,7 @@ func _l1_addresses(l2_user : felt) -> (l1_user : felt):
 end
 
 @external
-func register{
+func set_L1_address{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
@@ -22,7 +22,7 @@ func register{
 end
 
 @view
-func l1_address{
+func get_L1_address{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
