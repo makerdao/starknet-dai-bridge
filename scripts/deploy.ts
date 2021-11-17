@@ -1,44 +1,43 @@
 /**
  * Full goerli deploy including any permissions that need to be set.
  */
-import { getAddressOfNextDeployedContract } from "@makerdao/hardhat-utils";
+import {getAddressOfNextDeployedContract, getRequiredEnv} from "@makerdao/hardhat-utils";
+import assert from "assert";
 import fs from "fs";
 import hre from "hardhat";
 
 import { callFrom, getAddress, save } from "./utils";
 
-const L1_GOERLI_DAI_ADDRESS = "0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844";
-const L1_GOERLI_STARKNET_ADDRESS = "0x5e6229F2D4d977d20A50219E521dE6Dd694d45cc";
-let NETWORK: string;
-
 async function main(): Promise<void> {
   const [signer] = await hre.ethers.getSigners();
-  if (signer.provider) {
-    const network = await signer.provider.getNetwork();
-    NETWORK = network.name;
-  }
+  const NETWORK = await getL1NetworkName()
+
+  const L1_DAI_ADDRESS = getRequiredEnv(`L1_${NETWORK.toUpperCase()}_DAI_ADDRESS`)
+  const L1_STARKNET_ADDRESS = getRequiredEnv(`L1_${NETWORK.toUpperCase()}_STARKNET_ADDRESS`)
+
   console.log(`Deploying on ${NETWORK}`);
 
   if (!fs.existsSync(`./deployments/${NETWORK}`)) {
     fs.mkdirSync(`./deployments/${NETWORK}`, { recursive: true });
   }
-  save("DAI", { address: L1_GOERLI_DAI_ADDRESS }, NETWORK);
+  save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
 
-  const account = await deploy(hre, "account", 2, {}, "account-auth");
-  const get_this = await deploy(hre, "get_this", 2, {});
-  const l2DAI = await deploy(hre, "dai", 2, {
+  const account = await deployL2("account", {}, "account-auth");
+  const get_this = await deployL2("get_this");
+  const l2DAI = await deployL2("dai", {
     caller: BigInt(account.address).toString(),
     get_this: BigInt(get_this.address).toString(),
   });
-  const registry = await deploy(hre, "registry", 2, {});
+  //TODO: don't deploy if on mainnet?
+  const registry = await deployL2("registry");
   await callFrom(registry, "set_L1_address", [signer.address], account);
-  const l1Escrow = await deploy(hre, "L1Escrow", 1, []);
+  const l1Escrow = await deployL1("L1Escrow");
 
   const futureL1DAIBridgeAddress = await getAddressOfNextDeployedContract(
     signer
   );
 
-  const l2DAIBridge = await deploy(hre, "l2_dai_bridge", 2, {
+  const l2DAIBridge = await deployL2("l2_dai_bridge", {
     caller: BigInt(account.address).toString(),
     dai: BigInt(l2DAI.address).toString(),
     bridge: BigInt(futureL1DAIBridgeAddress).toString(),
@@ -53,9 +52,9 @@ async function main(): Promise<void> {
     account
   );
 
-  const l1DAIBridge = await deploy(hre, "L1DAIBridge", 1, [
-    L1_GOERLI_STARKNET_ADDRESS,
-    L1_GOERLI_DAI_ADDRESS,
+  const l1DAIBridge = await deployL1("L1DAIBridge",[
+    L1_STARKNET_ADDRESS,
+    L1_DAI_ADDRESS,
     l1Escrow.address,
     l2DAIBridge.address,
   ]);
@@ -68,40 +67,43 @@ async function main(): Promise<void> {
     signer
   );
 
-  const l2GovernanceRelay = await deploy(hre, "l2_governance_relay", 2, {
+  const l2GovernanceRelay = await deployL2("l2_governance_relay",{
     l1_governance_relay: BigInt(futureL1GovernanceRelayAddress).toString(),
     dai: BigInt(l2DAI.address).toString(),
     bridge: BigInt(l2DAIBridge.address).toString(),
   });
 
-  await deploy(hre, "L1GovernanceRelay", 1, [
-    L1_GOERLI_STARKNET_ADDRESS,
+  await deployL1("L1GovernanceRelay", [
+    L1_STARKNET_ADDRESS,
     l2GovernanceRelay.address,
   ]);
 }
 
-async function deploy(
-  hre: any,
-  contractName: string,
-  layer: 1 | 2,
-  calldata: any,
-  saveName?: string
-) {
-  const network = layer === 1 ? "ethers" : "starknet";
-  console.log(`Deploying ${contractName}`);
-  const contractFactory = await hre[network].getContractFactory(contractName);
-  let contract;
-  if (layer === 1) {
-    contract = await contractFactory.deploy(...calldata);
-  } else {
-    contract = await contractFactory.deploy(calldata);
-  }
-  const fileName = saveName || contractName;
-  save(fileName, contract, NETWORK);
-  if (layer === 1) {
-    await contract.deployed();
-  }
+async function deployL2(name: string, calldata: any = {}, saveName?: string) {
+  console.log(`Deploying ${name}`);
+  const contractFactory = await hre.starknet.getContractFactory(name);
+  const  contract = await contractFactory.deploy(calldata);
+  save(saveName || name, contract, await getL1NetworkName());
   return contract;
+}
+
+async function deployL1(name: string, calldata: any = [], saveName?: string) {
+  console.log(`Deploying ${name}`);
+  const contractFactory = await hre.ethers.getContractFactory(name);
+  const contract = await contractFactory.deploy(...calldata);
+
+  save(saveName || name, contract, await getL1NetworkName());
+
+  await contract.deployed();
+
+  return contract;
+}
+
+async function getL1NetworkName() {
+  const [signer] = await hre.ethers.getSigners();
+  const network = (await signer.provider?.getNetwork())?.name
+  assert(network);
+  return network;
 }
 
 main()
