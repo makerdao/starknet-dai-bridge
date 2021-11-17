@@ -5,7 +5,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
 from starkware.cairo.common.math import assert_le
-from starkware.starknet.common.syscalls import get_caller_address
+from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
 from starkware.cairo.common.uint256 import (Uint256, uint256_le)
 
 const FINALIZE_WITHDRAW = 0
@@ -23,12 +23,6 @@ namespace IDAI:
 
     func balance_of(user : felt) -> (res : Uint256):
     end
-end
-
-@contract_interface
-namespace IThis:
-  func get_this() -> (res : felt):
-  end
 end
 
 @contract_interface
@@ -55,10 +49,6 @@ end
 
 @storage_var
 func _wards(user : felt) -> (res : felt):
-end
-
-@storage_var
-func _this() -> (res : felt):
 end
 
 func auth{
@@ -115,7 +105,6 @@ func constructor{
     dai : felt,
     bridge : felt,
     registry : felt,
-    get_this : felt
   ):
     _wards.write(caller, 1)
 
@@ -123,9 +112,6 @@ func constructor{
     _dai.write(dai)
     _bridge.write(bridge)
     _registry.write(registry)
-
-    let (this) = IThis.get_this(get_this)
-    _this.write(this)
 
     return ()
 end
@@ -207,8 +193,8 @@ func finalize_force_withdrawal{
     end
 
     # check allowance
-    let (this) = _this.read()
-    let (allowance : Uint256) = IDAI.allowance(dai, source, this)
+    let (contract_address) = get_contract_address()
+    let (allowance : Uint256) = IDAI.allowance(dai, source, contract_address)
     let (allowance_check) = uint256_le(amount, allowance)
     if allowance_check == 0:
         return ()
