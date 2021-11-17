@@ -83,3 +83,9 @@ To reimburse L2 DAI users on L1, the last valid L2 state of DAI balances needs t
 Bridge consists of several interacting contracts and it is possible to misconfigure the construction which will render bridge non functional. There are at least two ways to do that:
 * remove allowance from `L1DAIBridge` to `L1Escrow` - withdrawals won't be finalized on L1, easy to fix by resetting the allowance and repeating `finalizeWithdrawal` operation
 * remove authorization to mint L2 DAI from `l2_dai_bridge` - deposits won't be finalized on L2, probably possible to fix with the help from the sequencer: first reauthorize bridge to mint, then ask sequencer to retry `finalize_deposit` method. Retrying of `finalize_deposit` should be possible as reverted transactions are not included in the state update.
+
+## Workarounds
+StarkNet is still under active development and there are missing features that require workarounds:
+* no equivalent to solidity `this` - getting current contract address requires a call to `get_this` contract
+* no delegate calls - `l2_governance_relay` needs to give explicitly authorize the spell to `dai` and `l2_dai_bridge` which is less general than it could have been with delegate call
+* no events - no events are emitted whatsoever, ux will suffer for certain applications
