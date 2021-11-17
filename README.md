@@ -86,6 +86,5 @@ Bridge consists of several interacting contracts and it is possible to misconfig
 
 ## Workarounds
 StarkNet is still under active development and there are missing features that require workarounds:
-* no equivalent to solidity `this` - getting current contract address requires a call to `get_this` contract
 * no delegate calls - `l2_governance_relay` needs to give explicitly authorize the spell to `dai` and `l2_dai_bridge` which is less general than it could have been with delegate call
 * no events - no events are emitted whatsoever, ux will suffer for certain applications
