@@ -1,4 +1,4 @@
-https://github.com/starkware-libs/cairo-lang/releases/download/v0.5.2/cairo-lang-0.5.2.zip
+https://github.com/starkware-libs/cairo-lang/releases/download/v0.6.0/cairo-lang-0.6.0.zip
 pytest==6.2.5
 pytest-asyncio==0.15.1
 lark==0.11.3
