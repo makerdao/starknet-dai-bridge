@@ -213,6 +213,10 @@ async def before_all(
             l2_governance_relay.contract_address,
         ).invoke(auth_user.contract_address)
 
+    yield
+
+    os.remove(SPELL_FILE)
+
 
 @pytest.fixture(autouse=True)
 async def before_each(
