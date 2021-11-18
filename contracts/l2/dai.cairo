@@ -159,8 +159,8 @@ func burn{
 
     # boolean logic implemented in regular arithmetic
     # addition and multiplication is more efficient in Cairo
-    let (not_auth) = 1 - is_auth
-    let (check_allowances) = not_caller*not_auth
+    let not_auth = 1 - is_auth
+    let check_allowances = not_caller*not_auth
 
     if check_allowances == 1:
       let MAX = Uint256(low=MAX_SPLIT, high=MAX_SPLIT)

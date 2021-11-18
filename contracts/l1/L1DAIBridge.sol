@@ -26,7 +26,7 @@ interface StarkNetLike {
 
 contract L1DAIBridge {
     // --- Auth ---
-    mapping(address => uint8) public wards;
+    mapping(address => uint256) public wards;
 
     function rely(address usr) external auth {
         wards[usr] = 1;

@@ -3,7 +3,9 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.starknet.common.syscalls import get_caller_address
-from contracts.l2.utils import assert_l1_address
+from starkware.cairo.common.math import assert_le
+
+const MAX_L1_ADDRESS = 2**160-1
 
 @storage_var
 func _l1_addresses(l2_user : felt) -> (l1_user : felt):
@@ -15,7 +17,7 @@ func set_L1_address{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(l1_user : felt):
-  assert_l1_address(l1_user)
+  assert_le(l1_user, MAX_L1_ADDRESS)
 
   let (caller) = get_caller_address()
   _l1_addresses.write(caller, l1_user)
