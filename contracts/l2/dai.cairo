@@ -83,8 +83,8 @@ func constructor{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(caller : felt):
-    _wards.write(caller, 1)
+  }(ward : felt):
+    _wards.write(ward, 1)
     return ()
 end
 
