@@ -45,13 +45,14 @@ async function main(): Promise<void> {
 
   if (REGISTRY_ADDRESS) {
     console.log(`Using existing registry: ${REGISTRY_ADDRESS}`);
+    save("registry", { address: REGISTRY_ADDRESS }, NETWORK);
   }
 
   const registry = REGISTRY_ADDRESS
     ? await getL2ContractAt("registry", REGISTRY_ADDRESS)
     : await deployL2("registry");
 
-  await callFrom(registry, "set_L1_address", [signer.address], account);
+  // await callFrom(registry, "set_L1_address", [signer.address], account);
   const l1Escrow = await deployL1("L1Escrow");
 
   const futureL1DAIBridgeAddress = await getAddressOfNextDeployedContract(
@@ -59,7 +60,7 @@ async function main(): Promise<void> {
   );
 
   const l2DAIBridge = await deployL2("l2_dai_bridge", {
-    caller: BigInt(account.address).toString(),
+    caller: BigInt(account.address).toString(), //TODO: l2_gov_relay
     dai: BigInt(l2DAI.address).toString(),
     bridge: BigInt(futureL1DAIBridgeAddress).toString(),
     registry: BigInt(registry.address).toString(),
@@ -67,6 +68,7 @@ async function main(): Promise<void> {
 
   console.log("Initializing dai");
 
+  // TODO: turn into spell
   await callFrom(
     l2DAI,
     "rely",
