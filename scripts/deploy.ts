@@ -6,12 +6,12 @@ import {
   getRequiredEnv,
 } from "@makerdao/hardhat-utils";
 import { getOptionalEnv } from "@makerdao/hardhat-utils/dist/env";
-import {DEFAULT_STARKNET_NETWORK} from "@shardlabs/starknet-hardhat-plugin/dist/constants";
+import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
+import { ethers } from "ethers";
 import fs from "fs";
 import hre from "hardhat";
 
 import { callFrom, getAddress, save } from "./utils";
-import {ethers} from "ethers";
 
 async function main(): Promise<void> {
   const [signer] = await hre.ethers.getSigners();
@@ -107,15 +107,22 @@ function printAddresses() {
   const NETWORK = hre.network.name;
 
   const contracts = [
-    'account-auth',
-    'dai', 'registry', 'L1Escrow',
-    'l2_dai_bridge', 'L1DAIBridge',
-    'l2_governance_relay', 'L1GovernanceRelay'
-  ]
+    "account-auth",
+    "dai",
+    "registry",
+    "L1Escrow",
+    "l2_dai_bridge",
+    "L1DAIBridge",
+    "l2_governance_relay",
+    "L1GovernanceRelay",
+  ];
 
-  const addresses = contracts.reduce((a, c) => Object.assign(a, {[c]: getAddress(c, NETWORK)}), {})
+  const addresses = contracts.reduce(
+    (a, c) => Object.assign(a, { [c]: getAddress(c, NETWORK) }),
+    {}
+  );
 
-  console.log(addresses)
+  console.log(addresses);
 }
 
 async function getL2ContractAt(name: string, address: string) {
@@ -125,7 +132,7 @@ async function getL2ContractAt(name: string, address: string) {
 }
 
 async function deployL2(name: string, calldata: any = {}, saveName?: string) {
-  console.log(`Deploying ${name}${saveName && ('/' + saveName) || ''}`);
+  console.log(`Deploying ${name}${(saveName && "/" + saveName) || ""}`);
   const contractFactory = await hre.starknet.getContractFactory(name);
   const contract = await contractFactory.deploy(calldata);
   save(saveName || name, contract, hre.network.name);
@@ -133,13 +140,12 @@ async function deployL2(name: string, calldata: any = {}, saveName?: string) {
 }
 
 async function deployL1(name: string, calldata: any = [], saveName?: string) {
-
   const options = {
-    gasPrice: await hre.ethers.provider.getGasPrice()
-  }
+    gasPrice: await hre.ethers.provider.getGasPrice(),
+  };
   console.log(
-    `Deploying ${name}${saveName && ('/' + saveName) || ''}`,
-    `gas price: ${ethers.utils.formatUnits(options.gasPrice, 'gwei')} gwei`
+    `Deploying ${name}${(saveName && "/" + saveName) || ""}`,
+    `gas price: ${ethers.utils.formatUnits(options.gasPrice, "gwei")} gwei`
   );
   const contractFactory = await hre.ethers.getContractFactory(name);
   const contract = await contractFactory.deploy(...calldata, options);
