@@ -7,6 +7,7 @@ from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
 from starkware.cairo.common.math import assert_le
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
 from starkware.cairo.common.uint256 import (Uint256, uint256_le)
+from contracts.l2.utils import assert_l1_address
 
 const FINALIZE_WITHDRAW = 0
 
@@ -124,6 +125,8 @@ func withdraw{
   }(dest : felt, amount : Uint256):
     let (is_open) = _is_open.read()
     assert is_open = 1
+
+    assert_l1_address(dest)
 
     let (dai) = _dai.read()
     let (caller) = get_caller_address()

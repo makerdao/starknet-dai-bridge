@@ -5,7 +5,7 @@ import "./L1DAIBridge.sol";
 
 contract L1GovernanceRelay {
   // --- Auth ---
-  mapping(address => uint256) public wards;
+  mapping(address => uint8) public wards;
   function rely(address usr) external auth {
     wards[usr] = 1;
     emit Rely(usr);
