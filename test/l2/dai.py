@@ -14,7 +14,6 @@ L2_CONTRACTS_DIR = os.path.join(os.getcwd(), "contracts/l2")
 DAI_FILE = os.path.join(L2_CONTRACTS_DIR, "dai.cairo")
 ACCOUNT_FILE = os.path.join(L2_CONTRACTS_DIR, "account.cairo")
 REGISTRY_FILE = os.path.join(L2_CONTRACTS_DIR, "registry.cairo")
-GET_THIS_FILE = os.path.join(L2_CONTRACTS_DIR, "get_this.cairo")
 BRIDGE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_bridge.cairo")
 
 
@@ -49,17 +48,11 @@ async def registry(starknet: Starknet) -> StarknetContract:
 
 
 @pytest.fixture
-async def get_this(starknet: Starknet) -> StarknetContract:
-    return await starknet.deploy(source=GET_THIS_FILE)
-
-
-@pytest.fixture
 async def l2_bridge(
     starknet: Starknet,
     dai: StarknetContract,
     auth_user: StarknetContract,
     registry: StarknetContract,
-    get_this: StarknetContract,
 ) -> StarknetContract:
     return await starknet.deploy(
         source=BRIDGE_FILE,
@@ -68,7 +61,6 @@ async def l2_bridge(
             dai.contract_address,
             L1_ADDRESS,
             registry.contract_address,
-            get_this.contract_address,
         ],
     )
 
@@ -77,13 +69,11 @@ async def l2_bridge(
 async def dai(
     starknet: Starknet,
     auth_user: StarknetContract,
-    get_this: StarknetContract,
 ) -> StarknetContract:
     return await starknet.deploy(
             source=DAI_FILE,
             constructor_calldata=[
                 auth_user.contract_address,
-                get_this.contract_address
             ])
 
 
