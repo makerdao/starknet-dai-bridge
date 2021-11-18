@@ -83,8 +83,8 @@ func constructor{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(caller : felt):
-    _wards.write(caller, 1)
+  }(ward : felt):
+    _wards.write(ward, 1)
     return ()
 end
 
@@ -113,10 +113,8 @@ func mint{
 
     # update total supply
     let (total : Uint256) = _total_supply.read()
-
     let (new_total : Uint256, total_carry : felt) = uint256_add(total, amount)
     assert total_carry = 0
-
     _total_supply.write(new_total)
 
     return ()
@@ -147,8 +145,9 @@ func burn{
     # decrease supply
     let (local total_supply : Uint256) = _total_supply.read()
 
-    let (is_le) = uint256_le(amount, total_supply)
-    assert is_le = 1
+    ## overflow check disabled for effeciency
+    # let (is_le) = uint256_le(amount, total_supply)
+    # assert is_le = 1
     let (new_total_supply : Uint256) = uint256_sub(total_supply, amount)
     _total_supply.write(new_total_supply)
 
@@ -158,8 +157,10 @@ func burn{
     let (not_caller) = is_not_zero(caller - account)
     let (is_auth) = _wards.read(caller)
 
-    let (not_auth) = bitwise_not(is_auth)
-    let (check_allowances) = bitwise_and(not_caller, not_auth)
+    # boolean logic implemented in regular arithmetic
+    # addition and multiplication is more efficient in Cairo
+    let not_auth = 1 - is_auth
+    let check_allowances = not_caller*not_auth
 
     if check_allowances == 1:
       let MAX = Uint256(low=MAX_SPLIT, high=MAX_SPLIT)

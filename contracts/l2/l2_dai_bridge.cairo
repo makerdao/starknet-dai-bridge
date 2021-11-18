@@ -4,7 +4,6 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
-from starkware.cairo.common.math import assert_le
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
 from starkware.cairo.common.uint256 import (Uint256, uint256_le)
 
@@ -101,12 +100,12 @@ func constructor{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(
-    caller : felt,
+    ward : felt,
     dai : felt,
     bridge : felt,
     registry : felt,
   ):
-    _wards.write(caller, 1)
+    _wards.write(ward, 1)
 
     _is_open.write(1)
     _dai.write(dai)
