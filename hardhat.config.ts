@@ -50,12 +50,6 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
-    // hardhat: {
-    //   accounts: {
-    //     mnemonic,
-    //   },
-    //   chainId: chainIds.hardhat,
-    // },
     goerli: getChainConfig("goerli"),
     localhost: {
       url: "http://127.0.0.1:8545",

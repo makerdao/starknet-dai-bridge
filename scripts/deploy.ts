@@ -6,16 +6,18 @@ import {
   getRequiredEnv,
 } from "@makerdao/hardhat-utils";
 import { getOptionalEnv } from "@makerdao/hardhat-utils/dist/env";
+import {DEFAULT_STARKNET_NETWORK} from "@shardlabs/starknet-hardhat-plugin/dist/constants";
 import fs from "fs";
 import hre from "hardhat";
 
 import { callFrom, getAddress, save } from "./utils";
+import {ethers} from "ethers";
 
 async function main(): Promise<void> {
   const [signer] = await hre.ethers.getSigners();
 
   const NETWORK = hre.network.name;
-  const STARKNET_NETWORK = "alpha"; //TODO: read from hre.starknet object when available
+  const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
 
   const L1_DAI_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_DAI_ADDRESS`
@@ -32,10 +34,9 @@ async function main(): Promise<void> {
   save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
 
   const account = await deployL2("account", {}, "account-auth");
-  const get_this = await deployL2("get_this");
+
   const l2DAI = await deployL2("dai", {
     caller: BigInt(account.address).toString(),
-    get_this: BigInt(get_this.address).toString(),
   });
 
   const REGISTRY_ADDRESS = getOptionalEnv(
@@ -62,7 +63,6 @@ async function main(): Promise<void> {
     dai: BigInt(l2DAI.address).toString(),
     bridge: BigInt(futureL1DAIBridgeAddress).toString(),
     registry: BigInt(registry.address).toString(),
-    get_this: BigInt(get_this.address).toString(),
   });
 
   console.log("Initializing dai");
@@ -101,6 +101,21 @@ async function main(): Promise<void> {
   ]);
 }
 
+function printAddresses() {
+  const NETWORK = hre.network.name;
+
+  const contracts = [
+    'account-auth',
+    'dai', 'registry', 'L1Escrow',
+    'l2_dai_bridge', 'L1DAIBridge',
+    'l2_governance_relay', 'L1GovernanceRelay'
+  ]
+
+  const addresses = contracts.reduce((a, c) => Object.assign(a, {[c]: getAddress(c, NETWORK)}), {})
+
+  console.log(addresses)
+}
+
 async function getL2ContractAt(name: string, address: string) {
   console.log(`Deploying ${name}`);
   const contractFactory = await hre.starknet.getContractFactory(name);
@@ -108,7 +123,7 @@ async function getL2ContractAt(name: string, address: string) {
 }
 
 async function deployL2(name: string, calldata: any = {}, saveName?: string) {
-  console.log(`Deploying ${name}`);
+  console.log(`Deploying ${name}${saveName && ('/' + saveName) || ''}`);
   const contractFactory = await hre.starknet.getContractFactory(name);
   const contract = await contractFactory.deploy(calldata);
   save(saveName || name, contract, hre.network.name);
@@ -116,9 +131,16 @@ async function deployL2(name: string, calldata: any = {}, saveName?: string) {
 }
 
 async function deployL1(name: string, calldata: any = [], saveName?: string) {
-  console.log(`Deploying ${name}`);
+
+  const options = {
+    gasPrice: await hre.ethers.provider.getGasPrice()
+  }
+  console.log(
+    `Deploying ${name}${saveName && ('/' + saveName) || ''}`,
+    `gas price: ${ethers.utils.formatUnits(options.gasPrice, 'gwei')} gwei`
+  );
   const contractFactory = await hre.ethers.getContractFactory(name);
-  const contract = await contractFactory.deploy(...calldata);
+  const contract = await contractFactory.deploy(...calldata, options);
   save(saveName || name, contract, hre.network.name);
   await contract.deployed();
   return contract;
@@ -126,4 +148,5 @@ async function deployL1(name: string, calldata: any = [], saveName?: string) {
 
 main()
   .then(() => console.log("Successfully deployed"))
+  .then(() => printAddresses())
   .catch((err) => console.log(err));
