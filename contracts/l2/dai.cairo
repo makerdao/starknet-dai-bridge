@@ -78,6 +78,16 @@ func allowance{
     return (res)
 end
 
+@view
+func wards{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(user : felt) -> (res : felt):
+    let (res : felt) = _wards.read(user)
+    return (res)
+end
+
 @constructor
 func constructor{
     syscall_ptr : felt*,
