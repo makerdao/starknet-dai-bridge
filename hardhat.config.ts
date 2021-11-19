@@ -44,6 +44,7 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
     },
     chainId: chainIds[network],
     url,
+    gasMultiplier: 1.5,
   };
 }
 
