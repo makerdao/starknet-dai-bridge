@@ -7,21 +7,14 @@ import {
   parseCalldataL2,
 } from "./utils";
 
-let NETWORK: string;
-
 task("invoke:l2", "Invoke an L2 contract")
   .addParam("contract", "Contract to call")
   .addParam("func", "Function to call")
   .addOptionalParam("calldata", "Inputs to the function")
   .addOptionalParam("name", "Account name to execute from")
   .setAction(async ({ contract, func, calldata, name }, hre) => {
-    const [signer] = await hre.ethers.getSigners();
-    if (signer.provider) {
-      const network = await signer.provider.getNetwork();
-      NETWORK = network.name;
-    }
+    const NETWORK = hre.network.name;
     console.log(`Calling on ${NETWORK}`);
-
     const address = getAddress(contract, NETWORK);
     const contractFactory = await hre.starknet.getContractFactory(contract);
     const contractInstance = contractFactory.getContractAt(address);
@@ -45,13 +38,8 @@ task("call:l2", "Call an L2 contract")
   .addParam("func", "Function to call")
   .addOptionalParam("calldata", "Inputs to the function")
   .setAction(async ({ contract, func, calldata }, hre) => {
-    const [signer] = await hre.ethers.getSigners();
-    if (signer.provider) {
-      const network = await signer.provider.getNetwork();
-      NETWORK = network.name;
-    }
+    const NETWORK = hre.network.name;
     console.log(`Calling on ${NETWORK}`);
-
     const address = getAddress(contract, NETWORK);
     const contractFactory = await hre.starknet.getContractFactory(contract);
     const contractInstance = contractFactory.getContractAt(address);
@@ -67,13 +55,8 @@ task("call:l1", "Call an L1 contract")
   .addOptionalParam("calldata", "Inputs to the function")
   .setAction(async ({ contract, func, calldata }, hre) => {
     const contractAbiName = contract === "DAI" ? "DAIMock" : contract;
-    const [signer] = await hre.ethers.getSigners();
-    if (signer.provider) {
-      const network = await signer.provider.getNetwork();
-      NETWORK = network.name;
-    }
+    const NETWORK = hre.network.name;
     console.log(`Calling on ${NETWORK}`);
-
     const address = getAddress(contract, NETWORK);
     const contractFactory = (await hre.ethers.getContractFactory(
       contractAbiName
