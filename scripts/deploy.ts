@@ -9,12 +9,11 @@ import {
 } from "@makerdao/hardhat-utils";
 import { getOptionalEnv } from "@makerdao/hardhat-utils/dist/env";
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
-import { ethers } from "ethers";
+import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
+import { expect } from "chai";
 import hre from "hardhat";
 
 import { callFrom, getAddress, save } from "./utils";
-import { expect } from "chai";
-import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
 
 async function main(): Promise<void> {
   const [l1Signer] = await hre.ethers.getSigners();
@@ -145,12 +144,12 @@ async function main(): Promise<void> {
   ]);
 
   console.log("L2 permission sanity checks...");
-  expect(await wards(l2DAIBridge, l2GovernanceRelay)).to.deep.eq([1]);
-  expect(await wards(l2DAIBridge, account)).to.deep.eq([0]);
+  expect(await wards(l2DAIBridge, l2GovernanceRelay)).to.deep.eq(BigInt(1));
+  expect(await wards(l2DAIBridge, account)).to.deep.eq(BigInt(0));
 
-  expect(await wards(l2DAI, l2GovernanceRelay)).to.deep.eq([1]);
-  expect(await wards(l2DAI, l2DAIBridge)).to.deep.eq([1]);
-  expect(await wards(l2DAI, account)).to.deep.eq([0]);
+  expect(await wards(l2DAI, l2GovernanceRelay)).to.deep.eq(BigInt(1));
+  expect(await wards(l2DAI, l2DAIBridge)).to.deep.eq(BigInt(1));
+  expect(await wards(l2DAI, account)).to.deep.eq(BigInt(0));
 }
 
 function printAddresses() {
@@ -175,8 +174,8 @@ function printAddresses() {
   console.log(addresses);
 }
 
-function wards(authable: StarknetContract, ward: StarknetContract) {
-  return authable.call("wards", [ward.address]);
+async function wards(authable: StarknetContract, ward: StarknetContract) {
+  return (await authable.call("wards", {user: asDec(ward.address)})).res;
 }
 
 function asDec(address: string): string {
