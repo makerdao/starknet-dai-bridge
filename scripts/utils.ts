@@ -92,6 +92,9 @@ export function parseCalldataL2(
 }
 
 export function save(name: string, contract: any, network: string) {
+  if (!fs.existsSync(`${DEPLOYMENTS_DIR}/${network}`)) {
+    fs.mkdirSync(`${DEPLOYMENTS_DIR}/${network}`, { recursive: true });
+  }
   fs.writeFileSync(
     `${DEPLOYMENTS_DIR}/${network}/${name}.json`,
     JSON.stringify({
