@@ -50,6 +50,56 @@ end
 func _wards(user : felt) -> (res : felt):
 end
 
+@view
+func is_open{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }() -> (res : felt):
+    let (res : felt) = _is_open.read()
+    return (res)
+end
+
+@view
+func dai{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }() -> (res : felt):
+    let (res : felt) = _dai.read()
+    return (res)
+end
+
+@view
+func registry{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }() -> (res : felt):
+    let (res : felt) = _registry.read()
+    return (res)
+end
+
+@view
+func bridge{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }() -> (res : felt):
+    let (res : felt) = _bridge.read()
+    return (res)
+end
+
+@view
+func wards{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(user : felt) -> (res : felt):
+    let (res : felt) = _wards.read(user)
+    return (res)
+end
+
 func auth{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
