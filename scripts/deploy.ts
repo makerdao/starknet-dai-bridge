@@ -175,7 +175,7 @@ function printAddresses() {
 }
 
 async function wards(authable: StarknetContract, ward: StarknetContract) {
-  return (await authable.call("wards", {user: asDec(ward.address)})).res;
+  return (await authable.call("wards", { user: asDec(ward.address) })).res;
 }
 
 function asDec(address: string): string {
@@ -197,9 +197,7 @@ async function deployL2(name: string, calldata: any = {}, saveName?: string) {
 }
 
 async function deployL1(name: string, calldata: any = [], saveName?: string) {
-  console.log(
-    `Deploying: ${name}${(saveName && "/" + saveName) || ""}`
-  );
+  console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}`);
   const contractFactory = await hre.ethers.getContractFactory(name);
   const contract = await contractFactory.deploy(...calldata);
   save(saveName || name, contract, hre.network.name);
