@@ -25,10 +25,10 @@ task("invoke:l2", "Invoke an L2 contract")
 
     const _calldata = parseCalldataL2(calldata, NETWORK, contract, func);
     const res = await callFrom(
+      accountInstance,
       contractInstance,
       func,
-      _calldata,
-      accountInstance
+      _calldata
     );
     console.log("Response:", res);
   });

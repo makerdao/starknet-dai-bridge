@@ -110,10 +110,10 @@ export function getSelectorFromName(name: string) {
 }
 
 export async function callFrom(
+  caller: StarknetContract,
   contract: StarknetContract,
   call: string,
-  calldata: any[] | any,
-  caller: StarknetContract
+  calldata: any[] | any
 ) {
   const selector = getSelectorFromName(call);
   const _calldata = flatten(calldata);
