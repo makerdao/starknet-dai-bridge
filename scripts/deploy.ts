@@ -30,6 +30,8 @@ async function main(): Promise<void> {
 
   console.log(`Deploying on ${NETWORK}/${STARKNET_NETWORK}`);
 
+  // TODO: use `grown up` account implementation when available
+  console.warn("Using toy acccount implementation. Do not use for mainnet!");
   const account = await deployL2("account", {}, "account-auth");
 
   save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);

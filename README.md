@@ -42,6 +42,9 @@ Allowance on L1Escrow should be managed by approve method on `L1Escrow` contract
 
 It is expected that admin rights to the bridge contracts will be given to the [Maker Governance](https://docs.makerdao.com/smart-contract-modules/governance-module).
 
+## Governance relay
+`L1GovernanceRelay` allows to relay L1 governance actions to a spell contract on the StarkNet via `l2_governance_relay`.
+
 ### Initial configuration
 Maker [PauseProxy](https://docs.makerdao.com/smart-contract-modules/governance-module/pause-detailed-documentation) should be relied on: `L1DAIBridge`, `L1Escrow`, `l2_dai_bridge`, `dai`, `L1GovernanceRelay`. Unlimited allowance on `L1Escrow` should be given to `L1DAIBridge`.
 In order to withdraw allowance needs to be given to the `l2_dai_bridge` individually by each L2 DAI user.
@@ -50,10 +53,6 @@ In order to withdraw allowance needs to be given to the `l2_dai_bridge` individu
 Since bridge funds are stored in a separate escrow contract, multiple bridge instances can share the escrow and operate independently.
 
 After new version of the bridge is up, old version can be closed. Due to the asynchronous nature of L1 <> L2 communication, it is a two step procedure. First `close` method on `l2_dai_bridge` and `L1DAIBridge` should be called, so no new deposit or withdrawal requests can be initiated. Then after all async messages that were in transit are processed, bridge is effectively closed. Now, escrow approval on L1 and token minting rights on L2 can be revoked.
-
-## Governance relay
-Allows to relay L1 governance actions to a spell contract on the StarkNet. Spell contract is authorized to operate on L2 side of the bridge just for the execution of the spell.
-Note that due to the unavailability of delagate call on StarkNet L2 Relay design is not elegant as it could be and Relay will need to be upgraded when new version of the bridge is deployed.
 
 ## Risks
 ### Bugs
@@ -84,7 +83,6 @@ Bridge consists of several interacting contracts and it is possible to misconfig
 * remove allowance from `L1DAIBridge` to `L1Escrow` - withdrawals won't be finalized on L1, easy to fix by resetting the allowance and repeating `finalizeWithdrawal` operation
 * remove authorization to mint L2 DAI from `l2_dai_bridge` - deposits won't be finalized on L2, probably possible to fix with the help from the sequencer: first reauthorize bridge to mint, then ask sequencer to retry `finalize_deposit` method. Retrying of `finalize_deposit` should be possible as reverted transactions are not included in the state update.
 
-## Workarounds
-StarkNet is still under active development and there are missing features that require workarounds:
-* no delegate calls - `l2_governance_relay` needs to give explicitly authorize the spell to `dai` and `l2_dai_bridge` which is less general than it could have been with delegate call
+## Missing parts
+StarkNet is still under active development and there are missing features for which there are no good workarounds:
 * no events - no events are emitted whatsoever, ux will suffer for certain applications

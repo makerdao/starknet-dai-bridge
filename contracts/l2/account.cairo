@@ -6,6 +6,10 @@ from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin
 from starkware.starknet.common.syscalls import call_contract
 
+# Warning!
+# No signature verification!
+# This contract is meant to be used just for tests!
+# Do not use it in production!
 
 @external
 func execute{
