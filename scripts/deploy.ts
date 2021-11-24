@@ -30,7 +30,7 @@ async function main(): Promise<void> {
 
   console.log(`Deploying on ${NETWORK}/${STARKNET_NETWORK}`);
 
-  const account = await deployL2("account", {}, "account-auth");
+  const account = await deployL2("account", { _public_key: 0 }, "account-auth");
 
   save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
   const DAIAddress = getAddress("DAI", NETWORK);

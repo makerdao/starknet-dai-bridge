@@ -20,7 +20,7 @@ task("account:create", "Create new L2 account")
 
     console.log(`Deploying account ${name} on ${NETWORK}`);
     const accountFactory = await hre.starknet.getContractFactory("account");
-    const account = await accountFactory.deploy();
+    const account = await accountFactory.deploy({ _public_key: 0 });
     save(`account-${name}`, account, NETWORK);
     console.log(`account-${name} L2 address:`, account.address);
   });
