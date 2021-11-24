@@ -229,11 +229,11 @@ func transfer{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
     bitwise_ptr : BitwiseBuiltin*
-  }(recipient : felt, amount : Uint256):
+  }(recipient : felt, amount : Uint256) -> (res : felt):
     let (caller) = get_caller_address()
     _transfer(caller, recipient, amount)
 
-    return ()
+    return (res=1)
 end
 
 @external
@@ -242,7 +242,7 @@ func transfer_from{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
     bitwise_ptr : BitwiseBuiltin*
-  }(sender : felt, recipient : felt, amount : Uint256):
+  }(sender : felt, recipient : felt, amount : Uint256) -> (res : felt):
     alloc_locals
 
     let (local caller) = get_caller_address()
@@ -278,7 +278,7 @@ func transfer_from{
       tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     end
 
-    return ()
+    return (res=1)
 end
 
 @external
@@ -286,11 +286,11 @@ func approve{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(spender: felt, amount : Uint256):
+  }(spender: felt, amount : Uint256) -> (res : felt):
     let (caller) = get_caller_address()
     _allowances.write(caller, spender, amount)
 
-    return ()
+    return (res=1)
 end
 
 @external
@@ -299,7 +299,7 @@ func increase_allowance{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
     bitwise_ptr : BitwiseBuiltin*
-  }(spender : felt, amount : Uint256):
+  }(spender : felt, amount : Uint256) -> (res : felt):
     alloc_locals
 
     let (local caller) = get_caller_address()
@@ -309,7 +309,7 @@ func increase_allowance{
     # check overflow
     assert carry = 0
     _allowances.write(caller, spender, new_allowance)
-    return ()
+    return (res=1)
 end
 
 @external
@@ -318,7 +318,7 @@ func decrease_allowance{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
     bitwise_ptr : BitwiseBuiltin*
-  }(spender : felt, amount : Uint256):
+  }(spender : felt, amount : Uint256) -> (res : felt):
     alloc_locals
 
     let (local caller) = get_caller_address()
@@ -328,7 +328,7 @@ func decrease_allowance{
     assert is_le = 1
     let (new_allowance : Uint256) = uint256_sub(allowance, amount)
     _allowances.write(caller, spender, new_allowance)
-    return ()
+    return (res=1)
 end
 
 func auth{

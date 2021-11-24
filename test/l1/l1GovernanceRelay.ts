@@ -10,9 +10,6 @@ import hre from "hardhat";
 
 chai.use(smock.matchers);
 
-const EXECUTE_SELECTOR = parseFixed(
-  "1017745666394979726211766185068760164586829337678283062942418931026954492996"
-);
 const RELAY_SELECTOR = parseFixed(
   "300224956480472355485152391090755024345070441743081995053718200325371913697"
 );
@@ -31,7 +28,7 @@ describe("L1GovernanceRelay", function () {
     await assertPublicMutableMethods("L1GovernanceRelay", [
       "rely(address)",
       "deny(address)",
-      "relay(uint256,uint256)",
+      "relay(uint256)",
     ]);
   });
   describe("relay", function () {
@@ -44,22 +41,20 @@ describe("L1GovernanceRelay", function () {
         spellAddress,
       } = await setupTest();
 
-      await l1GovernanceRelay
-        .connect(admin)
-        .relay(spellAddress, EXECUTE_SELECTOR);
+      await l1GovernanceRelay.connect(admin).relay(spellAddress);
 
       expect(starkNetFake.sendMessageToL2).to.have.been.calledOnce;
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
         l2GovernanceRelayAddress,
         RELAY_SELECTOR,
-        [spellAddress, EXECUTE_SELECTOR]
+        [spellAddress]
       );
     });
     it("reverts when called not by the owner", async () => {
       const { l1Alice, l1GovernanceRelay, spellAddress } = await setupTest();
 
       await expect(
-        l1GovernanceRelay.connect(l1Alice).relay(spellAddress, EXECUTE_SELECTOR)
+        l1GovernanceRelay.connect(l1Alice).relay(spellAddress)
       ).to.be.revertedWith("L1GovernanceRelay/not-authorized");
     });
   });

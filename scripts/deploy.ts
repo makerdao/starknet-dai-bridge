@@ -199,7 +199,7 @@ async function deployL2(name: string, calldata: any = {}, saveName?: string) {
 }
 
 async function deployL1(name: string, calldata: any = [], saveName?: string) {
-  console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}`);
+  console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
   const contractFactory = await hre.ethers.getContractFactory(name);
   const contract = await contractFactory.deploy(...calldata);
   save(saveName || name, contract, hre.network.name);
