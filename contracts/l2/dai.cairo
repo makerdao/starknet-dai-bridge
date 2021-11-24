@@ -298,7 +298,11 @@ func increase_allowance{
     let (new_allowance: Uint256, carry : felt) = uint256_add(amount, allowance)
     # check overflow
     assert carry = 0
+<<<<<<< HEAD
     _approve(caller, spender, new_allowance)
+=======
+    _allowances.write(caller, spender, new_allowance)
+>>>>>>> Add return values to dai functions
     return (res=1)
 end
 
@@ -317,7 +321,11 @@ func decrease_allowance{
     let (is_le) = uint256_le(amount, allowance)
     assert is_le = 1
     let (new_allowance : Uint256) = uint256_sub(allowance, amount)
+<<<<<<< HEAD
     _approve(caller, spender, new_allowance)
+=======
+    _allowances.write(caller, spender, new_allowance)
+>>>>>>> Add return values to dai functions
     return (res=1)
 end
 
