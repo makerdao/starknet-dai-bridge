@@ -130,11 +130,6 @@ contract L1DAIBridge {
         StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, DEPOSIT, payload);
     }
 
-    struct SplitUint256 {
-      uint256 low;
-      uint256 high;
-    }
-
     function toSplitUint(uint256 value) internal pure returns (uint256, uint256) {
       uint256 low = value & ((1 << 128) - 1);
       uint256 high = value >> 128;
