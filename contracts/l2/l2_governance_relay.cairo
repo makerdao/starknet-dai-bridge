@@ -29,13 +29,13 @@ func relay{
     range_check_ptr
   }(
     from_address : felt,
-    target : felt
+    spell : felt
   ):
     let (l1_governance_relay) = _l1_governance_relay.read()
     assert l1_governance_relay = from_address
 
     let (calldata : felt*) = alloc()
-    delegate_call(target, EXECUTE_SELECTOR, 0, calldata)
+    delegate_call(spell, EXECUTE_SELECTOR, 0, calldata)
 
     return ()
 end
