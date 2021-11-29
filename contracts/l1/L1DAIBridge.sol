@@ -114,6 +114,9 @@ contract L1DAIBridge {
         uint256 to,
         uint256 amount
     ) external whenOpen {
+
+        require(to != 0, "L1DAIBridge/invalid-address");
+
         emit Deposit(from, to, amount);
 
         TokenLike(dai).transferFrom(from, escrow, amount);

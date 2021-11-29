@@ -290,7 +290,7 @@ func approve{
 
     uint256_check(amount)
     let (caller) = get_caller_address()
-    _allowances.write(caller, spender, amount)
+    _approve(caller, spender, amount)
 
     return (res=1)
 end
@@ -310,7 +310,7 @@ func increase_allowance{
     let (new_allowance: Uint256, carry : felt) = uint256_add(amount, allowance)
     # check overflow
     assert carry = 0
-    _allowances.write(caller, spender, new_allowance)
+    _approve(caller, spender, new_allowance)
     return (res=1)
 end
 
@@ -329,7 +329,7 @@ func decrease_allowance{
     let (is_le) = uint256_le(amount, allowance)
     assert is_le = 1
     let (new_allowance : Uint256) = uint256_sub(allowance, amount)
-    _allowances.write(caller, spender, new_allowance)
+    _approve(caller, spender, new_allowance)
     return (res=1)
 end
 
@@ -371,5 +371,16 @@ func _transfer{
     assert carry = 0
     _balances.write(recipient, sum)
 
+    return ()
+end
+
+func _approve{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(caller: felt, spender: felt, amount: Uint256):
+    assert_not_zero(caller)
+    assert_not_zero(spender)
+    _allowances.write(caller, spender, amount)
     return ()
 end
