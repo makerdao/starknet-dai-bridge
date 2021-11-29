@@ -160,8 +160,23 @@ func burn{
     let (new_total_supply : Uint256) = uint256_sub(total_supply, amount)
     _total_supply.write(new_total_supply)
 
+<<<<<<< HEAD
     if caller != account:
       let (allowance : Uint256) = _allowances.read(account, caller)
+=======
+    # check allowance
+    let (local allowance : Uint256) = _allowances.read(account, caller)
+
+    let (not_caller) = is_not_zero(caller - account)
+    let (is_auth) = _wards.read(caller)
+
+    # boolean logic implemented in regular arithmetic
+    # addition and multiplication is more efficient in Cairo
+    let not_auth = 1 - is_auth
+    let check_allowances = not_caller*not_auth
+
+    if check_allowances == 1:
+>>>>>>> Fix unlimited approvals and approval Uint256 checks
       let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (local eq) = uint256_eq(allowance, MAX)
       if eq == 0:
@@ -239,7 +254,10 @@ func transfer_from{
     _transfer(sender, recipient, amount)
 
     if caller != sender:
+<<<<<<< HEAD
       let (allowance : Uint256) = _allowances.read(sender, caller)
+=======
+>>>>>>> Fix unlimited approvals and approval Uint256 checks
       let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (local max_allowance) = uint256_eq(allowance, MAX)
       if max_allowance == 0:
