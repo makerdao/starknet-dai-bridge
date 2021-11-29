@@ -160,23 +160,8 @@ func burn{
     let (new_total_supply : Uint256) = uint256_sub(total_supply, amount)
     _total_supply.write(new_total_supply)
 
-<<<<<<< HEAD
     if caller != account:
       let (allowance : Uint256) = _allowances.read(account, caller)
-=======
-    # check allowance
-    let (local allowance : Uint256) = _allowances.read(account, caller)
-
-    let (not_caller) = is_not_zero(caller - account)
-    let (is_auth) = _wards.read(caller)
-
-    # boolean logic implemented in regular arithmetic
-    # addition and multiplication is more efficient in Cairo
-    let not_auth = 1 - is_auth
-    let check_allowances = not_caller*not_auth
-
-    if check_allowances == 1:
->>>>>>> Fix unlimited approvals and approval Uint256 checks
       let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (local eq) = uint256_eq(allowance, MAX)
       if eq == 0:
@@ -316,11 +301,7 @@ func increase_allowance{
     let (new_allowance: Uint256, carry : felt) = uint256_add(amount, allowance)
     # check overflow
     assert carry = 0
-<<<<<<< HEAD
     _approve(caller, spender, new_allowance)
-=======
-    _allowances.write(caller, spender, new_allowance)
->>>>>>> Add return values to dai functions
     return (res=1)
 end
 
@@ -339,11 +320,7 @@ func decrease_allowance{
     let (is_le) = uint256_le(amount, allowance)
     assert is_le = 1
     let (new_allowance : Uint256) = uint256_sub(allowance, amount)
-<<<<<<< HEAD
     _approve(caller, spender, new_allowance)
-=======
-    _allowances.write(caller, spender, new_allowance)
->>>>>>> Add return values to dai functions
     return (res=1)
 end
 
