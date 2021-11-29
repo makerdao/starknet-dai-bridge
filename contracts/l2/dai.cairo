@@ -354,6 +354,9 @@ func _transfer{
   }(sender : felt, recipient : felt, amount : Uint256):
     alloc_locals
 
+    # check valid amount
+    uint256_check(amount)
+
     assert_not_zero(recipient)
     let (contract_address) = get_contract_address()
     assert_not_equal(recipient, contract_address)
