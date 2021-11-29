@@ -43,7 +43,7 @@ describe("L1DAIBridge", function () {
       "rely(address)",
       "deny(address)",
       "close()",
-      "deposit(address,uint256,uint256)",
+      "deposit(uint256,uint256)",
       "finalizeWithdrawal(address,uint256)",
       "forceWithdrawal(uint256,uint256)",
       "setCeiling(uint256)",
@@ -69,11 +69,7 @@ describe("L1DAIBridge", function () {
 
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
-      await expect(
-        l1Bridge
-          .connect(l1Alice)
-          .deposit(l1Alice.address, l2User, depositAmount)
-      )
+      await expect(l1Bridge.connect(l1Alice).deposit(l2User, depositAmount))
         .to.emit(l1Bridge, "Deposit")
         .withArgs(l1Alice.address, l2User, depositAmount);
 
@@ -102,9 +98,7 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
       await expect(
-        l1Bridge
-          .connect(l1Alice)
-          .deposit(l1Alice.address, l2User, depositAmount)
+        l1Bridge.connect(l1Alice).deposit(l2User, depositAmount)
       ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
     });
     it("reverts when funds too low", async () => {
@@ -119,9 +113,7 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
       await expect(
-        l1Bridge
-          .connect(l1Alice)
-          .deposit(l1Alice.address, l2User, depositAmount)
+        l1Bridge.connect(l1Alice).deposit(l2User, depositAmount)
       ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
     it("reverts when bridge is closed", async () => {
@@ -134,9 +126,7 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).close();
 
       await expect(
-        l1Bridge
-          .connect(l1Alice)
-          .deposit(l1Alice.address, l2User, depositAmount)
+        l1Bridge.connect(l1Alice).deposit(l2User, depositAmount)
       ).to.be.revertedWith("L1DAIBridge/closed");
     });
     it("reverts when ceiling is too low", async () => {
@@ -150,9 +140,7 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).setCeiling(depositAmount.sub(1));
 
       await expect(
-        l1Bridge
-          .connect(l1Alice)
-          .deposit(l1Alice.address, l2User, depositAmount)
+        l1Bridge.connect(l1Alice).deposit(l2User, depositAmount)
       ).to.be.revertedWith("L1DAIBridge/above-ceiling");
     });
   });
