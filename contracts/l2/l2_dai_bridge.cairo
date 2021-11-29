@@ -4,7 +4,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
-from starkware.cairo.common.math import (assert_le)
+from starkware.cairo.common.math import (assert_le_felt)
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
 from starkware.cairo.common.uint256 import (Uint256, uint256_le)
 
@@ -176,9 +176,6 @@ func withdraw{
     let (is_open) = _is_open.read()
     assert is_open = 1
 
-    # check valid L1 address
-    assert_l1_address(dest)
-
     let (dai) = _dai.read()
     let (caller) = get_caller_address()
 
@@ -265,6 +262,7 @@ func send_finalize_withdraw{
     range_check_ptr
   }(dest : felt, amount : Uint256):
 
+    # check valid L1 address
     assert_l1_address(dest)
 
     let (payload : felt*) = alloc()
@@ -289,7 +287,7 @@ func assert_l1_address{
     local syscall_ptr : felt* = syscall_ptr
     local pedersen_ptr : HashBuiltin* = pedersen_ptr
 
-    assert_le(l1_address, MAX_L1_ADDRESS)
+    assert_le_felt(l1_address, MAX_L1_ADDRESS)
 
     return ()
 end

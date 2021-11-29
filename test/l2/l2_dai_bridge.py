@@ -8,6 +8,7 @@ from starkware.starkware_utils.error_handling import StarkException
 
 
 L1_ADDRESS = 0x1
+INVALID_L1_ADDRESS = 0x10000000000000000000000000000000000000000
 L1_BRIDGE_ADDRESS = 0x1
 FINALIZE_WITHDRAW = 0
 
@@ -269,6 +270,35 @@ async def test_withdraw_insufficient_funds(
 
 
 @pytest.mark.asyncio
+async def test_withdraw_invalid_l1_address(
+    starknet: Starknet,
+    l2_bridge: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+    check_balances,
+):
+    await dai.approve(
+            l2_bridge.contract_address,
+            to_split_uint(10),
+        ).invoke(user1.contract_address)
+    with pytest.raises(StarkException):
+        await l2_bridge.withdraw(
+                INVALID_L1_ADDRESS,
+                to_split_uint(10)).invoke(user1.contract_address)
+
+    payload = [FINALIZE_WITHDRAW, INVALID_L1_ADDRESS, *to_split_uint(10)]
+    with pytest.raises(AssertionError):
+        starknet.consume_message_from_l2(
+            from_address=l2_bridge.contract_address,
+            to_address=L1_BRIDGE_ADDRESS,
+            payload=payload,
+        )
+
+    await check_balances(user1_balance, user2_balance)
+
+
+@pytest.mark.asyncio
 async def test_finalize_deposit(
     starknet: Starknet,
     l2_bridge: StarknetContract,
@@ -376,3 +406,37 @@ async def test_finalize_force_withdrawal_insufficient_allowance(
             to_address=L1_BRIDGE_ADDRESS,
             payload=payload,
         )
+
+
+@pytest.mark.asyncio
+async def test_finalize_force_withdrawal_invalid_l1_address(
+    starknet: Starknet,
+    l2_bridge: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    check_balances,
+):
+    await dai.approve(
+            l2_bridge.contract_address,
+            to_split_uint(10),
+        ).invoke(user1.contract_address)
+    await starknet.send_message_to_l2(
+        from_address=L1_BRIDGE_ADDRESS,
+        to_address=l2_bridge.contract_address,
+        selector="finalize_force_withdrawal",
+        payload=[
+            user1.contract_address,
+            int(INVALID_L1_ADDRESS),
+            *to_split_uint(10)
+        ],
+    )
+
+    payload = [FINALIZE_WITHDRAW, INVALID_L1_ADDRESS, *to_split_uint(10)]
+    with pytest.raises(AssertionError):
+        starknet.consume_message_from_l2(
+            from_address=l2_bridge.contract_address,
+            to_address=L1_BRIDGE_ADDRESS,
+            payload=payload,
+        )
+
+    await check_balances(user1_balance, user2_balance)
