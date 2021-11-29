@@ -15,7 +15,7 @@ from starkware.cairo.common.uint256 import (
   uint256_check
 )
 
-const MAX_SPLIT = 2**128
+const ALL_ONES = 2 ** 128 - 1
 
 @storage_var
 func _wards(user : felt) -> (res : felt):
@@ -173,7 +173,7 @@ func burn{
     let check_allowances = not_caller*not_auth
 
     if check_allowances == 1:
-      let MAX = Uint256(low=MAX_SPLIT, high=MAX_SPLIT)
+      let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (local eq) = uint256_eq(allowance, MAX)
       if eq == 0:
         let (is_le) = uint256_le(amount, allowance)
@@ -252,7 +252,7 @@ func transfer_from{
     let (local allowance : Uint256) = _allowances.read(sender, caller)
 
     if caller != sender:
-      let MAX = Uint256(low=MAX_SPLIT, high=MAX_SPLIT)
+      let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (local max_allowance) = uint256_eq(allowance, MAX)
       if max_allowance == 0:
         let (is_le) = uint256_le(amount, allowance)
@@ -287,6 +287,8 @@ func approve{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(spender: felt, amount : Uint256) -> (res : felt):
+
+    uint256_check(amount)
     let (caller) = get_caller_address()
     _allowances.write(caller, spender, amount)
 
@@ -302,8 +304,8 @@ func increase_allowance{
   }(spender : felt, amount : Uint256) -> (res : felt):
     alloc_locals
 
+    uint256_check(amount)
     let (local caller) = get_caller_address()
-
     let (allowance : Uint256) = _allowances.read(caller, spender)
     let (new_allowance: Uint256, carry : felt) = uint256_add(amount, allowance)
     # check overflow
@@ -321,8 +323,8 @@ func decrease_allowance{
   }(spender : felt, amount : Uint256) -> (res : felt):
     alloc_locals
 
+    uint256_check(amount)
     let (local caller) = get_caller_address()
-
     let (local allowance : Uint256) = _allowances.read(caller, spender)
     let (is_le) = uint256_le(amount, allowance)
     assert is_le = 1

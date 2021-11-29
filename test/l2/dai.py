@@ -7,7 +7,7 @@ from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
 
 
-MAX = (2**128, 2**128)
+MAX = (2**128-1, 2**128-1)
 L1_ADDRESS = 0x1
 
 L2_CONTRACTS_DIR = os.path.join(os.getcwd(), "contracts/l2")
@@ -406,6 +406,52 @@ async def test_can_burn_other_if_approved(
 
 
 # ALLOWANCE
+@pytest.mark.asyncio
+async def test_approve_should_not_accept_invalid_amount(
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+):
+    with pytest.raises(StarkException):
+        await dai.approve(
+                user2.contract_address,
+                (2**128, 2**128)).invoke(user1.contract_address)
+
+@pytest.mark.asyncio
+async def test_decrease_allowance_should_not_accept_invalid_amount(
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+):
+    with pytest.raises(StarkException):
+        await dai.decrease_allowance(
+                user2.contract_address,
+                (2**128, 2**128)).invoke(user1.contract_address)
+
+@pytest.mark.asyncio
+async def test_increase_allowance_should_not_accept_invalid_amount(
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+):
+    with pytest.raises(StarkException):
+        await dai.increase_allowance(
+                user2.contract_address,
+                (2**128, 2**128)).invoke(user1.contract_address)
+
+@pytest.mark.asyncio
+async def test_approve_should_not_accept_invalid_amount(
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+    user3: StarknetContract,
+):
+    with pytest.raises(StarkException):
+        await dai.approve(
+                user3.contract_address,
+                (2**128, 2**128)).invoke(user1.contract_address)
+
+
 @pytest.mark.asyncio
 async def test_transfer_using_transfer_from_and_allowance(
     dai: StarknetContract,
