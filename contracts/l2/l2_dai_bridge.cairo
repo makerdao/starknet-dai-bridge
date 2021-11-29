@@ -176,9 +176,6 @@ func withdraw{
     let (is_open) = _is_open.read()
     assert is_open = 1
 
-    # check valid L1 address
-    assert_l1_address(dest)
-
     let (dai) = _dai.read()
     let (caller) = get_caller_address()
 
@@ -265,10 +262,7 @@ func send_finalize_withdraw{
     range_check_ptr
   }(dest : felt, amount : Uint256):
 
-<<<<<<< HEAD
     # check valid L1 address
-=======
->>>>>>> Fix lack of L1-address sanity checks on L2
     assert_l1_address(dest)
 
     let (payload : felt*) = alloc()
@@ -283,22 +277,7 @@ func send_finalize_withdraw{
     return ()
 end
 
-<<<<<<< HEAD
 func assert_l1_address{range_check_ptr}(l1_address : felt):
     assert_le_felt(l1_address, MAX_L1_ADDRESS)
-=======
-func assert_l1_address{
-    syscall_ptr : felt*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(l1_address : felt):
-    alloc_locals
-
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
-
-    assert_le(l1_address, MAX_L1_ADDRESS)
-
->>>>>>> Fix lack of L1-address sanity checks on L2
     return ()
 end
