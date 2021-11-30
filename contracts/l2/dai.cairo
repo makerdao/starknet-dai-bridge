@@ -165,14 +165,7 @@ func burn{
     let (local allowance : Uint256) = _allowances.read(account, caller)
 
     let (not_caller) = is_not_zero(caller - account)
-    let (is_auth) = _wards.read(caller)
-
-    # boolean logic implemented in regular arithmetic
-    # addition and multiplication is more efficient in Cairo
-    let not_auth = 1 - is_auth
-    let check_allowances = not_caller*not_auth
-
-    if check_allowances == 1:
+    if not_caller == 1:
       let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (local eq) = uint256_eq(allowance, MAX)
       if eq == 0:

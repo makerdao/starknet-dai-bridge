@@ -356,18 +356,17 @@ async def test_should_not_burn_other(
 
 
 @pytest.mark.asyncio
-async def test_deployer_can_burn_other(
+async def test_deployer_should_not_be_able_to_burn(
     dai: StarknetContract,
     auth_user: StarknetContract,
     user1: StarknetContract,
     check_balances,
 ):
-    await dai.burn(
-        user1.contract_address,
-        to_split_uint(10),
-    ).invoke(auth_user.contract_address)
-
-    await check_balances(user1_balance-10, user2_balance)
+    with pytest.raises(StarkException):
+        await dai.burn(
+            user1.contract_address,
+            to_split_uint(10),
+        ).invoke(auth_user.contract_address)
 
 
 @pytest.mark.asyncio
