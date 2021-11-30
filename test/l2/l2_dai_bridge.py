@@ -196,10 +196,10 @@ async def test_withdraw(
             to_split_uint(10),
         ).invoke(user1.contract_address)
     await l2_bridge.withdraw(
-            user2.contract_address,
+            L1_ADDRESS,
             to_split_uint(10)).invoke(user1.contract_address)
 
-    payload = [FINALIZE_WITHDRAW, user2.contract_address, *to_split_uint(10)]
+    payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
     starknet.consume_message_from_l2(
         from_address=l2_bridge.contract_address,
         to_address=L1_BRIDGE_ADDRESS,
