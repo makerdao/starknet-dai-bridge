@@ -239,10 +239,7 @@ func transfer_from{
     _transfer(sender, recipient, amount)
 
     if caller != sender:
-<<<<<<< HEAD
       let (allowance : Uint256) = _allowances.read(sender, caller)
-=======
->>>>>>> Fix unlimited approvals and approval Uint256 checks
       let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (local max_allowance) = uint256_eq(allowance, MAX)
       if max_allowance == 0:
