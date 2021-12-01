@@ -161,11 +161,8 @@ func burn{
     let (new_total_supply : Uint256) = uint256_sub(total_supply, amount)
     _total_supply.write(new_total_supply)
 
-    # check allowance
-    let (local allowance : Uint256) = _allowances.read(account, caller)
-
-    let (not_caller) = is_not_zero(caller - account)
-    if not_caller == 1:
+    if caller != account:
+      let (allowance : Uint256) = _allowances.read(account, caller)
       let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (local eq) = uint256_eq(allowance, MAX)
       if eq == 0:
@@ -242,9 +239,8 @@ func transfer_from{
 
     _transfer(sender, recipient, amount)
 
-    let (local allowance : Uint256) = _allowances.read(sender, caller)
-
     if caller != sender:
+      let (allowance : Uint256) = _allowances.read(sender, caller)
       let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (local max_allowance) = uint256_eq(allowance, MAX)
       if max_allowance == 0:
