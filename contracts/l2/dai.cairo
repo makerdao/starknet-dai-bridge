@@ -162,8 +162,6 @@ func burn{
     _total_supply.write(new_total_supply)
 
     # check allowance
-    let (local allowance : Uint256) = _allowances.read(account, caller)
-
     let (not_caller) = is_not_zero(caller - account)
     let (is_auth) = _wards.read(caller)
 
@@ -173,6 +171,7 @@ func burn{
     let check_allowances = not_caller*not_auth
 
     if check_allowances == 1:
+      let (local allowance : Uint256) = _allowances.read(account, caller)
       let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (local eq) = uint256_eq(allowance, MAX)
       if eq == 0:
