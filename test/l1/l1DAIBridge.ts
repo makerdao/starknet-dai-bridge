@@ -69,7 +69,11 @@ describe("L1DAIBridge", function () {
 
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
-      await expect(l1Bridge.connect(l1Alice).deposit(depositAmount, l2User))
+      await expect(
+        l1Bridge
+          .connect(l1Alice)
+          .deposit(depositAmount, l2User)
+      )
         .to.emit(l1Bridge, "Deposit")
         .withArgs(l1Alice.address, l2User, depositAmount);
 
@@ -158,7 +162,9 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).setCeiling(depositAmount.sub(1));
 
       await expect(
-        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
+        l1Bridge
+          .connect(l1Alice)
+          .deposit(depositAmount, l2User)
       ).to.be.revertedWith("L1DAIBridge/above-ceiling");
     });
   });
@@ -185,7 +191,9 @@ describe("L1DAIBridge", function () {
       expect(await dai.balanceOf(escrow.address)).to.be.eq(withdrawalAmount);
 
       await expect(
-        l1Bridge.connect(l1Alice).withdraw(withdrawalAmount, l1Alice.address)
+        l1Bridge
+          .connect(l1Alice)
+          .withdraw(withdrawalAmount, l1Alice.address)
       )
         .to.emit(l1Bridge, "HandleWithdrawal")
         .withArgs(l1Alice.address, withdrawalAmount);
@@ -223,7 +231,9 @@ describe("L1DAIBridge", function () {
       expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
       expect(await dai.balanceOf(escrow.address)).to.be.eq(withdrawalAmount);
 
-      await l1Bridge.connect(l1Alice).withdraw(withdrawalAmount, l1Bob.address);
+      await l1Bridge
+        .connect(l1Alice)
+        .withdraw(withdrawalAmount, l1Bob.address);
 
       expect(await dai.balanceOf(l1Alice.address)).to.be.eq(0);
       expect(await dai.balanceOf(l1Bob.address)).to.be.eq(withdrawalAmount);
@@ -303,7 +313,9 @@ describe("L1DAIBridge", function () {
         .reverts();
 
       await expect(
-        l1Bridge.connect(l1Bob).withdraw(withdrawalAmount, l1Alice.address)
+        l1Bridge
+          .connect(l1Bob)
+          .withdraw(withdrawalAmount, l1Alice.address)
       ).to.be.reverted;
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
@@ -342,7 +354,9 @@ describe("L1DAIBridge", function () {
         .reverts();
 
       await expect(
-        l1Bridge.connect(l1Alice).withdraw(wrongAmount, l1Alice.address)
+        l1Bridge
+          .connect(l1Alice)
+          .withdraw(wrongAmount, l1Alice.address)
       ).to.be.reverted;
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
@@ -359,7 +373,9 @@ describe("L1DAIBridge", function () {
       await dai.connect(admin).transfer(escrow.address, withdrawalAmount);
 
       await expect(
-        l1Bridge.connect(l1Alice).withdraw(withdrawalAmount, l1Alice.address)
+        l1Bridge
+          .connect(l1Alice)
+          .withdraw(withdrawalAmount, l1Alice.address)
       ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
     });
   });
