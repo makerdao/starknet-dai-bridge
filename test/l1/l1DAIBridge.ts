@@ -96,7 +96,6 @@ describe("L1DAIBridge", function () {
       await expect(
         l1Bridge.connect(l1Alice).deposit(l2DaiAddress, depositAmount)
       ).to.be.revertedWith("L1DAIBridge/invalid-address");
-
     });
 
     it("reverts when approval is too low", async () => {
@@ -451,7 +450,8 @@ describe("L1DAIBridge", function () {
   testAuth({
     name: "L1DAIBridge",
     getDeployArgs: async () => {
-      const { starkNetFake, dai, escrow, l2BridgeAddress, l2DaiAddress } = await setupTest();
+      const { starkNetFake, dai, escrow, l2BridgeAddress, l2DaiAddress } =
+        await setupTest();
       return [
         starkNetFake.address,
         dai.address,
@@ -493,7 +493,7 @@ async function setupTest() {
     escrow: escrow as any,
     l1Bridge: l1Bridge as any,
     l2BridgeAddress: L2_DAI_BRIDGE_ADDRESS,
-    l2DaiAddress: L2_DAI_ADDRESS
+    l2DaiAddress: L2_DAI_ADDRESS,
   };
 }
 
