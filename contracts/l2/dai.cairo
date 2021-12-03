@@ -370,7 +370,6 @@ func _approve{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(caller: felt, spender: felt, amount: Uint256):
-    assert_not_zero(caller)
     assert_not_zero(spender)
     _allowances.write(caller, spender, amount)
     return ()
