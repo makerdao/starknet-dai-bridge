@@ -85,6 +85,7 @@ async function main(): Promise<void> {
   const l1DAIBridge = await deployL1("L1DAIBridge", [
     L1_STARKNET_ADDRESS,
     L1_DAI_ADDRESS,
+    l2DAI.address,
     l1Escrow.address,
     l2DAIBridge.address,
   ]);

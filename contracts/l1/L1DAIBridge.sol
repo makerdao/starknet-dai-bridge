@@ -63,6 +63,7 @@ contract L1DAIBridge {
 
     address public immutable starkNet;
     address public immutable dai;
+    uint256 public immutable l2Dai;
     address public immutable escrow;
     uint256 public immutable l2DaiBridge;
 
@@ -92,6 +93,7 @@ contract L1DAIBridge {
     constructor(
         address _starkNet,
         address _dai,
+        uint256 _l2Dai,
         address _escrow,
         uint256 _l2DaiBridge
     ) {
@@ -100,6 +102,7 @@ contract L1DAIBridge {
 
         starkNet = _starkNet;
         dai = _dai;
+        l2Dai = _l2Dai;
         escrow = _escrow;
         l2DaiBridge = _l2DaiBridge;
     }
@@ -114,7 +117,7 @@ contract L1DAIBridge {
         uint256 amount
     ) external whenOpen {
 
-        require(to != 0, "L1DAIBridge/invalid-address");
+        require(to != 0 && to != l2Dai, "L1DAIBridge/invalid-address");
 
         emit Deposit(msg.sender, to, amount);
 
