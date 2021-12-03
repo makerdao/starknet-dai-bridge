@@ -48,7 +48,7 @@ func symbol{} () -> (res: felt):
 end
 
 @view
-func total_supply{
+func totalSupply{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
@@ -58,7 +58,7 @@ func total_supply{
 end
 
 @view
-func balance_of{
+func balanceOf{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
@@ -226,7 +226,7 @@ func transfer{
 end
 
 @external
-func transfer_from{
+func transferFrom{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
@@ -284,7 +284,7 @@ func approve{
 end
 
 @external
-func increase_allowance{
+func increaseAllowance{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
@@ -303,7 +303,7 @@ func increase_allowance{
 end
 
 @external
-func decrease_allowance{
+func decreaseAllowance{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,

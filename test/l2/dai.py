@@ -105,10 +105,10 @@ async def check_balances(
         expected_user1_balance,
         expected_user2_balance,
     ):
-        user1_balance = await dai.balance_of(user1.contract_address).call()
-        user2_balance = await dai.balance_of(user2.contract_address).call()
-        user3_balance = await dai.balance_of(user3.contract_address).call()
-        total_supply = await dai.total_supply().call()
+        user1_balance = await dai.balanceOf(user1.contract_address).call()
+        user2_balance = await dai.balanceOf(user2.contract_address).call()
+        user3_balance = await dai.balanceOf(user3.contract_address).call()
+        total_supply = await dai.totalSupply().call()
 
         assert user1_balance.result == (to_split_uint(expected_user1_balance),)
         assert user2_balance.result == (to_split_uint(expected_user2_balance),)
@@ -155,9 +155,9 @@ async def before_each(
             user2.contract_address,
             to_split_uint(100)).invoke(auth_user.contract_address)
 
-    balance = await dai.balance_of(user1.contract_address).call()
+    balance = await dai.balanceOf(user1.contract_address).call()
     user1_balance = to_uint(balance.result[0])
-    balance = await dai.balance_of(user2.contract_address).call()
+    balance = await dai.balanceOf(user2.contract_address).call()
     user2_balance = to_uint(balance.result[0])
 
 
@@ -168,7 +168,7 @@ async def before_each(
 async def test_total_supply(
     dai: StarknetContract,
 ):
-    total_supply = await dai.total_supply().call()
+    total_supply = await dai.totalSupply().call()
 
     assert total_supply.result == (to_split_uint(200),)
 
@@ -178,7 +178,7 @@ async def test_balance_of(
     dai: StarknetContract,
     user1: StarknetContract,
 ):
-    balance = await dai.balance_of(user1.contract_address).call()
+    balance = await dai.balanceOf(user1.contract_address).call()
 
     assert balance.result == (to_split_uint(user1_balance),)
 
@@ -222,7 +222,7 @@ async def test_transfer_from(
     await dai.approve(
             user3.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
-    await dai.transfer_from(
+    await dai.transferFrom(
         user1.contract_address,
         user2.contract_address,
         to_split_uint(10)).invoke(user3.contract_address)
@@ -237,7 +237,7 @@ async def test_transfer_to_yourself_using_transfer_from(
     dai: StarknetContract,
     user1: StarknetContract,
 ):
-    await dai.transfer_from(
+    await dai.transferFrom(
         user1.contract_address,
         user1.contract_address,
         to_split_uint(10)).invoke(user1.contract_address)
@@ -480,7 +480,7 @@ async def test_transfer_using_transfer_from_and_allowance(
             user3.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
 
-    await dai.transfer_from(
+    await dai.transferFrom(
             user1.contract_address,
             user2.contract_address,
             to_split_uint(10),
@@ -505,7 +505,7 @@ async def test_should_not_transfer_beyond_allowance(
         user3.contract_address).call()
 
     with pytest.raises(StarkException):
-        await dai.transfer_from(
+        await dai.transferFrom(
             user1.contract_address,
             user2.contract_address,
             to_split_uint(to_uint(allowance.result[0])+1),
@@ -560,7 +560,7 @@ async def test_increase_allowance(
     await dai.approve(
             user2.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
-    await dai.increase_allowance(
+    await dai.increaseAllowance(
             user2.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
 
@@ -580,7 +580,7 @@ async def test_should_not_increase_allowance_beyond_max(
             user2.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
     with pytest.raises(StarkException):
-        await dai.increase_allowance(
+        await dai.increaseAllowance(
                 user2.contract_address, MAX).invoke(user1.contract_address)
 
 
@@ -593,7 +593,7 @@ async def test_decrease_allowance(
     await dai.approve(
             user2.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
-    await dai.decrease_allowance(
+    await dai.decreaseAllowance(
             user2.contract_address,
             to_split_uint(1)).invoke(user1.contract_address)
 
@@ -618,7 +618,7 @@ async def test_should_not_decrease_allowance_beyond_allowance(
         user2.contract_address).call()
 
     with pytest.raises(StarkException):
-        await dai.decrease_allowance(
+        await dai.decreaseAllowance(
             user2.contract_address,
             to_split_uint(to_uint(allowance.result[0]) + 1),
         ).invoke(user1.contract_address)
@@ -635,7 +635,7 @@ async def test_does_not_decrease_allowance_using_transfer_from(
 ):
     await dai.approve(
             user3.contract_address, MAX).invoke(user1.contract_address)
-    await dai.transfer_from(
+    await dai.transferFrom(
             user1.contract_address,
             user2.contract_address,
             to_split_uint(10),

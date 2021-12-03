@@ -22,7 +22,7 @@ namespace IDAI:
     func allowance(owner : felt, spender : felt) -> (res : Uint256):
     end
 
-    func balance_of(user : felt) -> (res : Uint256):
+    func balanceOf(user : felt) -> (res : Uint256):
     end
 end
 
@@ -168,11 +168,11 @@ func constructor{
 end
 
 @external
-func withdraw{
+func initiate_withdraw{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(dest : felt, amount : Uint256):
+  }(l1_recipient : felt, amount : Uint256):
     let (is_open) = _is_open.read()
     assert is_open = 1
 
@@ -181,19 +181,19 @@ func withdraw{
 
     IDAI.burn(dai, caller, amount)
 
-    send_finalize_withdraw(dest, amount)
+    send_handle_withdraw(l1_recipient, amount)
 
     return ()
 end
 
 @l1_handler
-func finalize_deposit{
+func handle_deposit{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(
     from_address : felt,
-    dest : felt,
+    account: felt,
     amount_low : felt,
     amount_high : felt
   ):
@@ -203,13 +203,13 @@ func finalize_deposit{
 
     let amount = Uint256(low=amount_low, high=amount_high)
     let (dai) = _dai.read()
-    IDAI.mint(dai, dest, amount)
+    IDAI.mint(dai, account, amount)
 
     return ()
 end
 
 @l1_handler
-func finalize_force_withdrawal{
+func handle_force_withdrawal{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
@@ -237,7 +237,7 @@ func finalize_force_withdrawal{
 
     # check l2 DAI balance
     let amount = Uint256(low=amount_low, high=amount_high)
-    let (balance : Uint256) = IDAI.balance_of(dai, source)
+    let (balance : Uint256) = IDAI.balanceOf(dai, source)
     let (balance_check) = uint256_le(amount, balance)
     if balance_check == 0:
         return ()
@@ -252,11 +252,11 @@ func finalize_force_withdrawal{
     end
 
     IDAI.burn(dai, source, amount)
-    send_finalize_withdraw(dest, amount)
+    send_handle_withdraw(dest, amount)
     return ()
 end
 
-func send_finalize_withdraw{
+func send_handle_withdraw{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr

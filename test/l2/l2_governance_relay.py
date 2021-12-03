@@ -159,10 +159,10 @@ async def check_balances(
         expected_user1_balance,
         expected_user2_balance,
     ):
-        user1_balance = await dai.balance_of(user1.contract_address).call()
-        user2_balance = await dai.balance_of(user2.contract_address).call()
-        user3_balance = await dai.balance_of(user3.contract_address).call()
-        total_supply = await dai.total_supply().call()
+        user1_balance = await dai.balanceOf(user1.contract_address).call()
+        user2_balance = await dai.balanceOf(user2.contract_address).call()
+        user3_balance = await dai.balanceOf(user3.contract_address).call()
+        total_supply = await dai.totalSupply().call()
 
         assert user1_balance.result == (to_split_uint(expected_user1_balance),)
         assert user2_balance.result == (to_split_uint(expected_user2_balance),)
@@ -236,9 +236,9 @@ async def before_each(
             user2.contract_address,
             to_split_uint(100)).invoke(auth_user.contract_address)
 
-    balance = await dai.balance_of(user1.contract_address).call()
+    balance = await dai.balanceOf(user1.contract_address).call()
     user1_balance = to_uint(balance.result[0])
-    balance = await dai.balance_of(user2.contract_address).call()
+    balance = await dai.balanceOf(user2.contract_address).call()
     user2_balance = to_uint(balance.result[0])
 
 
