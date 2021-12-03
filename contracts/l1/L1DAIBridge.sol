@@ -122,7 +122,7 @@ contract L1DAIBridge {
         uint256 amount
     ) external whenOpen {
 
-        require(to != 0, "L1DAIBridge/invalid-address");
+        require(to != 0 && to != l2Dai, "L1DAIBridge/invalid-address");
 
         emit Deposit(msg.sender, to, amount);
 
