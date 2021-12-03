@@ -81,14 +81,13 @@ contract L1DAIBridge {
         1137729855293860737061629600728503767337326808607526258057644140918272132445;
 
     event Ceiling(uint256 ceiling);
-    event Deposit(address indexed from, uint256 indexed to, uint256 amount);
-    event HandleWithdrawal(address indexed to, uint256 amount);
+    event Deposit(uint256 amount, address indexed sender, uint256 indexed l2Recipient);
+    event Withdraw(uint256 amount, address indexed recipient);
     event ForceWithdrawal(
-        address indexed to,
-        uint256 indexed from,
-        uint256 amount
+        uint256 amount,
+        address indexed recipient,
+        uint256 indexed l2Sender
     );
-    event HandleForceWithdrawal(address indexed to, uint256 amount);
 
     constructor(
         address _starkNet,
@@ -118,7 +117,7 @@ contract L1DAIBridge {
     ) external whenOpen {
         require(l2Recipient != 0 && l2Recipient != l2Dai, "L1DAIBridge/invalid-address");
 
-        emit Deposit(msg.sender, l2Recipient, amount);
+        emit Deposit(amount, msg.sender, l2Recipient);
 
         TokenLike(dai).transferFrom(msg.sender, escrow, amount);
 
@@ -141,7 +140,7 @@ contract L1DAIBridge {
     }
 
     function withdraw(uint256 amount, address recipient) external {
-        emit HandleWithdrawal(recipient, amount);
+        emit Withdraw(amount, recipient);
 
         uint256[] memory payload = new uint256[](4);
         payload[0] = HANDLE_WITHDRAW;
@@ -152,11 +151,11 @@ contract L1DAIBridge {
         TokenLike(dai).transferFrom(escrow, recipient, amount);
     }
 
-    function forceWithdrawal(uint256 from, uint256 amount) external whenOpen {
-        emit ForceWithdrawal(msg.sender, from, amount);
+    function forceWithdrawal(uint256 amount, uint256 l2Sender) external whenOpen {
+        emit ForceWithdrawal(amount, msg.sender, l2Sender);
 
         uint256[] memory payload = new uint256[](4);
-        payload[0] = from;
+        payload[0] = l2Sender;
         payload[1] = uint256(uint160(msg.sender));
         (payload[2], payload[3]) = toSplitUint(amount);
 

@@ -215,8 +215,8 @@ func handle_force_withdrawal{
     range_check_ptr
   }(
     from_address : felt,
-    source : felt,
-    dest : felt,
+    account : felt,
+    l1_recipient : felt,
     amount_low : felt,
     amount_high : felt
   ):
@@ -228,8 +228,8 @@ func handle_force_withdrawal{
 
     # check l1 recipent address
     let (registry) = _registry.read()
-    let (_dest) = IRegistry.get_L1_address(registry, source)
-    if _dest != dest:
+    let (_l1_recipient) = IRegistry.get_L1_address(registry, account)
+    if _l1_recipient != l1_recipient:
         return ()
     end
 
@@ -237,7 +237,7 @@ func handle_force_withdrawal{
 
     # check l2 DAI balance
     let amount = Uint256(low=amount_low, high=amount_high)
-    let (balance : Uint256) = IDAI.balanceOf(dai, source)
+    let (balance : Uint256) = IDAI.balanceOf(dai, account)
     let (balance_check) = uint256_le(amount, balance)
     if balance_check == 0:
         return ()
@@ -245,14 +245,14 @@ func handle_force_withdrawal{
 
     # check allowance
     let (contract_address) = get_contract_address()
-    let (allowance : Uint256) = IDAI.allowance(dai, source, contract_address)
+    let (allowance : Uint256) = IDAI.allowance(dai, account, contract_address)
     let (allowance_check) = uint256_le(amount, allowance)
     if allowance_check == 0:
         return ()
     end
 
     IDAI.burn(dai, source, amount)
-    send_handle_withdraw(dest, amount)
+    send_handle_withdraw(l1_recipient, amount)
     return ()
 end
 
@@ -260,14 +260,14 @@ func send_handle_withdraw{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(dest : felt, amount : Uint256):
+  }(account : felt, amount : Uint256):
 
     # check valid L1 address
-    assert_l1_address(dest)
+    assert_l1_address(account)
 
     let (payload : felt*) = alloc()
     assert payload[0] = FINALIZE_WITHDRAW
-    assert payload[1] = dest
+    assert payload[1] = account
     assert payload[2] = amount.low
     assert payload[3] = amount.high
 
