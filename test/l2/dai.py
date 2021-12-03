@@ -423,7 +423,7 @@ async def test_decrease_allowance_should_not_accept_invalid_amount(
     user2: StarknetContract,
 ):
     with pytest.raises(StarkException):
-        await dai.decrease_allowance(
+        await dai.decreaseAllowance(
                 user2.contract_address,
                 (2**128, 2**128)).invoke(user1.contract_address)
 
@@ -434,7 +434,7 @@ async def test_increase_allowance_should_not_accept_invalid_amount(
     user2: StarknetContract,
 ):
     with pytest.raises(StarkException):
-        await dai.increase_allowance(
+        await dai.increaseAllowance(
                 user2.contract_address,
                 (2**128, 2**128)).invoke(user1.contract_address)
 
@@ -453,7 +453,7 @@ async def test_decrease_allowance_should_not_accept_zero_addresses(
     user1: StarknetContract,
 ):
     with pytest.raises(StarkException):
-        await dai.decrease_allowance(0, to_split_uint(1)).invoke(user1.contract_address)
+        await dai.decreaseAllowance(0, to_split_uint(1)).invoke(user1.contract_address)
 
 
 @pytest.mark.asyncio
@@ -463,10 +463,10 @@ async def test_increase_allowance_should_not_accept_zero_addresses(
     user2: StarknetContract,
 ):
     with pytest.raises(StarkException):
-        await dai.increase_allowance(0, to_split_uint(1)).invoke(user1.contract_address)
+        await dai.increaseAllowance(0, to_split_uint(1)).invoke(user1.contract_address)
 
     with pytest.raises(StarkException):
-        await dai.increase_allowance(0, to_split_uint(1)).invoke(0)
+        await dai.increaseAllowance(0, to_split_uint(1)).invoke(0)
 
 @pytest.mark.asyncio
 async def test_transfer_using_transfer_from_and_allowance(
