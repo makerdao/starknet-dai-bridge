@@ -475,7 +475,8 @@ describe("L1DAIBridge", function () {
   testAuth({
     name: "L1DAIBridge",
     getDeployArgs: async () => {
-      const { starkNetFake, dai, escrow, l2BridgeAddress, l2DaiAddress } = await setupTest();
+      const { starkNetFake, dai, escrow, l2BridgeAddress, l2DaiAddress } =
+        await setupTest();
       return [
         starkNetFake.address,
         dai.address,
@@ -517,7 +518,7 @@ async function setupTest() {
     escrow: escrow as any,
     l1Bridge: l1Bridge as any,
     l2BridgeAddress: L2_DAI_BRIDGE_ADDRESS,
-    l2DaiAddress: L2_DAI_ADDRESS
+    l2DaiAddress: L2_DAI_ADDRESS,
   };
 }
 
