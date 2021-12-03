@@ -112,9 +112,7 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
       await expect(
-        l1Bridge
-          .connect(l1Alice)
-          .deposit(depositAmount, l2User)
+        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
       ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
     });
     it("reverts when funds too low", async () => {
@@ -129,9 +127,7 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
       await expect(
-        l1Bridge
-          .connect(l1Alice)
-          .deposit(depositAmount, l2User)
+        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
       ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
     it("reverts when bridge is closed", async () => {
