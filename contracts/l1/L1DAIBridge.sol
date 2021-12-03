@@ -69,7 +69,7 @@ contract L1DAIBridge {
 
     uint256 public ceiling = 0;
 
-    uint256 constant FINALIZE_WITHDRAW = 0;
+    uint256 constant HANDLE_WITHDRAW = 0;
 
     // src/starkware/cairo/lang/cairo_constants.py
     //  2 ** 251 + 17 * 2 ** 192 + 1;
@@ -77,23 +77,23 @@ contract L1DAIBridge {
         3618502788666131213697322783095070105623107215331596699973092056135872020481;
 
     //  from starkware.starknet.compiler.compile import get_selector_from_name
-    //  print(get_selector_from_name('finalize_deposit'))
+    //  print(get_selector_from_name('handle_deposit'))
     uint256 constant DEPOSIT =
-        1523838171560039099257556432344066729220707462881094726430257427074598770742;
+        1285101517810983806491589552491143496277809242732141897358598292095611420389;
 
-    //  print(get_selector_from_name('finalize_force_withdrawal'))
+    //  print(get_selector_from_name('handle_force_withdrawal'))
     uint256 constant FORCE_WITHDRAW =
-        564231610187525314777546578127020298415997786138103002442821814044854275916;
+        1137729855293860737061629600728503767337326808607526258057644140918272132445;
 
     event Ceiling(uint256 ceiling);
     event Deposit(address indexed from, uint256 indexed to, uint256 amount);
-    event FinalizeWithdrawal(address indexed to, uint256 amount);
+    event HandleWithdrawal(address indexed to, uint256 amount);
     event ForceWithdrawal(
         address indexed to,
         uint256 indexed from,
         uint256 amount
     );
-    event FinalizeForceWithdrawal(address indexed to, uint256 amount);
+    event HandleForceWithdrawal(address indexed to, uint256 amount);
 
     constructor(
         address _starkNet,
@@ -118,13 +118,12 @@ contract L1DAIBridge {
     }
 
     function deposit(
-        uint256 to,
-        uint256 amount
+        uint256 amount,
+        uint256 l2Recipient
     ) external whenOpen {
+        require(l2Recipient != 0 && l2Recipient != l2Dai, "L1DAIBridge/invalid-address");
 
-        require(to != 0 && to != l2Dai, "L1DAIBridge/invalid-address");
-
-        emit Deposit(msg.sender, to, amount);
+        emit Deposit(msg.sender, l2Recipient, amount);
 
         require(to != 0 && to != l2Dai && to < SN_PRIME, "L1DAIBridge/invalid-address");
 
@@ -138,7 +137,7 @@ contract L1DAIBridge {
         );
 
         uint256[] memory payload = new uint256[](3);
-        payload[0] = to;
+        payload[0] = l2Recipient;
         (payload[1], payload[2]) = toSplitUint(amount);
 
         StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, DEPOSIT, payload);
@@ -150,16 +149,16 @@ contract L1DAIBridge {
       return (low, high);
     }
 
-    function finalizeWithdrawal(address to, uint256 amount) external {
-        emit FinalizeWithdrawal(to, amount);
+    function withdraw(uint256 amount, address recipient) external {
+        emit HandleWithdrawal(recipient, amount);
 
         uint256[] memory payload = new uint256[](4);
-        payload[0] = FINALIZE_WITHDRAW;
+        payload[0] = HANDLE_WITHDRAW;
         payload[1] = uint256(uint160(msg.sender));
         (payload[2], payload[3]) = toSplitUint(amount);
 
         StarkNetLike(starkNet).consumeMessageFromL2(l2DaiBridge, payload);
-        TokenLike(dai).transferFrom(escrow, to, amount);
+        TokenLike(dai).transferFrom(escrow, recipient, amount);
     }
 
     function forceWithdrawal(uint256 from, uint256 amount) external whenOpen {

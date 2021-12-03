@@ -107,10 +107,10 @@ async def check_balances(
         expected_user1_balance,
         expected_user2_balance,
     ):
-        user1_balance = await dai.balance_of(user1.contract_address).call()
-        user2_balance = await dai.balance_of(user2.contract_address).call()
-        user3_balance = await dai.balance_of(user3.contract_address).call()
-        total_supply = await dai.total_supply().call()
+        user1_balance = await dai.balanceOf(user1.contract_address).call()
+        user2_balance = await dai.balanceOf(user2.contract_address).call()
+        user3_balance = await dai.balanceOf(user3.contract_address).call()
+        total_supply = await dai.totalSupply().call()
 
         assert user1_balance.result == (to_split_uint(expected_user1_balance),)
         assert user2_balance.result == (to_split_uint(expected_user2_balance),)
@@ -173,9 +173,9 @@ async def before_each(
             user2.contract_address,
             to_split_uint(100)).invoke(auth_user.contract_address)
 
-    balance = await dai.balance_of(user1.contract_address).call()
+    balance = await dai.balanceOf(user1.contract_address).call()
     user1_balance = to_uint(balance.result[0])
-    balance = await dai.balance_of(user2.contract_address).call()
+    balance = await dai.balanceOf(user2.contract_address).call()
     user2_balance = to_uint(balance.result[0])
 
 
@@ -183,7 +183,7 @@ async def before_each(
 # TESTS #
 #########
 @pytest.mark.asyncio
-async def test_withdraw(
+async def test_initiate_withdraw(
     starknet: Starknet,
     l2_bridge: StarknetContract,
     dai: StarknetContract,
@@ -195,7 +195,7 @@ async def test_withdraw(
             l2_bridge.contract_address,
             to_split_uint(10),
         ).invoke(user1.contract_address)
-    await l2_bridge.withdraw(
+    await l2_bridge.initiate_withdraw(
             L1_ADDRESS,
             to_split_uint(10)).invoke(user1.contract_address)
 
@@ -219,7 +219,7 @@ async def test_close_should_fail_when_not_authorized(
 
 
 @pytest.mark.asyncio
-async def test_withdraw_should_fail_when_closed(
+async def test_initiate_withdraw_should_fail_when_closed(
     starknet: Starknet,
     l2_bridge: StarknetContract,
     dai: StarknetContract,
@@ -235,7 +235,7 @@ async def test_withdraw_should_fail_when_closed(
     await l2_bridge.close().invoke(auth_user.contract_address)
 
     with pytest.raises(Exception):
-        await l2_bridge.withdraw(
+        await l2_bridge.initiate_withdraw(
                 user2.contract_address,
                 to_split_uint(10)).invoke(user1.contract_address)
 
@@ -249,14 +249,14 @@ async def test_withdraw_should_fail_when_closed(
 
 
 @pytest.mark.asyncio
-async def test_withdraw_insufficient_funds(
+async def test_initiate_withdraw_insufficient_funds(
     starknet: Starknet,
     l2_bridge: StarknetContract,
     user2: StarknetContract,
     user3: StarknetContract,
 ):
     with pytest.raises(StarkException):
-        await l2_bridge.withdraw(
+        await l2_bridge.initiate_withdraw(
                 user2.contract_address,
                 to_split_uint(10)).invoke(user3.contract_address)
 
@@ -283,7 +283,7 @@ async def test_withdraw_invalid_l1_address(
             to_split_uint(10),
         ).invoke(user1.contract_address)
     with pytest.raises(StarkException):
-        await l2_bridge.withdraw(
+        await l2_bridge.initiate_withdraw(
                 INVALID_L1_ADDRESS,
                 to_split_uint(10)).invoke(user1.contract_address)
 
@@ -299,7 +299,7 @@ async def test_withdraw_invalid_l1_address(
 
 
 @pytest.mark.asyncio
-async def test_finalize_deposit(
+async def test_handle_deposit(
     starknet: Starknet,
     l2_bridge: StarknetContract,
     user2: StarknetContract,
@@ -308,7 +308,7 @@ async def test_finalize_deposit(
     await starknet.send_message_to_l2(
         from_address=L1_BRIDGE_ADDRESS,
         to_address=l2_bridge.contract_address,
-        selector="finalize_deposit",
+        selector="handle_deposit",
         payload=[
             user2.contract_address,
             *to_split_uint(10)
@@ -319,7 +319,7 @@ async def test_finalize_deposit(
 
 
 @pytest.mark.asyncio
-async def test_finalize_force_withdrawal(
+async def test_handle_force_withdrawal(
     starknet: Starknet,
     l2_bridge: StarknetContract,
     dai: StarknetContract,
@@ -333,7 +333,7 @@ async def test_finalize_force_withdrawal(
     await starknet.send_message_to_l2(
         from_address=L1_BRIDGE_ADDRESS,
         to_address=l2_bridge.contract_address,
-        selector="finalize_force_withdrawal",
+        selector="handle_force_withdrawal",
         payload=[
             user1.contract_address,
             int(L1_ADDRESS),
@@ -352,7 +352,7 @@ async def test_finalize_force_withdrawal(
 
 
 @pytest.mark.asyncio
-async def test_finalize_force_withdrawal_insufficient_funds(
+async def test_handle_force_withdrawal_insufficient_funds(
     starknet: Starknet,
     l2_bridge: StarknetContract,
     dai: StarknetContract,
@@ -365,7 +365,7 @@ async def test_finalize_force_withdrawal_insufficient_funds(
     await starknet.send_message_to_l2(
         from_address=L1_BRIDGE_ADDRESS,
         to_address=l2_bridge.contract_address,
-        selector="finalize_force_withdrawal",
+        selector="handle_force_withdrawal",
         payload=[
             user3.contract_address,
             int(L1_ADDRESS),
@@ -383,7 +383,7 @@ async def test_finalize_force_withdrawal_insufficient_funds(
 
 
 @pytest.mark.asyncio
-async def test_finalize_force_withdrawal_insufficient_allowance(
+async def test_handle_force_withdrawal_insufficient_allowance(
     starknet: Starknet,
     l2_bridge: StarknetContract,
     user1: StarknetContract,
@@ -391,7 +391,7 @@ async def test_finalize_force_withdrawal_insufficient_allowance(
     await starknet.send_message_to_l2(
         from_address=L1_BRIDGE_ADDRESS,
         to_address=l2_bridge.contract_address,
-        selector="finalize_force_withdrawal",
+        selector="handle_force_withdrawal",
         payload=[
             user1.contract_address,
             int(L1_ADDRESS),

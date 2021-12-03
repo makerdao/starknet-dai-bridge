@@ -14,10 +14,10 @@ chai.use(smock.matchers);
 
 const MAX_UINT256 = hre.ethers.constants.MaxUint256;
 const DEPOSIT = parseFixed(
-  "1523838171560039099257556432344066729220707462881094726430257427074598770742"
+  "1285101517810983806491589552491143496277809242732141897358598292095611420389"
 );
 const FORCE_WITHDRAW = parseFixed(
-  "564231610187525314777546578127020298415997786138103002442821814044854275916"
+  "1137729855293860737061629600728503767337326808607526258057644140918272132445"
 );
 
 const WITHDRAW = 0;
@@ -45,7 +45,7 @@ describe("L1DAIBridge", function () {
       "deny(address)",
       "close()",
       "deposit(uint256,uint256)",
-      "finalizeWithdrawal(address,uint256)",
+      "withdraw(uint256,address)",
       "forceWithdrawal(uint256,uint256)",
       "setCeiling(uint256)",
     ]);
@@ -70,7 +70,11 @@ describe("L1DAIBridge", function () {
 
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
-      await expect(l1Bridge.connect(l1Alice).deposit(l2User, depositAmount))
+      await expect(
+        l1Bridge
+          .connect(l1Alice)
+          .deposit(depositAmount, l2User)
+      )
         .to.emit(l1Bridge, "Deposit")
         .withArgs(l1Alice.address, l2User, depositAmount);
 
@@ -91,11 +95,11 @@ describe("L1DAIBridge", function () {
       const depositAmount = eth("333");
 
       await expect(
-        l1Bridge.connect(l1Alice).deposit("0", depositAmount)
+        l1Bridge.connect(l1Alice).deposit(depositAmount, "0")
       ).to.be.revertedWith("L1DAIBridge/invalid-address");
 
       await expect(
-        l1Bridge.connect(l1Alice).deposit(l2DaiAddress, depositAmount)
+        l1Bridge.connect(l1Alice).deposit(depositAmount, l2DaiAddress)
       ).to.be.revertedWith("L1DAIBridge/invalid-address");
 
       // 2 ** 251 + 17 * 2 ** 192 + 1
@@ -137,7 +141,9 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
       await expect(
-        l1Bridge.connect(l1Alice).deposit(l2User, depositAmount)
+        l1Bridge
+          .connect(l1Alice)
+          .deposit(depositAmount, l2User)
       ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
     });
     it("reverts when funds too low", async () => {
@@ -152,7 +158,9 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
       await expect(
-        l1Bridge.connect(l1Alice).deposit(l2User, depositAmount)
+        l1Bridge
+          .connect(l1Alice)
+          .deposit(depositAmount, l2User)
       ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
     it("reverts when bridge is closed", async () => {
@@ -165,7 +173,9 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).close();
 
       await expect(
-        l1Bridge.connect(l1Alice).deposit(l2User, depositAmount)
+        l1Bridge
+          .connect(l1Alice)
+          .deposit(depositAmount, l2User)
       ).to.be.revertedWith("L1DAIBridge/closed");
     });
     it("reverts when ceiling is too low", async () => {
@@ -179,11 +189,13 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).setCeiling(depositAmount.sub(1));
 
       await expect(
-        l1Bridge.connect(l1Alice).deposit(l2User, depositAmount)
+        l1Bridge
+          .connect(l1Alice)
+          .deposit(depositAmount, l2User)
       ).to.be.revertedWith("L1DAIBridge/above-ceiling");
     });
   });
-  describe("finalizeWithdrawal", function () {
+  describe("withdraw", function () {
     it("sends funds from the escrow", async () => {
       const {
         admin,
@@ -208,9 +220,9 @@ describe("L1DAIBridge", function () {
       await expect(
         l1Bridge
           .connect(l1Alice)
-          .finalizeWithdrawal(l1Alice.address, withdrawalAmount)
+          .withdraw(withdrawalAmount, l1Alice.address)
       )
-        .to.emit(l1Bridge, "FinalizeWithdrawal")
+        .to.emit(l1Bridge, "HandleWithdrawal")
         .withArgs(l1Alice.address, withdrawalAmount);
 
       expect(await dai.balanceOf(l1Alice.address)).to.be.eq(withdrawalAmount);
@@ -248,7 +260,7 @@ describe("L1DAIBridge", function () {
 
       await l1Bridge
         .connect(l1Alice)
-        .finalizeWithdrawal(l1Bob.address, withdrawalAmount);
+        .withdraw(withdrawalAmount, l1Bob.address);
 
       expect(await dai.balanceOf(l1Alice.address)).to.be.eq(0);
       expect(await dai.balanceOf(l1Bob.address)).to.be.eq(withdrawalAmount);
@@ -285,7 +297,7 @@ describe("L1DAIBridge", function () {
       await l1Bridge.close();
       await l1Bridge
         .connect(l1Alice)
-        .finalizeWithdrawal(l1Alice.address, withdrawalAmount);
+        .withdraw(withdrawalAmount, l1Alice.address);
 
       expect(await dai.balanceOf(l1Alice.address)).to.be.eq(withdrawalAmount);
       expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
@@ -330,7 +342,7 @@ describe("L1DAIBridge", function () {
       await expect(
         l1Bridge
           .connect(l1Bob)
-          .finalizeWithdrawal(l1Alice.address, withdrawalAmount)
+          .withdraw(withdrawalAmount, l1Alice.address)
       ).to.be.reverted;
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
@@ -371,7 +383,7 @@ describe("L1DAIBridge", function () {
       await expect(
         l1Bridge
           .connect(l1Alice)
-          .finalizeWithdrawal(l1Alice.address, wrongAmount)
+          .withdraw(wrongAmount, l1Alice.address)
       ).to.be.reverted;
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
@@ -390,7 +402,7 @@ describe("L1DAIBridge", function () {
       await expect(
         l1Bridge
           .connect(l1Alice)
-          .finalizeWithdrawal(l1Alice.address, withdrawalAmount)
+          .withdraw(withdrawalAmount, l1Alice.address)
       ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
     });
   });
