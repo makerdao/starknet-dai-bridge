@@ -277,17 +277,7 @@ func send_finalize_withdraw{
     return ()
 end
 
-func assert_l1_address{
-    syscall_ptr : felt*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(l1_address : felt):
-    alloc_locals
-
-    local syscall_ptr : felt* = syscall_ptr
-    local pedersen_ptr : HashBuiltin* = pedersen_ptr
-
+func assert_l1_address{range_check_ptr}(l1_address : felt):
     assert_le_felt(l1_address, MAX_L1_ADDRESS)
-
     return ()
 end
