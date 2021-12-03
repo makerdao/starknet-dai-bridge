@@ -409,7 +409,7 @@ async def test_handle_force_withdrawal_insufficient_allowance(
 
 
 @pytest.mark.asyncio
-async def test_finalize_force_withdrawal_invalid_l1_address(
+async def test_handle_force_withdrawal_invalid_l1_address(
     starknet: Starknet,
     l2_bridge: StarknetContract,
     dai: StarknetContract,
@@ -423,7 +423,7 @@ async def test_finalize_force_withdrawal_invalid_l1_address(
     await starknet.send_message_to_l2(
         from_address=L1_BRIDGE_ADDRESS,
         to_address=l2_bridge.contract_address,
-        selector="finalize_force_withdrawal",
+        selector="handle_force_withdrawal",
         payload=[
             user1.contract_address,
             int(INVALID_L1_ADDRESS),
