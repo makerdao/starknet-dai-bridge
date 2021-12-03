@@ -472,40 +472,13 @@ async def test_increase_allowance_should_not_accept_zero_addresses(
         await dai.increase_allowance(0, to_split_uint(1)).invoke(0)
 
 
+@pytest.mark.asyncio
 async def test_approve_should_not_accept_invalid_amount(
     with pytest.raises(StarkException):
         await dai.approve(user1.contract_address, to_split_uint(1)).invoke(0)
 
     with pytest.raises(StarkException):
         await dai.approve(0, to_split_uint(1)).invoke(0)
-
-
-@pytest.mark.asyncio
-async def test_decrease_allowance_should_not_accept_zero_addresses(
-    dai: StarknetContract,
-    user1: StarknetContract,
-):
-    with pytest.raises(StarkException):
-        await dai.decrease_allowance(0, to_split_uint(1)).invoke(user1.contract_address)
-
-    with pytest.raises(StarkException):
-        await dai.decrease_allowance(user1.contract_address, to_split_uint(1)).invoke(0)
-
-    with pytest.raises(StarkException):
-        await dai.decrease_allowance(0, to_split_uint(1)).invoke(0)
-
-
-@pytest.mark.asyncio
-async def test_increase_allowance_should_not_accept_invalid_amount(
-    dai: StarknetContract,
-    user1: StarknetContract,
-    user2: StarknetContract,
-):
-    with pytest.raises(StarkException):
-        await dai.increase_allowance(0, to_split_uint(1)).invoke(user1.contract_address)
-
-    with pytest.raises(StarkException):
-        await dai.increase_allowance(0, to_split_uint(1)).invoke(0)
 
 
 @pytest.mark.asyncio
