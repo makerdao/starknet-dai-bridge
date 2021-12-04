@@ -251,7 +251,7 @@ func handle_force_withdrawal{
         return ()
     end
 
-    IDAI.burn(dai, source, amount)
+    IDAI.burn(dai, account, amount)
     send_handle_withdraw(l1_recipient, amount)
     return ()
 end
