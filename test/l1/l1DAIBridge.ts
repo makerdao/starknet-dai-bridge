@@ -121,6 +121,30 @@ describe("L1DAIBridge", function () {
             depositAmount
           )
       ).to.be.revertedWith("L1DAIBridge/invalid-address");
+
+      // 2 ** 251 + 17 * 2 ** 192 + 1
+      const SN_PRIME = BigNumber.from(
+        "3618502788666131213697322783095070105623107215331596699973092056135872020481"
+      );
+
+      await expect(
+        l1Bridge.connect(l1Alice).deposit(SN_PRIME, depositAmount)
+      ).to.be.revertedWith("L1DAIBridge/invalid-address");
+
+      await expect(
+        l1Bridge
+          .connect(l1Alice)
+          .deposit(ethers.constants.MaxUint256, depositAmount)
+      ).to.be.revertedWith("L1DAIBridge/invalid-address");
+
+      await expect(
+        l1Bridge
+          .connect(l1Alice)
+          .deposit(
+            ethers.constants.MaxUint256.add(SN_PRIME).div(2),
+            depositAmount
+          )
+      ).to.be.revertedWith("L1DAIBridge/invalid-address");
     });
 
     it("reverts when approval is too low", async () => {
