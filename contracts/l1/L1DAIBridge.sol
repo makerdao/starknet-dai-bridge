@@ -71,6 +71,11 @@ contract L1DAIBridge {
 
     uint256 constant HANDLE_WITHDRAW = 0;
 
+    // src/starkware/cairo/lang/cairo_constants.py
+    //  2 ** 251 + 17 * 2 ** 192 + 1;
+    uint256 constant SN_PRIME =
+        3618502788666131213697322783095070105623107215331596699973092056135872020481;
+
     //  from starkware.starknet.compiler.compile import get_selector_from_name
     //  print(get_selector_from_name('handle_deposit'))
     uint256 constant DEPOSIT =
@@ -118,6 +123,7 @@ contract L1DAIBridge {
         require(l2Recipient != 0 && l2Recipient != l2Dai, "L1DAIBridge/invalid-address");
 
         emit LogDeposit(msg.sender, amount, l2Recipient);
+        require(to != 0 && to != l2Dai && to < SN_PRIME, "L1DAIBridge/invalid-address");
 
         TokenLike(dai).transferFrom(msg.sender, escrow, amount);
 
