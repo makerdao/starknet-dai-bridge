@@ -76,11 +76,6 @@ contract L1DAIBridge {
     uint256 constant SN_PRIME =
         3618502788666131213697322783095070105623107215331596699973092056135872020481;
 
-    // src/starkware/cairo/lang/cairo_constants.py
-    //  2 ** 251 + 17 * 2 ** 192 + 1;
-    uint256 constant SN_PRIME =
-        3618502788666131213697322783095070105623107215331596699973092056135872020481;
-
     //  from starkware.starknet.compiler.compile import get_selector_from_name
     //  print(get_selector_from_name('handle_deposit'))
     uint256 constant DEPOSIT =
