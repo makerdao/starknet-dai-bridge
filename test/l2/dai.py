@@ -468,6 +468,7 @@ async def test_increase_allowance_should_not_accept_zero_addresses(
     with pytest.raises(StarkException):
         await dai.increaseAllowance(0, to_split_uint(1)).invoke(0)
 
+
 @pytest.mark.asyncio
 async def test_transfer_using_transfer_from_and_allowance(
     dai: StarknetContract,

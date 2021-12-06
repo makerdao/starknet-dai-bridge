@@ -5,6 +5,9 @@
 
 StarkNet interpretation of DAI token and basic DAI bridge.
 
+## :warning: :skull_and_crossbones: :warning:️ WARNING! :warning: :skull_and_crossbones:️ :warning:
+This codebase is still in an experimental phase, has not been audited, might contain bugs and should not be used in production.
+
 ## Additional Documentation
 [Development documentation](./docs/development.md)
 
