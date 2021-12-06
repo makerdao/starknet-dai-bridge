@@ -4,10 +4,12 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
+from starkware.cairo.common.math import (assert_le_felt)
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
 from starkware.cairo.common.uint256 import (Uint256, uint256_le)
 
 const FINALIZE_WITHDRAW = 0
+const MAX_L1_ADDRESS = 2**160 - 1
 
 @contract_interface
 namespace IDAI:
@@ -259,6 +261,10 @@ func send_finalize_withdraw{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(dest : felt, amount : Uint256):
+
+    # check valid L1 address
+    assert_l1_address(dest)
+
     let (payload : felt*) = alloc()
     assert payload[0] = FINALIZE_WITHDRAW
     assert payload[1] = dest
@@ -268,5 +274,10 @@ func send_finalize_withdraw{
     let (bridge) = _bridge.read()
 
     send_message_to_l1(bridge, 4, payload)
+    return ()
+end
+
+func assert_l1_address{range_check_ptr}(l1_address : felt):
+    assert_le_felt(l1_address, MAX_L1_ADDRESS)
     return ()
 end

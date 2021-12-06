@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.7.6;
+pragma solidity ^0.7.6;
 
 interface TokenLike {
     function transferFrom(
@@ -63,12 +63,18 @@ contract L1DAIBridge {
 
     address public immutable starkNet;
     address public immutable dai;
+    uint256 public immutable l2Dai;
     address public immutable escrow;
     uint256 public immutable l2DaiBridge;
 
     uint256 public ceiling = 0;
 
     uint256 constant FINALIZE_WITHDRAW = 0;
+
+    // src/starkware/cairo/lang/cairo_constants.py
+    //  2 ** 251 + 17 * 2 ** 192 + 1;
+    uint256 constant SN_PRIME =
+        3618502788666131213697322783095070105623107215331596699973092056135872020481;
 
     //  from starkware.starknet.compiler.compile import get_selector_from_name
     //  print(get_selector_from_name('finalize_deposit'))
@@ -92,6 +98,7 @@ contract L1DAIBridge {
     constructor(
         address _starkNet,
         address _dai,
+        uint256 _l2Dai,
         address _escrow,
         uint256 _l2DaiBridge
     ) {
@@ -100,6 +107,7 @@ contract L1DAIBridge {
 
         starkNet = _starkNet;
         dai = _dai;
+        l2Dai = _l2Dai;
         escrow = _escrow;
         l2DaiBridge = _l2DaiBridge;
     }
@@ -110,13 +118,15 @@ contract L1DAIBridge {
     }
 
     function deposit(
-        address from,
         uint256 to,
         uint256 amount
     ) external whenOpen {
-        emit Deposit(from, to, amount);
 
-        TokenLike(dai).transferFrom(from, escrow, amount);
+        require(to != 0 && to != l2Dai && to < SN_PRIME, "L1DAIBridge/invalid-address");
+
+        emit Deposit(msg.sender, to, amount);
+
+        TokenLike(dai).transferFrom(msg.sender, escrow, amount);
 
         require(
             TokenLike(dai).balanceOf(escrow) <= ceiling,
@@ -128,11 +138,6 @@ contract L1DAIBridge {
         (payload[1], payload[2]) = toSplitUint(amount);
 
         StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, DEPOSIT, payload);
-    }
-
-    struct SplitUint256 {
-      uint256 low;
-      uint256 high;
     }
 
     function toSplitUint(uint256 value) internal pure returns (uint256, uint256) {

@@ -2,10 +2,9 @@
 %builtins pedersen range_check bitwise
 
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
-from starkware.cairo.common.math import (assert_nn_le, assert_not_equal, assert_not_zero)
+from starkware.cairo.common.math import (assert_not_equal, assert_not_zero)
 from starkware.cairo.common.math_cmp import is_not_zero
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
-from starkware.cairo.common.bitwise import (bitwise_not, bitwise_and)
 from starkware.cairo.common.uint256 import (
   Uint256,
   uint256_add,
@@ -15,7 +14,7 @@ from starkware.cairo.common.uint256 import (
   uint256_check
 )
 
-const MAX_SPLIT = 2**128
+const ALL_ONES = 2 ** 128 - 1
 
 @storage_var
 func _wards(user : felt) -> (res : felt):
@@ -161,19 +160,9 @@ func burn{
     let (new_total_supply : Uint256) = uint256_sub(total_supply, amount)
     _total_supply.write(new_total_supply)
 
-    # check allowance
-    let (local allowance : Uint256) = _allowances.read(account, caller)
-
-    let (not_caller) = is_not_zero(caller - account)
-    let (is_auth) = _wards.read(caller)
-
-    # boolean logic implemented in regular arithmetic
-    # addition and multiplication is more efficient in Cairo
-    let not_auth = 1 - is_auth
-    let check_allowances = not_caller*not_auth
-
-    if check_allowances == 1:
-      let MAX = Uint256(low=MAX_SPLIT, high=MAX_SPLIT)
+    if caller != account:
+      let (allowance : Uint256) = _allowances.read(account, caller)
+      let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (local eq) = uint256_eq(allowance, MAX)
       if eq == 0:
         let (is_le) = uint256_le(amount, allowance)
@@ -229,11 +218,11 @@ func transfer{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
     bitwise_ptr : BitwiseBuiltin*
-  }(recipient : felt, amount : Uint256):
+  }(recipient : felt, amount : Uint256) -> (res : felt):
     let (caller) = get_caller_address()
     _transfer(caller, recipient, amount)
 
-    return ()
+    return (res=1)
 end
 
 @external
@@ -242,17 +231,16 @@ func transfer_from{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
     bitwise_ptr : BitwiseBuiltin*
-  }(sender : felt, recipient : felt, amount : Uint256):
+  }(sender : felt, recipient : felt, amount : Uint256) -> (res : felt):
     alloc_locals
 
     let (local caller) = get_caller_address()
 
     _transfer(sender, recipient, amount)
 
-    let (local allowance : Uint256) = _allowances.read(sender, caller)
-
     if caller != sender:
-      let MAX = Uint256(low=MAX_SPLIT, high=MAX_SPLIT)
+      let (allowance : Uint256) = _allowances.read(sender, caller)
+      let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (local max_allowance) = uint256_eq(allowance, MAX)
       if max_allowance == 0:
         let (is_le) = uint256_le(amount, allowance)
@@ -278,7 +266,7 @@ func transfer_from{
       tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     end
 
-    return ()
+    return (res=1)
 end
 
 @external
@@ -286,11 +274,13 @@ func approve{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(spender: felt, amount : Uint256):
-    let (caller) = get_caller_address()
-    _allowances.write(caller, spender, amount)
+  }(spender: felt, amount : Uint256) -> (res : felt):
 
-    return ()
+    uint256_check(amount)
+    let (caller) = get_caller_address()
+    _approve(caller, spender, amount)
+
+    return (res=1)
 end
 
 @external
@@ -299,17 +289,17 @@ func increase_allowance{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
     bitwise_ptr : BitwiseBuiltin*
-  }(spender : felt, amount : Uint256):
+  }(spender : felt, amount : Uint256) -> (res : felt):
     alloc_locals
 
+    uint256_check(amount)
     let (local caller) = get_caller_address()
-
     let (allowance : Uint256) = _allowances.read(caller, spender)
     let (new_allowance: Uint256, carry : felt) = uint256_add(amount, allowance)
     # check overflow
     assert carry = 0
-    _allowances.write(caller, spender, new_allowance)
-    return ()
+    _approve(caller, spender, new_allowance)
+    return (res=1)
 end
 
 @external
@@ -318,17 +308,17 @@ func decrease_allowance{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr,
     bitwise_ptr : BitwiseBuiltin*
-  }(spender : felt, amount : Uint256):
+  }(spender : felt, amount : Uint256) -> (res : felt):
     alloc_locals
 
+    uint256_check(amount)
     let (local caller) = get_caller_address()
-
     let (local allowance : Uint256) = _allowances.read(caller, spender)
     let (is_le) = uint256_le(amount, allowance)
     assert is_le = 1
     let (new_allowance : Uint256) = uint256_sub(allowance, amount)
-    _allowances.write(caller, spender, new_allowance)
-    return ()
+    _approve(caller, spender, new_allowance)
+    return (res=1)
 end
 
 func auth{
@@ -352,6 +342,9 @@ func _transfer{
   }(sender : felt, recipient : felt, amount : Uint256):
     alloc_locals
 
+    # check valid amount
+    uint256_check(amount)
+
     assert_not_zero(recipient)
     let (contract_address) = get_contract_address()
     assert_not_equal(recipient, contract_address)
@@ -369,5 +362,15 @@ func _transfer{
     assert carry = 0
     _balances.write(recipient, sum)
 
+    return ()
+end
+
+func _approve{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(caller: felt, spender: felt, amount: Uint256):
+    assert_not_zero(spender)
+    _allowances.write(caller, spender, amount)
     return ()
 end

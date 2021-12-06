@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.7.6;
+pragma solidity ^0.7.6;
 
 import "./L1DAIBridge.sol";
 
@@ -36,14 +36,9 @@ contract L1GovernanceRelay {
   }
 
   // Forward a call to be repeated on L2
-  function relay(
-    uint256 to,
-    uint256 selector
-  ) external auth {
-    uint256[] memory payload = new uint256[](2);
-    payload[0] = to;
-    payload[1] = selector;
-
+  function relay(uint256 spell) external auth {
+    uint256[] memory payload = new uint256[](1);
+    payload[0] = spell;
     StarkNetLike(starkNet).sendMessageToL2(l2GovernanceRelay, RELAY_SELECTOR, payload);
   }
 }
