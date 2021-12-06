@@ -86,11 +86,11 @@ contract L1DAIBridge {
         1137729855293860737061629600728503767337326808607526258057644140918272132445;
 
     event Ceiling(uint256 ceiling);
-    event Deposit(uint256 amount, address indexed sender, uint256 indexed l2Recipient);
-    event Withdraw(uint256 amount, address indexed recipient);
-    event ForceWithdrawal(
+    event LogDeposit(address indexed l1Sender, uint256 amount, uint256 indexed l2Recipient);
+    event LogWithdrawal(address indexed l1Recipient, uint256 amount);
+    event LogForceWithdrawal(
+        address indexed l1Recipient,
         uint256 amount,
-        address indexed recipient,
         uint256 indexed l2Sender
     );
 
@@ -122,7 +122,7 @@ contract L1DAIBridge {
     ) external whenOpen {
         require(l2Recipient != 0 && l2Recipient != l2Dai, "L1DAIBridge/invalid-address");
 
-        emit Deposit(amount, msg.sender, l2Recipient);
+        emit LogDeposit(msg.sender, amount, l2Recipient);
 
         require(to != 0 && to != l2Dai && to < SN_PRIME, "L1DAIBridge/invalid-address");
 
@@ -148,8 +148,8 @@ contract L1DAIBridge {
       return (low, high);
     }
 
-    function withdraw(uint256 amount, address recipient) external {
-        emit Withdraw(amount, recipient);
+    function withdraw(uint256 amount, address l1Recipient) external {
+        emit LogWithdrawal(l1Recipient, amount);
 
         uint256[] memory payload = new uint256[](4);
         payload[0] = HANDLE_WITHDRAW;
@@ -157,11 +157,11 @@ contract L1DAIBridge {
         (payload[2], payload[3]) = toSplitUint(amount);
 
         StarkNetLike(starkNet).consumeMessageFromL2(l2DaiBridge, payload);
-        TokenLike(dai).transferFrom(escrow, recipient, amount);
+        TokenLike(dai).transferFrom(escrow, l1Recipient, amount);
     }
 
     function forceWithdrawal(uint256 amount, uint256 l2Sender) external whenOpen {
-        emit ForceWithdrawal(amount, msg.sender, l2Sender);
+        emit LogForceWithdrawal(msg.sender, amount, l2Sender);
 
         uint256[] memory payload = new uint256[](4);
         payload[0] = l2Sender;

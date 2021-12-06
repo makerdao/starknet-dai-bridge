@@ -193,7 +193,7 @@ func handle_deposit{
     range_check_ptr
   }(
     from_address : felt,
-    account: felt,
+    l2_recipient: felt,
     amount_low : felt,
     amount_high : felt
   ):
@@ -203,7 +203,7 @@ func handle_deposit{
 
     let amount = Uint256(low=amount_low, high=amount_high)
     let (dai) = _dai.read()
-    IDAI.mint(dai, account, amount)
+    IDAI.mint(dai, l2_recipient, amount)
 
     return ()
 end
@@ -215,7 +215,7 @@ func handle_force_withdrawal{
     range_check_ptr
   }(
     from_address : felt,
-    account : felt,
+    l2_sender : felt,
     l1_recipient : felt,
     amount_low : felt,
     amount_high : felt
@@ -228,7 +228,7 @@ func handle_force_withdrawal{
 
     # check l1 recipent address
     let (registry) = _registry.read()
-    let (_l1_recipient) = IRegistry.get_L1_address(registry, account)
+    let (_l1_recipient) = IRegistry.get_L1_address(registry, l2_sender)
     if _l1_recipient != l1_recipient:
         return ()
     end
@@ -237,7 +237,7 @@ func handle_force_withdrawal{
 
     # check l2 DAI balance
     let amount = Uint256(low=amount_low, high=amount_high)
-    let (balance : Uint256) = IDAI.balanceOf(dai, account)
+    let (balance : Uint256) = IDAI.balanceOf(dai, l2_sender)
     let (balance_check) = uint256_le(amount, balance)
     if balance_check == 0:
         return ()
@@ -245,13 +245,13 @@ func handle_force_withdrawal{
 
     # check allowance
     let (contract_address) = get_contract_address()
-    let (allowance : Uint256) = IDAI.allowance(dai, account, contract_address)
+    let (allowance : Uint256) = IDAI.allowance(dai, l2_sender, contract_address)
     let (allowance_check) = uint256_le(amount, allowance)
     if allowance_check == 0:
         return ()
     end
 
-    IDAI.burn(dai, account, amount)
+    IDAI.burn(dai, l2_sender, amount)
     send_handle_withdraw(l1_recipient, amount)
     return ()
 end
@@ -260,14 +260,14 @@ func send_handle_withdraw{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(account : felt, amount : Uint256):
+  }(l1_recipient : felt, amount : Uint256):
 
     # check valid L1 address
-    assert_l1_address(account)
+    assert_l1_address(l1_recipient)
 
     let (payload : felt*) = alloc()
     assert payload[0] = FINALIZE_WITHDRAW
-    assert payload[1] = account
+    assert payload[1] = l1_recipient
     assert payload[2] = amount.low
     assert payload[3] = amount.high
 
