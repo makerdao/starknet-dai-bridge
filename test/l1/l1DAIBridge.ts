@@ -70,8 +70,8 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
       await expect(l1Bridge.connect(l1Alice).deposit(depositAmount, l2User))
-        .to.emit(l1Bridge, "Deposit")
-        .withArgs(depositAmount, l1Alice.address, l2User);
+        .to.emit(l1Bridge, "LogDeposit")
+        .withArgs(l1Alice.address, depositAmount, l2User);
 
       expect(await dai.balanceOf(l1Alice.address)).to.be.eq(0);
       expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
@@ -183,8 +183,8 @@ describe("L1DAIBridge", function () {
       await expect(
         l1Bridge.connect(l1Alice).withdraw(withdrawalAmount, l1Alice.address)
       )
-        .to.emit(l1Bridge, "Withdraw")
-        .withArgs(withdrawalAmount, l1Alice.address);
+        .to.emit(l1Bridge, "LogWithdrawal")
+        .withArgs(l1Alice.address, withdrawalAmount);
 
       expect(await dai.balanceOf(l1Alice.address)).to.be.eq(withdrawalAmount);
       expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
@@ -414,8 +414,8 @@ describe("L1DAIBridge", function () {
       const l2User = "123";
 
       await expect(l1Bridge.connect(l1Alice).forceWithdrawal(amount, l2User))
-        .to.emit(l1Bridge, "ForceWithdrawal")
-        .withArgs(amount, l1Alice.address, l2User);
+        .to.emit(l1Bridge, "LogForceWithdrawal")
+        .withArgs(l1Alice.address, amount, l2User);
 
       expect(starkNetFake.sendMessageToL2).to.have.been.calledOnce;
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
