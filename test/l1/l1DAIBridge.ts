@@ -104,21 +104,21 @@ describe("L1DAIBridge", function () {
       );
 
       await expect(
-        l1Bridge.connect(l1Alice).deposit(SN_PRIME, depositAmount)
+        l1Bridge.connect(l1Alice).deposit(depositAmount, SN_PRIME)
       ).to.be.revertedWith("L1DAIBridge/invalid-address");
 
       await expect(
         l1Bridge
           .connect(l1Alice)
-          .deposit(ethers.constants.MaxUint256, depositAmount)
+          .deposit(depositAmount, ethers.constants.MaxUint256)
       ).to.be.revertedWith("L1DAIBridge/invalid-address");
 
       await expect(
         l1Bridge
           .connect(l1Alice)
           .deposit(
-            ethers.constants.MaxUint256.add(SN_PRIME).div(2),
-            depositAmount
+            depositAmount,
+            ethers.constants.MaxUint256.add(SN_PRIME).div(2)
           )
       ).to.be.revertedWith("L1DAIBridge/invalid-address");
 
