@@ -116,6 +116,7 @@ contract L1DAIBridge {
         emit Ceiling(_ceiling);
     }
 
+    // slither-disable-next-line similar-names
     function deposit(
         uint256 amount,
         uint256 l2Recipient
@@ -144,6 +145,7 @@ contract L1DAIBridge {
       return (low, high);
     }
 
+    // slither-disable-next-line similar-names
     function withdraw(uint256 amount, address l1Recipient) external {
         emit LogWithdrawal(l1Recipient, amount);
 
