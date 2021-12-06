@@ -120,10 +120,9 @@ contract L1DAIBridge {
         uint256 amount,
         uint256 l2Recipient
     ) external whenOpen {
-        require(l2Recipient != 0 && l2Recipient != l2Dai, "L1DAIBridge/invalid-address");
-
         emit LogDeposit(msg.sender, amount, l2Recipient);
-        require(to != 0 && to != l2Dai && to < SN_PRIME, "L1DAIBridge/invalid-address");
+
+        require(l2Recipient != 0 && l2Recipient != l2Dai && l2Recipient < SN_PRIME, "L1DAIBridge/invalid-address");
 
         TokenLike(dai).transferFrom(msg.sender, escrow, amount);
 
