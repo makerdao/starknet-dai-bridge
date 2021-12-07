@@ -11,6 +11,7 @@ L1_ADDRESS = 0x1
 INVALID_L1_ADDRESS = 0x10000000000000000000000000000000000000000
 L1_BRIDGE_ADDRESS = 0x1
 FINALIZE_WITHDRAW = 0
+ECDSA_PUBLIC_KEY = 0
 
 L2_CONTRACTS_DIR = os.path.join(os.getcwd(), "contracts/l2")
 DAI_FILE = os.path.join(L2_CONTRACTS_DIR, "dai.cairo")
@@ -26,22 +27,42 @@ async def starknet() -> Starknet:
 
 @pytest.fixture
 async def user1(starknet: Starknet) -> StarknetContract:
-    return await starknet.deploy(source=ACCOUNT_FILE)
+    return await starknet.deploy(
+        source=ACCOUNT_FILE,
+        constructor_calldata=[
+            ECDSA_PUBLIC_KEY,
+        ],
+    )
 
 
 @pytest.fixture
 async def user2(starknet: Starknet) -> StarknetContract:
-    return await starknet.deploy(source=ACCOUNT_FILE)
+    return await starknet.deploy(
+        source=ACCOUNT_FILE,
+        constructor_calldata=[
+            ECDSA_PUBLIC_KEY,
+        ],
+    )
 
 
 @pytest.fixture
 async def user3(starknet: Starknet) -> StarknetContract:
-    return await starknet.deploy(source=ACCOUNT_FILE)
+    return await starknet.deploy(
+        source=ACCOUNT_FILE,
+        constructor_calldata=[
+            ECDSA_PUBLIC_KEY,
+        ],
+    )
 
 
 @pytest.fixture
 async def auth_user(starknet: Starknet) -> StarknetContract:
-    return await starknet.deploy(source=ACCOUNT_FILE)
+    return await starknet.deploy(
+        source=ACCOUNT_FILE,
+        constructor_calldata=[
+            ECDSA_PUBLIC_KEY,
+        ],
+    )
 
 
 @pytest.fixture
