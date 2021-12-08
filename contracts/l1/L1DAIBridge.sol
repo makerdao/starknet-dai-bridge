@@ -69,7 +69,7 @@ contract L1DAIBridge {
 
     uint256 public ceiling = 0;
 
-    uint256 constant FINALIZE_WITHDRAW = 0;
+    uint256 constant HANDLE_WITHDRAW = 0;
 
     // src/starkware/cairo/lang/cairo_constants.py
     //  2 ** 251 + 17 * 2 ** 192 + 1;
@@ -77,23 +77,22 @@ contract L1DAIBridge {
         3618502788666131213697322783095070105623107215331596699973092056135872020481;
 
     //  from starkware.starknet.compiler.compile import get_selector_from_name
-    //  print(get_selector_from_name('finalize_deposit'))
+    //  print(get_selector_from_name('handle_deposit'))
     uint256 constant DEPOSIT =
-        1523838171560039099257556432344066729220707462881094726430257427074598770742;
+        1285101517810983806491589552491143496277809242732141897358598292095611420389;
 
-    //  print(get_selector_from_name('finalize_force_withdrawal'))
+    //  print(get_selector_from_name('handle_force_withdrawal'))
     uint256 constant FORCE_WITHDRAW =
-        564231610187525314777546578127020298415997786138103002442821814044854275916;
+        1137729855293860737061629600728503767337326808607526258057644140918272132445;
 
-    event Ceiling(uint256 ceiling);
-    event Deposit(address indexed from, uint256 indexed to, uint256 amount);
-    event FinalizeWithdrawal(address indexed to, uint256 amount);
-    event ForceWithdrawal(
-        address indexed to,
-        uint256 indexed from,
-        uint256 amount
+    event LogCeiling(uint256 ceiling);
+    event LogDeposit(address indexed l1Sender, uint256 amount, uint256 l2Recipient);
+    event LogWithdrawal(address indexed l1Recipient, uint256 amount);
+    event LogForceWithdrawal(
+        address indexed l1Recipient,
+        uint256 amount,
+        uint256 indexed l2Sender
     );
-    event FinalizeForceWithdrawal(address indexed to, uint256 amount);
 
     constructor(
         address _starkNet,
@@ -114,17 +113,17 @@ contract L1DAIBridge {
 
     function setCeiling(uint256 _ceiling) external auth whenOpen {
         ceiling = _ceiling;
-        emit Ceiling(_ceiling);
+        emit LogCeiling(_ceiling);
     }
 
+    // slither-disable-next-line similar-names
     function deposit(
-        uint256 to,
-        uint256 amount
+        uint256 amount,
+        uint256 l2Recipient
     ) external whenOpen {
+        emit LogDeposit(msg.sender, amount, l2Recipient);
 
-        require(to != 0 && to != l2Dai && to < SN_PRIME, "L1DAIBridge/invalid-address");
-
-        emit Deposit(msg.sender, to, amount);
+        require(l2Recipient != 0 && l2Recipient != l2Dai && l2Recipient < SN_PRIME, "L1DAIBridge/invalid-address");
 
         TokenLike(dai).transferFrom(msg.sender, escrow, amount);
 
@@ -134,7 +133,7 @@ contract L1DAIBridge {
         );
 
         uint256[] memory payload = new uint256[](3);
-        payload[0] = to;
+        payload[0] = l2Recipient;
         (payload[1], payload[2]) = toSplitUint(amount);
 
         StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, DEPOSIT, payload);
@@ -146,23 +145,24 @@ contract L1DAIBridge {
       return (low, high);
     }
 
-    function finalizeWithdrawal(address to, uint256 amount) external {
-        emit FinalizeWithdrawal(to, amount);
+    // slither-disable-next-line similar-names
+    function withdraw(uint256 amount, address l1Recipient) external {
+        emit LogWithdrawal(l1Recipient, amount);
 
         uint256[] memory payload = new uint256[](4);
-        payload[0] = FINALIZE_WITHDRAW;
+        payload[0] = HANDLE_WITHDRAW;
         payload[1] = uint256(uint160(msg.sender));
         (payload[2], payload[3]) = toSplitUint(amount);
 
         StarkNetLike(starkNet).consumeMessageFromL2(l2DaiBridge, payload);
-        TokenLike(dai).transferFrom(escrow, to, amount);
+        TokenLike(dai).transferFrom(escrow, l1Recipient, amount);
     }
 
-    function forceWithdrawal(uint256 from, uint256 amount) external whenOpen {
-        emit ForceWithdrawal(msg.sender, from, amount);
+    function forceWithdrawal(uint256 amount, uint256 l2Sender) external whenOpen {
+        emit LogForceWithdrawal(msg.sender, amount, l2Sender);
 
         uint256[] memory payload = new uint256[](4);
-        payload[0] = from;
+        payload[0] = l2Sender;
         payload[1] = uint256(uint160(msg.sender));
         (payload[2], payload[3]) = toSplitUint(amount);
 

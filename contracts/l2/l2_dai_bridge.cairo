@@ -22,7 +22,7 @@ namespace IDAI:
     func allowance(owner : felt, spender : felt) -> (res : Uint256):
     end
 
-    func balance_of(user : felt) -> (res : Uint256):
+    func balanceOf(user : felt) -> (res : Uint256):
     end
 end
 
@@ -168,11 +168,11 @@ func constructor{
 end
 
 @external
-func withdraw{
+func initiate_withdraw{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(dest : felt, amount : Uint256):
+  }(l1_recipient : felt, amount : Uint256):
     let (is_open) = _is_open.read()
     assert is_open = 1
 
@@ -181,19 +181,19 @@ func withdraw{
 
     IDAI.burn(dai, caller, amount)
 
-    send_finalize_withdraw(dest, amount)
+    send_handle_withdraw(l1_recipient, amount)
 
     return ()
 end
 
 @l1_handler
-func finalize_deposit{
+func handle_deposit{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(
     from_address : felt,
-    dest : felt,
+    l2_recipient: felt,
     amount_low : felt,
     amount_high : felt
   ):
@@ -203,20 +203,20 @@ func finalize_deposit{
 
     let amount = Uint256(low=amount_low, high=amount_high)
     let (dai) = _dai.read()
-    IDAI.mint(dai, dest, amount)
+    IDAI.mint(dai, l2_recipient, amount)
 
     return ()
 end
 
 @l1_handler
-func finalize_force_withdrawal{
+func handle_force_withdrawal{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(
     from_address : felt,
-    source : felt,
-    dest : felt,
+    l2_sender : felt,
+    l1_recipient : felt,
     amount_low : felt,
     amount_high : felt
   ):
@@ -228,8 +228,8 @@ func finalize_force_withdrawal{
 
     # check l1 recipent address
     let (registry) = _registry.read()
-    let (_dest) = IRegistry.get_L1_address(registry, source)
-    if _dest != dest:
+    let (_l1_recipient) = IRegistry.get_L1_address(registry, l2_sender)
+    if _l1_recipient != l1_recipient:
         return ()
     end
 
@@ -237,7 +237,7 @@ func finalize_force_withdrawal{
 
     # check l2 DAI balance
     let amount = Uint256(low=amount_low, high=amount_high)
-    let (balance : Uint256) = IDAI.balance_of(dai, source)
+    let (balance : Uint256) = IDAI.balanceOf(dai, l2_sender)
     let (balance_check) = uint256_le(amount, balance)
     if balance_check == 0:
         return ()
@@ -245,29 +245,29 @@ func finalize_force_withdrawal{
 
     # check allowance
     let (contract_address) = get_contract_address()
-    let (allowance : Uint256) = IDAI.allowance(dai, source, contract_address)
+    let (allowance : Uint256) = IDAI.allowance(dai, l2_sender, contract_address)
     let (allowance_check) = uint256_le(amount, allowance)
     if allowance_check == 0:
         return ()
     end
 
-    IDAI.burn(dai, source, amount)
-    send_finalize_withdraw(dest, amount)
+    IDAI.burn(dai, l2_sender, amount)
+    send_handle_withdraw(l1_recipient, amount)
     return ()
 end
 
-func send_finalize_withdraw{
+func send_handle_withdraw{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(dest : felt, amount : Uint256):
+  }(l1_recipient : felt, amount : Uint256):
 
     # check valid L1 address
-    assert_l1_address(dest)
+    assert_l1_address(l1_recipient)
 
     let (payload : felt*) = alloc()
     assert payload[0] = FINALIZE_WITHDRAW
-    assert payload[1] = dest
+    assert payload[1] = l1_recipient
     assert payload[2] = amount.low
     assert payload[3] = amount.high
 
