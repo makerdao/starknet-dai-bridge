@@ -85,8 +85,8 @@ contract L1DAIBridge {
     uint256 constant FORCE_WITHDRAW =
         1137729855293860737061629600728503767337326808607526258057644140918272132445;
 
-    event Ceiling(uint256 ceiling);
-    event LogDeposit(address indexed l1Sender, uint256 amount, uint256 indexed l2Recipient);
+    event LogCeiling(uint256 ceiling);
+    event LogDeposit(address indexed l1Sender, uint256 amount, uint256 l2Recipient);
     event LogWithdrawal(address indexed l1Recipient, uint256 amount);
     event LogForceWithdrawal(
         address indexed l1Recipient,
@@ -113,7 +113,7 @@ contract L1DAIBridge {
 
     function setCeiling(uint256 _ceiling) external auth whenOpen {
         ceiling = _ceiling;
-        emit Ceiling(_ceiling);
+        emit LogCeiling(_ceiling);
     }
 
     // slither-disable-next-line similar-names

@@ -417,7 +417,7 @@ describe("L1DAIBridge", function () {
 
       expect(await l1Bridge.ceiling()).to.be.eq(0);
       await expect(l1Bridge.connect(admin).setCeiling(1))
-        .to.emit(l1Bridge, "Ceiling")
+        .to.emit(l1Bridge, "LogCeiling")
         .withArgs(1);
       expect(await l1Bridge.ceiling()).to.be.eq(1);
     });
