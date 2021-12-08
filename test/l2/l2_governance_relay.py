@@ -49,16 +49,6 @@ async def user2(starknet: Starknet) -> StarknetContract:
 
 
 @pytest.fixture
-async def user3(starknet: Starknet) -> StarknetContract:
-    return await starknet.deploy(
-        source=ACCOUNT_FILE,
-        constructor_calldata=[
-            ECDSA_PUBLIC_KEY,
-        ],
-    )
-
-
-@pytest.fixture
 async def auth_user(starknet: Starknet) -> StarknetContract:
     return await starknet.deploy(
         source=ACCOUNT_FILE,
@@ -174,20 +164,17 @@ async def check_balances(
     dai: StarknetContract,
     user1: StarknetContract,
     user2: StarknetContract,
-    user3: StarknetContract,
 ):
     async def internal_check_balances(
         expected_user1_balance,
         expected_user2_balance,
     ):
-        user1_balance = await dai.balanceOf(user1.contract_address).call()
-        user2_balance = await dai.balanceOf(user2.contract_address).call()
-        user3_balance = await dai.balanceOf(user3.contract_address).call()
-        total_supply = await dai.totalSupply().call()
+        user1_balance = await dai.balance_of(user1.contract_address).call()
+        user2_balance = await dai.balance_of(user2.contract_address).call()
+        total_supply = await dai.total_supply().call()
 
         assert user1_balance.result == (to_split_uint(expected_user1_balance),)
         assert user2_balance.result == (to_split_uint(expected_user2_balance),)
-        assert user3_balance.result == (to_split_uint(0),)
         assert total_supply.result == (
                 to_split_uint(expected_user1_balance+expected_user2_balance),)
 
@@ -209,7 +196,6 @@ async def before_all(
     auth_user: StarknetContract,
     user1: StarknetContract,
     user2: StarknetContract,
-    user3: StarknetContract,
 ):
     await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(auth_user.contract_address)
@@ -217,8 +203,6 @@ async def before_all(
             int(L1_ADDRESS)).invoke(user1.contract_address)
     await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(user2.contract_address)
-    await registry.set_L1_address(
-            int(L1_ADDRESS)).invoke(user3.contract_address)
 
     print("-------------------------------------------")
     print(l2_bridge.contract_address)
