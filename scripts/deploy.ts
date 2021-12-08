@@ -66,6 +66,7 @@ async function main(): Promise<void> {
   const registry = REGISTRY_ADDRESS
     ? await getL2ContractAt("registry", REGISTRY_ADDRESS)
     : await deployL2("registry");
+  await callFrom(account, registry, "set_L1_address", [asDec(l1Signer.address)]);
 
   const l1Escrow = await deployL1("L1Escrow");
 
