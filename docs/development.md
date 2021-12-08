@@ -46,6 +46,11 @@ yarn account:get --name ACCOUNT_NAME
 yarn call:l1 --contract L1DAIBridge --func setCeiling --calldata AMOUNT
 ```
 
+### Set Address in Registry
+```
+yarn invoke:l2 --contract registry --func set_L1_address --calldata calldata L1_ADDRESS
+```
+
 ### Deposit
 ```
 yarn call:l1 --contract DAI --func approve --calldata L1DAIBridge,AMOUNT
