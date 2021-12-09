@@ -1,6 +1,9 @@
 import { ethers } from "ethers";
 import fs from "fs";
 import { StarknetContract } from "hardhat/types/runtime";
+import { execSync } from "child_process";
+const { sign, verify, pedersen, ec, privateToStarkKey } = require('./signature');
+
 
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
@@ -134,4 +137,89 @@ function flatten(calldata: any): any[] {
     }
   });
   return res;
+}
+
+
+export class Signer {
+    
+  keyPair;
+  privateKey;
+  publicKey;
+
+  constructor(privateKey: string) {
+    this.privateKey = privateKey;
+    this.publicKey = privateToStarkKey(privateKey);
+    this.keyPair = ec.keyFromPrivate(privateKey, "");
+  }
+
+  sign(messageHash: any): any {
+    return sign(this.keyPair, messageHash);
+  }
+
+  async sendTransaction(
+    caller: StarknetContract,
+    contract: StarknetContract,
+    selectorName: string,
+    calldata: any[] | any,
+    nonce: number = 0,
+  ) {
+    if (!nonce) {
+      const executionInfo = await caller.call("get_nonce");
+      nonce = executionInfo.res;
+    }
+
+    const selector = getSelectorFromName(selectorName); 
+    const contractAddress = BigInt(contract.address).toString();
+    const _calldata = flatten(calldata);
+    const _result = execSync(`python ./scripts/Signer.py ${this.privateKey} ${caller.address} ${contract.address} ${selector} ${_calldata.join(',')} ${nonce}`);
+    const result = _result.toString().split('\n');
+    // const messageHash = BigInt(result[0]);
+    const sigR = BigInt(result[1]);
+    const sigS = BigInt(result[2]);
+
+    /*
+    const messageHash = hashMessage(
+      caller.address,
+      contract.address,
+      selector,
+      _calldata,
+      nonce,
+    );
+  
+    const signature = this.sign(messageHash);
+    const publicKey = ec.keyFromPublic(this.publicKey, "");
+    const verified = verify(publicKey, messageHash, { r: sigR, s: sigS });
+    */
+
+    return caller.invoke("execute", {
+      to: contractAddress,
+      selector,
+      calldata: _calldata,
+    }, [sigR, sigS]);
+  }
+}
+
+function computeHashOnElements(data: any[]) {
+  let hash = pedersen([data[0], data[1]]);
+  for (let i=2; i<data.length; i++) {
+    hash = pedersen([hash, data[i]]);
+  }
+  return hash;
+}
+
+function hashMessage(
+  sender: any,
+  to: any,
+  selector: any,
+  calldata: any,
+  nonce: any,
+) {
+  const message = [
+    sender.slice(3),
+    to.slice(3),
+    parseInt(selector).toString(16),
+    computeHashOnElements(calldata),
+    nonce.toString()
+  ];
+  return computeHashOnElements(message);
 }

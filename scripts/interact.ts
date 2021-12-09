@@ -1,10 +1,10 @@
 import { task } from "hardhat/config";
 
 import {
-  callFrom,
   getAddress,
   parseCalldataL1,
   parseCalldataL2,
+  Signer
 } from "./utils";
 
 task("invoke:l2", "Invoke an L2 contract")
@@ -24,13 +24,17 @@ task("invoke:l2", "Invoke an L2 contract")
     const accountInstance = accountFactory.getContractAt(accountAddress);
 
     const _calldata = parseCalldataL2(calldata, NETWORK, contract, func);
-    const res = await callFrom(
-      accountInstance,
-      contractInstance,
-      func,
-      _calldata
-    );
-    console.log("Response:", res);
+    const ECDSA_PRIVATE_KEY = process.env.ECDSA_PRIVATE_KEY;
+    if (ECDSA_PRIVATE_KEY) {
+      const l2Signer = new Signer(ECDSA_PRIVATE_KEY);
+      const res = await l2Signer.sendTransaction(
+        accountInstance,
+        contractInstance,
+        func,
+        _calldata
+      );
+      console.log("Response:", res);
+    }
   });
 
 task("call:l2", "Call an L2 contract")
