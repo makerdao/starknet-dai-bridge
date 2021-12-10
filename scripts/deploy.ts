@@ -30,6 +30,9 @@ async function main(): Promise<void> {
     `${NETWORK.toUpperCase()}_L1_STARKNET_ADDRESS`
   );
 
+  // @ts-ignore
+  const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
+
   console.log(`Deploying on ${NETWORK}/${STARKNET_NETWORK}`);
 
   const keyPair = genKeyPair();
@@ -38,6 +41,7 @@ async function main(): Promise<void> {
   const l2Signer = new Signer(privateKey);
   const account = await deployL2(
     "account",
+    BLOCK_NUMBER,
     { _public_key: publicKey },
     "account-deployer"
   );
@@ -49,11 +53,11 @@ async function main(): Promise<void> {
     l1Signer
   );
 
-  const l2GovernanceRelay = await deployL2("l2_governance_relay", {
+  const l2GovernanceRelay = await deployL2("l2_governance_relay", BLOCK_NUMBER, {
     l1_governance_relay: BigInt(futureL1GovRelayAddress).toString(),
   });
 
-  const l1GovernanceRelay = await deployL1("L1GovernanceRelay", [
+  const l1GovernanceRelay = await deployL1("L1GovernanceRelay", BLOCK_NUMBER, [
     L1_STARKNET_ADDRESS,
     l2GovernanceRelay.address,
   ]);
@@ -63,7 +67,7 @@ async function main(): Promise<void> {
     "futureL1GovRelayAddress != l1GovernanceRelay.address"
   );
 
-  const l2DAI = await deployL2("dai", { ward: asDec(account.address) });
+  const l2DAI = await deployL2("dai", BLOCK_NUMBER, { ward: asDec(account.address) });
 
   const REGISTRY_ADDRESS = getOptionalEnv(
     `${NETWORK.toUpperCase()}_REGISTRY_ADDRESS`
@@ -75,22 +79,22 @@ async function main(): Promise<void> {
 
   const registry = REGISTRY_ADDRESS
     ? await getL2ContractAt("registry", REGISTRY_ADDRESS)
-    : await deployL2("registry");
+    : await deployL2("registry", BLOCK_NUMBER);
 
-  const l1Escrow = await deployL1("L1Escrow");
+  const l1Escrow = await deployL1("L1Escrow", BLOCK_NUMBER);
 
   const futureL1DAIBridgeAddress = await getAddressOfNextDeployedContract(
     l1Signer
   );
 
-  const l2DAIBridge = await deployL2("l2_dai_bridge", {
+  const l2DAIBridge = await deployL2("l2_dai_bridge", BLOCK_NUMBER, {
     ward: asDec(account.address),
     dai: asDec(l2DAI.address),
     bridge: asDec(futureL1DAIBridgeAddress),
     registry: asDec(registry.address),
   });
 
-  const l1DAIBridge = await deployL1("L1DAIBridge", [
+  const l1DAIBridge = await deployL1("L1DAIBridge", BLOCK_NUMBER, [
     L1_STARKNET_ADDRESS,
     L1_DAI_ADDRESS,
     l2DAI.address,
@@ -207,19 +211,19 @@ async function getL2ContractAt(name: string, address: string) {
   return contractFactory.getContractAt(address);
 }
 
-async function deployL2(name: string, calldata: any = {}, saveName?: string) {
+async function deployL2(name: string, blockNumber: number, calldata: any = {}, saveName?: string) {
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
   const contractFactory = await hre.starknet.getContractFactory(name);
   const contract = await contractFactory.deploy(calldata);
-  save(saveName || name, contract, hre.network.name);
+  save(saveName || name, contract, hre.network.name, blockNumber);
   return contract;
 }
 
-async function deployL1(name: string, calldata: any = [], saveName?: string) {
+async function deployL1(name: string, blockNumber: number, calldata: any = [], saveName?: string) {
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
   const contractFactory = await hre.ethers.getContractFactory(name);
   const contract = await contractFactory.deploy(...calldata);
-  save(saveName || name, contract, hre.network.name);
+  save(saveName || name, contract, hre.network.name, blockNumber);
   await contract.deployed();
   return contract;
 }

@@ -205,22 +205,6 @@ class MemoryPagesFetcher:
                 memory_pages.append(tx_decoded_values)
         return memory_pages
 
-    def get_memory_pages_2(self) -> List[List[int]]:
-        memory_pages = []
-        memory_pages_indexes = self.index_memory_pages_map
-        for memory_pages_hashes in memory_pages_indexes:
-            if len(memory_pages_hashes) != 2:
-            for memory_page_hash in memory_pages_hashes:
-                transaction_str = self.memory_page_transactions_map[
-                    int.from_bytes(memory_page_hash, "big")
-                ]
-                memory_pages_tx = self.web3.eth.getTransaction(HexStr(transaction_str))
-                tx_decoded_values = self.memory_page_fact_registry_contract.decode_function_input(
-                    memory_pages_tx["input"]
-                )[1]["values"]
-                memory_pages.append(tx_decoded_values)
-        return memory_pages
-
 
 DEFUALT_GET_LOGS_MAX_CHUNK_SIZE = 10 ** 6
 def get_contract_events(
@@ -302,9 +286,10 @@ def main():
     )
     (gps_statement_verifier_contract, memory_pages_contract) = [contracts_dict[contract_name] for contract_name in contract_names]
 
+    from_block = min(DAI_BLOCK, REGISTRY_BLOCK)
     memory_pages_fetcher = MemoryPagesFetcher.create(
         web3=w3,
-        from_block=int(args.from_block),
+        from_block=from_block,
         gps_statement_verifier_contract=gps_statement_verifier_contract,
         memory_page_fact_registry_contract=memory_pages_contract
     )
@@ -316,7 +301,6 @@ def main():
         pages = memory_pages_fetcher.get_memory_pages()
         state_diffs = []
         for index, page in enumerate(pages):
-            # if index % 2 == 1:
             state_diffs.append(page)
 
     diffs = [item for page in state_diffs for item in page]
@@ -329,11 +313,15 @@ def main():
 
 
 with open('./deployments/goerli/dai.json', 'r') as f:
-    DAI_ADDRESS = hex(int(json.load(f)['address'], 16))
+    dai = json.load(f)
 with open('./deployments/goerli/registry.json', 'r') as f:
-    REGISTRY_ADDRESS = hex(int(json.load(f)['address'], 16))
-with open('./deployments/goerli/account-auth.json', 'r') as f:
+    registry = json.load(f)
+with open('./deployments/goerli/account-user.json', 'r') as f:
     L2_ADDRESS = int(json.load(f)['address'], 16)
+DAI_ADDRESS = hex(int(dai['address'], 16))
+DAI_BLOCK = int(dai['block'])
+REGISTRY_ADDRESS = hex(int(registry['address'], 16))
+REGISTRY_BLOCK = int(registry['block'])
 
 def get_diffs(diffs):
     dai_diffs = {}
