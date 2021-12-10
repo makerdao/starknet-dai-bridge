@@ -95,7 +95,12 @@ export function parseCalldataL2(
   return res;
 }
 
-export function save(name: string, contract: any, network: string, block?: number) {
+export function save(
+  name: string,
+  contract: any,
+  network: string,
+  block?: number
+) {
   if (!fs.existsSync(`${DEPLOYMENTS_DIR}/${network}`)) {
     fs.mkdirSync(`${DEPLOYMENTS_DIR}/${network}`, { recursive: true });
   }

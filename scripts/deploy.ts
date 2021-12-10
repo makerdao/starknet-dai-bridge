@@ -53,9 +53,13 @@ async function main(): Promise<void> {
     l1Signer
   );
 
-  const l2GovernanceRelay = await deployL2("l2_governance_relay", BLOCK_NUMBER, {
-    l1_governance_relay: BigInt(futureL1GovRelayAddress).toString(),
-  });
+  const l2GovernanceRelay = await deployL2(
+    "l2_governance_relay",
+    BLOCK_NUMBER,
+    {
+      l1_governance_relay: BigInt(futureL1GovRelayAddress).toString(),
+    }
+  );
 
   const l1GovernanceRelay = await deployL1("L1GovernanceRelay", BLOCK_NUMBER, [
     L1_STARKNET_ADDRESS,
@@ -67,7 +71,9 @@ async function main(): Promise<void> {
     "futureL1GovRelayAddress != l1GovernanceRelay.address"
   );
 
-  const l2DAI = await deployL2("dai", BLOCK_NUMBER, { ward: asDec(account.address) });
+  const l2DAI = await deployL2("dai", BLOCK_NUMBER, {
+    ward: asDec(account.address),
+  });
 
   const REGISTRY_ADDRESS = getOptionalEnv(
     `${NETWORK.toUpperCase()}_REGISTRY_ADDRESS`
@@ -211,7 +217,12 @@ async function getL2ContractAt(name: string, address: string) {
   return contractFactory.getContractAt(address);
 }
 
-async function deployL2(name: string, blockNumber: number, calldata: any = {}, saveName?: string) {
+async function deployL2(
+  name: string,
+  blockNumber: number,
+  calldata: any = {},
+  saveName?: string
+) {
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
   const contractFactory = await hre.starknet.getContractFactory(name);
   const contract = await contractFactory.deploy(calldata);
@@ -219,7 +230,12 @@ async function deployL2(name: string, blockNumber: number, calldata: any = {}, s
   return contract;
 }
 
-async function deployL1(name: string, blockNumber: number, calldata: any = [], saveName?: string) {
+async function deployL1(
+  name: string,
+  blockNumber: number,
+  calldata: any = [],
+  saveName?: string
+) {
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
   const contractFactory = await hre.ethers.getContractFactory(name);
   const contract = await contractFactory.deploy(...calldata);
