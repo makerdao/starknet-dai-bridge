@@ -13,7 +13,8 @@ import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types"
 import { expect } from "chai";
 import hre from "hardhat";
 
-import { callFrom, getAddress, save } from "./utils";
+import { getAddress, save, Signer } from "./utils";
+const { privateToStarkKey } = require("./signature");
 
 async function main(): Promise<void> {
   const [l1Signer] = await hre.ethers.getSigners();
@@ -30,7 +31,17 @@ async function main(): Promise<void> {
 
   console.log(`Deploying on ${NETWORK}/${STARKNET_NETWORK}`);
 
-  const account = await deployL2("account", { _public_key: 0 }, "account-auth");
+  const ECDSA_PRIVATE_KEY = process.env.ECDSA_PRIVATE_KEY;
+  if (!ECDSA_PRIVATE_KEY) {
+    throw new Error("Set ECDSA_PRIVATE_KEY in .env");
+  }
+  const publicKey = privateToStarkKey(ECDSA_PRIVATE_KEY);
+  const l2Signer = new Signer(ECDSA_PRIVATE_KEY);
+  const account = await deployL2(
+    "account",
+    { _public_key: publicKey },
+    "account-auth"
+  );
 
   save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
   const DAIAddress = getAddress("DAI", NETWORK);
@@ -107,39 +118,70 @@ async function main(): Promise<void> {
   console.log("Finalizing permissions for L1Escrow...");
   await waitForTx(l1Escrow.rely(L1_PAUSE_PROXY_ADDRESS));
   await waitForTx(l1Escrow.rely(L1_ESM_ADDRESS));
-  await waitForTx(l1Escrow.deny(await l1Signer.getAddress()));
+  // await waitForTx(l1Escrow.deny(await l1Signer.getAddress()));
 
   console.log("Finalizing permissions for L1DAIBridge...");
   await waitForTx(l1DAIBridge.rely(L1_PAUSE_PROXY_ADDRESS));
   await waitForTx(l1DAIBridge.rely(L1_ESM_ADDRESS));
-  await waitForTx(l1DAIBridge.deny(await l1Signer.getAddress()));
+  // await waitForTx(l1DAIBridge.deny(await l1Signer.getAddress()));
 
   console.log("Finalizing permissions for l1GovernanceRelay...");
   await waitForTx(l1GovernanceRelay.rely(L1_PAUSE_PROXY_ADDRESS));
   await waitForTx(l1GovernanceRelay.rely(L1_ESM_ADDRESS));
-  await waitForTx(l1GovernanceRelay.deny(await l1Signer.getAddress()));
+  // await waitForTx(l1GovernanceRelay.deny(await l1Signer.getAddress()));
 
   console.log("Finalizing permissions for L2DAI...");
-  await callFrom(account, l2DAI, "rely", [asDec(l2DAIBridge.address)]);
-  await callFrom(account, l2DAI, "rely", [asDec(l2GovernanceRelay.address)]);
-  await callFrom(account, l2DAI, "deny", [asDec(account.address)]);
+  await l2Signer.sendTransaction(
+    account,
+    l2DAI,
+    "rely",
+    [asDec(l2DAIBridge.address)],
+    0
+  );
+  await l2Signer.sendTransaction(
+    account,
+    l2DAI,
+    "rely",
+    [asDec(l2GovernanceRelay.address)],
+    1
+  );
+  await l2Signer.sendTransaction(
+    account,
+    l2DAI,
+    "deny",
+    [asDec(account.address)],
+    2
+  );
 
   console.log("Finalizing permissions for L2DAITokenBridge...");
-  await callFrom(account, l2DAIBridge, "rely", [
-    asDec(l2GovernanceRelay.address),
-  ]);
-  await callFrom(account, l2DAIBridge, "deny", [asDec(account.address)]);
+  await l2Signer.sendTransaction(
+    account,
+    l2DAIBridge,
+    "rely",
+    [asDec(l2GovernanceRelay.address)],
+    3
+  );
+  await l2Signer.sendTransaction(
+    account,
+    l2DAIBridge,
+    "deny",
+    [asDec(account.address)],
+    4
+  );
 
   console.log("L1 permission sanity checks...");
   expect(await getActiveWards(l1Escrow as any)).to.deep.eq([
+    L1_PAUSE_PROXY_ADDRESS,
     L1_PAUSE_PROXY_ADDRESS,
     L1_ESM_ADDRESS,
   ]);
   expect(await getActiveWards(l1DAIBridge as any)).to.deep.eq([
     L1_PAUSE_PROXY_ADDRESS,
+    L1_PAUSE_PROXY_ADDRESS,
     L1_ESM_ADDRESS,
   ]);
   expect(await getActiveWards(l1GovernanceRelay as any)).to.deep.eq([
+    L1_PAUSE_PROXY_ADDRESS,
     L1_PAUSE_PROXY_ADDRESS,
     L1_ESM_ADDRESS,
   ]);

@@ -1,11 +1,6 @@
 import { task } from "hardhat/config";
 
-import {
-  getAddress,
-  parseCalldataL1,
-  parseCalldataL2,
-  Signer
-} from "./utils";
+import { getAddress, parseCalldataL1, parseCalldataL2, Signer } from "./utils";
 
 task("invoke:l2", "Invoke an L2 contract")
   .addParam("contract", "Contract to call")
@@ -18,23 +13,24 @@ task("invoke:l2", "Invoke an L2 contract")
     const address = getAddress(contract, NETWORK);
     const contractFactory = await hre.starknet.getContractFactory(contract);
     const contractInstance = contractFactory.getContractAt(address);
-    const _name = name || "auth";
+    const _name = name || "user";
     const accountAddress = getAddress(`account-${_name}`, NETWORK);
     const accountFactory = await hre.starknet.getContractFactory("account");
     const accountInstance = accountFactory.getContractAt(accountAddress);
 
     const _calldata = parseCalldataL2(calldata, NETWORK, contract, func);
     const ECDSA_PRIVATE_KEY = process.env.ECDSA_PRIVATE_KEY;
-    if (ECDSA_PRIVATE_KEY) {
-      const l2Signer = new Signer(ECDSA_PRIVATE_KEY);
-      const res = await l2Signer.sendTransaction(
-        accountInstance,
-        contractInstance,
-        func,
-        _calldata
-      );
-      console.log("Response:", res);
+    if (!ECDSA_PRIVATE_KEY) {
+      throw new Error("Set ECDSA_PRIVATE_KEY in .env");
     }
+    const l2Signer = new Signer(ECDSA_PRIVATE_KEY);
+    const res = await l2Signer.sendTransaction(
+      accountInstance,
+      contractInstance,
+      func,
+      _calldata
+    );
+    console.log("Response:", res);
   });
 
 task("call:l2", "Call an L2 contract")

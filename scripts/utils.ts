@@ -1,9 +1,8 @@
+import { execSync } from "child_process";
 import { ethers } from "ethers";
 import fs from "fs";
 import { StarknetContract } from "hardhat/types/runtime";
-import { execSync } from "child_process";
-const { sign, verify, pedersen, ec, privateToStarkKey } = require('./signature');
-
+const { sign, ec, privateToStarkKey } = require("./signature");
 
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
@@ -139,9 +138,7 @@ function flatten(calldata: any): any[] {
   return res;
 }
 
-
 export class Signer {
-    
   keyPair;
   privateKey;
   publicKey;
@@ -161,18 +158,22 @@ export class Signer {
     contract: StarknetContract,
     selectorName: string,
     calldata: any[] | any,
-    nonce: number = 0,
+    nonce: number = 0
   ) {
-    if (!nonce) {
+    if (nonce === 0) {
       const executionInfo = await caller.call("get_nonce");
       nonce = executionInfo.res;
     }
 
-    const selector = getSelectorFromName(selectorName); 
+    const selector = getSelectorFromName(selectorName);
     const contractAddress = BigInt(contract.address).toString();
     const _calldata = flatten(calldata);
-    const _result = execSync(`python ./scripts/Signer.py ${this.privateKey} ${caller.address} ${contract.address} ${selector} ${_calldata.join(',')} ${nonce}`);
-    const result = _result.toString().split('\n');
+    const _result = execSync(
+      `python ./scripts/Signer.py ${this.privateKey} ${caller.address} ${
+        contract.address
+      } ${selector} ${_calldata.join(",")} ${nonce}`
+    );
+    const result = _result.toString().split("\n");
     // const messageHash = BigInt(result[0]);
     const sigR = BigInt(result[1]);
     const sigS = BigInt(result[2]);
@@ -191,14 +192,19 @@ export class Signer {
     const verified = verify(publicKey, messageHash, { r: sigR, s: sigS });
     */
 
-    return caller.invoke("execute", {
-      to: contractAddress,
-      selector,
-      calldata: _calldata,
-    }, [sigR, sigS]);
+    return caller.invoke(
+      "execute",
+      {
+        to: contractAddress,
+        selector,
+        calldata: _calldata,
+      },
+      [sigR, sigS]
+    );
   }
 }
 
+/*
 function computeHashOnElements(data: any[]) {
   let hash = pedersen([data[0], data[1]]);
   for (let i=2; i<data.length; i++) {
@@ -223,3 +229,4 @@ function hashMessage(
   ];
   return computeHashOnElements(message);
 }
+*/

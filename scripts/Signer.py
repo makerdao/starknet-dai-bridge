@@ -68,9 +68,10 @@ msg_hash = hash_message(
     [int(_) for _ in sys.argv[5].split(',')], # calldata
     int(sys.argv[6]), # nonce
 )
-sig = signer.sign(message_hash)
+sig = signer.sign(msg_hash)
 verified = signer.verify(msg_hash, sig[0], sig[1])
 
 print(msg_hash)
 print(sig[0])
 print(sig[1])
+print(verified)
