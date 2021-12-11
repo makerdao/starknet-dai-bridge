@@ -12,6 +12,7 @@ L1_ADDRESS = 0x1
 L1_GOVERNANCE_ADDRESS = 0x1
 L1_BRIDGE_ADDRESS = 0x1
 EXECUTE = 1017745666394979726211766185068760164586829337678283062942418931026954492996
+ECDSA_PUBLIC_KEY = 0
 
 L2_CONTRACTS_DIR = os.path.join(os.getcwd(), "contracts/l2")
 DAI_FILE = os.path.join(L2_CONTRACTS_DIR, "dai.cairo")
@@ -29,22 +30,32 @@ async def starknet() -> Starknet:
 
 @pytest.fixture
 async def user1(starknet: Starknet) -> StarknetContract:
-    return await starknet.deploy(source=ACCOUNT_FILE)
+    return await starknet.deploy(
+        source=ACCOUNT_FILE,
+        constructor_calldata=[
+            ECDSA_PUBLIC_KEY,
+        ],
+    )
 
 
 @pytest.fixture
 async def user2(starknet: Starknet) -> StarknetContract:
-    return await starknet.deploy(source=ACCOUNT_FILE)
-
-
-@pytest.fixture
-async def user3(starknet: Starknet) -> StarknetContract:
-    return await starknet.deploy(source=ACCOUNT_FILE)
+    return await starknet.deploy(
+        source=ACCOUNT_FILE,
+        constructor_calldata=[
+            ECDSA_PUBLIC_KEY,
+        ],
+    )
 
 
 @pytest.fixture
 async def auth_user(starknet: Starknet) -> StarknetContract:
-    return await starknet.deploy(source=ACCOUNT_FILE)
+    return await starknet.deploy(
+        source=ACCOUNT_FILE,
+        constructor_calldata=[
+            ECDSA_PUBLIC_KEY,
+        ],
+    )
 
 
 @pytest.fixture
@@ -153,7 +164,6 @@ async def check_balances(
     dai: StarknetContract,
     user1: StarknetContract,
     user2: StarknetContract,
-    user3: StarknetContract,
 ):
     async def internal_check_balances(
         expected_user1_balance,
@@ -161,12 +171,10 @@ async def check_balances(
     ):
         user1_balance = await dai.balanceOf(user1.contract_address).call()
         user2_balance = await dai.balanceOf(user2.contract_address).call()
-        user3_balance = await dai.balanceOf(user3.contract_address).call()
         total_supply = await dai.totalSupply().call()
 
         assert user1_balance.result == (to_split_uint(expected_user1_balance),)
         assert user2_balance.result == (to_split_uint(expected_user2_balance),)
-        assert user3_balance.result == (to_split_uint(0),)
         assert total_supply.result == (
                 to_split_uint(expected_user1_balance+expected_user2_balance),)
 
@@ -188,7 +196,6 @@ async def before_all(
     auth_user: StarknetContract,
     user1: StarknetContract,
     user2: StarknetContract,
-    user3: StarknetContract,
 ):
     await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(auth_user.contract_address)
@@ -196,8 +203,6 @@ async def before_all(
             int(L1_ADDRESS)).invoke(user1.contract_address)
     await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(user2.contract_address)
-    await registry.set_L1_address(
-            int(L1_ADDRESS)).invoke(user3.contract_address)
 
     print("-------------------------------------------")
     print(l2_bridge.contract_address)
