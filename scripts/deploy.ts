@@ -12,9 +12,11 @@ import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dis
 import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
 import { expect } from "chai";
 import hre from "hardhat";
+import { ec } from "starknet";
+const { genKeyPair, getStarkKey } = ec;
 
 import { getAddress, save, Signer } from "./utils";
-const { privateToStarkKey } = require("./signature");
+
 
 async function main(): Promise<void> {
   const [l1Signer] = await hre.ethers.getSigners();
@@ -31,16 +33,14 @@ async function main(): Promise<void> {
 
   console.log(`Deploying on ${NETWORK}/${STARKNET_NETWORK}`);
 
-  const ECDSA_PRIVATE_KEY = process.env.ECDSA_PRIVATE_KEY;
-  if (!ECDSA_PRIVATE_KEY) {
-    throw new Error("Set ECDSA_PRIVATE_KEY in .env");
-  }
-  const publicKey = privateToStarkKey(ECDSA_PRIVATE_KEY);
-  const l2Signer = new Signer(ECDSA_PRIVATE_KEY);
+  const keyPair = genKeyPair();
+  const privateKey = keyPair.priv;
+  const publicKey = BigInt(getStarkKey(keyPair));
+  const l2Signer = new Signer(privateKey);
   const account = await deployL2(
     "account",
     { _public_key: publicKey },
-    "account-auth"
+    "account-deployer"
   );
 
   save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
@@ -196,7 +196,7 @@ function printAddresses() {
   const NETWORK = hre.network.name;
 
   const contracts = [
-    "account-auth",
+    "account-deployer",
     "dai",
     "registry",
     "L1Escrow",

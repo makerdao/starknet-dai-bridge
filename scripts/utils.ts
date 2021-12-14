@@ -2,7 +2,10 @@ import { execSync } from "child_process";
 import { ethers } from "ethers";
 import fs from "fs";
 import { StarknetContract } from "hardhat/types/runtime";
-const { sign, ec, privateToStarkKey } = require("./signature");
+import { ec, hash } from "starknet";
+const { getKeyPair, getStarkKey, sign, verify } = ec;
+const { hashMessage } = hash;
+import type { KeyPair, Signature } from "starknet";
 
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
@@ -139,18 +142,22 @@ function flatten(calldata: any): any[] {
 }
 
 export class Signer {
-  keyPair;
   privateKey;
+  keyPair: KeyPair;
   publicKey;
 
   constructor(privateKey: string) {
     this.privateKey = privateKey;
-    this.publicKey = privateToStarkKey(privateKey);
-    this.keyPair = ec.keyFromPrivate(privateKey, "");
+    this.keyPair = getKeyPair(this.privateKey);
+    this.publicKey = getStarkKey(this.keyPair);
   }
 
-  sign(messageHash: any): any {
-    return sign(this.keyPair, messageHash);
+  sign(msgHash: string): Signature {
+    return sign(this.keyPair, msgHash);
+  }
+
+  verify(msgHash: string, sig: Signature): boolean {
+    return verify(this.keyPair, msgHash, sig);
   }
 
   async sendTransaction(
@@ -168,29 +175,16 @@ export class Signer {
     const selector = getSelectorFromName(selectorName);
     const contractAddress = BigInt(contract.address).toString();
     const _calldata = flatten(calldata);
-    const _result = execSync(
-      `python ./scripts/Signer.py ${this.privateKey} ${caller.address} ${
-        contract.address
-      } ${selector} ${_calldata.join(",")} ${nonce}`
-    );
-    const result = _result.toString().split("\n");
-    // const messageHash = BigInt(result[0]);
-    const sigR = BigInt(result[1]);
-    const sigS = BigInt(result[2]);
-
-    /*
-    const messageHash = hashMessage(
+    const msgHash = hashMessage(
       caller.address,
       contract.address,
       selector,
       _calldata,
-      nonce,
+      nonce.toString(),
     );
 
-    const signature = this.sign(messageHash);
-    const publicKey = ec.keyFromPublic(this.publicKey, "");
-    const verified = verify(publicKey, messageHash, { r: sigR, s: sigS });
-    */
+    const sig = this.sign(msgHash);
+    // const verified = this.verify(msgHash, sig);
 
     return caller.invoke(
       "execute",
@@ -199,34 +193,7 @@ export class Signer {
         selector,
         calldata: _calldata,
       },
-      [sigR, sigS]
+      [sig.r, sig.s]
     );
   }
 }
-
-/*
-function computeHashOnElements(data: any[]) {
-  let hash = pedersen([data[0], data[1]]);
-  for (let i=2; i<data.length; i++) {
-    hash = pedersen([hash, data[i]]);
-  }
-  return hash;
-}
-
-function hashMessage(
-  sender: any,
-  to: any,
-  selector: any,
-  calldata: any,
-  nonce: any,
-) {
-  const message = [
-    sender.slice(3),
-    to.slice(3),
-    parseInt(selector).toString(16),
-    computeHashOnElements(calldata),
-    nonce.toString()
-  ];
-  return computeHashOnElements(message);
-}
-*/
