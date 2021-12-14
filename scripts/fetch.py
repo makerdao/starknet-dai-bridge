@@ -4,6 +4,7 @@ import web3
 from web3.exceptions import InvalidAddress
 from typing import Dict, List
 import os
+from dotenv import load_dotenv
 import logging
 from typing import Dict, List
 
@@ -65,41 +66,6 @@ def _initialize_fact_memory_hashes_map(
         for event in statement_verifier_events
     }
 
-# TODO: function name seems inaccurate, function seem to return list of memory pages hashes,
-# unless it is a map from integer to a memory page. Python idiom?
-# it should be possible to use _initialize_fact_memory_hashes_map to simplify implementation
-def _initialize_index_memory_hashes_map(
-    statement_verifier_impl_contracts: List[Contract], from_block: int, to_block: int
-) -> List[bytes]:
-    # TODO: fix description
-    """
-    Given a list of statement verifier implementation contracts and block numbers, returns a mapping
-    between Cairo job's fact and the memory pages hashes for each verifier contract.
-    """
-    statement_verifier_events = []
-    for statement_verifier_impl_contract in statement_verifier_impl_contracts:
-        # Asserts that the contract is a statement verifier implementation contract.
-        assert (
-            "GpsStatementVerifier" in statement_verifier_impl_contract.functions.identify().call()
-        ), (
-            f"Contract with address {statement_verifier_impl_contract.address} is not a "
-            "statement verifier contract."
-        )
-        statement_verifier_contract_event = (
-            statement_verifier_impl_contract.events.LogMemoryPagesHashes
-        )
-        statement_verifier_events.extend(
-            get_contract_events(
-                contract_event=statement_verifier_contract_event,
-                from_block=from_block,
-                to_block=to_block,
-            )
-        )
-    return [
-        event["args"]["pagesHashes"]
-        for event in statement_verifier_events
-    ]
-
 
 class MemoryPagesFetcher:
     """
@@ -112,7 +78,6 @@ class MemoryPagesFetcher:
         web3: Web3,
         memory_page_transactions_map: Dict[int, str],
         fact_memory_pages_map: Dict[bytes, bytes],
-        index_memory_pages_map: List[bytes],
         memory_page_fact_registry_contract: Contract,
     ):
         self.web3 = web3
@@ -120,7 +85,6 @@ class MemoryPagesFetcher:
         self.memory_page_transactions_map = memory_page_transactions_map
         # Mapping from Cairo job's fact to the Cairo job memory pages list.
         self.fact_memory_pages_map = fact_memory_pages_map
-        self.index_memory_pages_map = index_memory_pages_map
         self.memory_page_fact_registry_contract = memory_page_fact_registry_contract
 
     @classmethod
@@ -149,17 +113,11 @@ class MemoryPagesFetcher:
             from_block=from_block,
             to_block=last_block,
         )
-        index_memory_pages_map = _initialize_index_memory_hashes_map(
-            statement_verifier_impl_contracts=gps_statement_verifier_impl_contracts,
-            from_block=from_block,
-            to_block=last_block,
-        )
 
         return cls(
             web3=web3,
             memory_page_transactions_map=memory_page_transactions_map,
             fact_memory_pages_map=fact_memory_pages_map,
-            index_memory_pages_map=index_memory_pages_map,
             memory_page_fact_registry_contract=memory_page_fact_registry_contract,
         )
 
@@ -173,7 +131,6 @@ class MemoryPagesFetcher:
             )
         return self.fact_memory_pages_map[fact_hash]
 
-    # TODO:
     def get_memory_pages_from_fact(self, fact_hash: bytes) -> List[List[int]]:
         """
         Given a fact hash, retrieves the memory pages which are relevant for that fact.
@@ -194,11 +151,8 @@ class MemoryPagesFetcher:
         return memory_pages
 
     def get_memory_pages(self) -> List[List[int]]:
-        # [len(deployments_info), ..., num_of_updates, contract_address, num_of_storage_updates, address, value]
-        # deployments_info = [contract_address, contract_hash, len(call_data), call_data]
         memory_pages = []
-        memory_pages_indexes = self.index_memory_pages_map
-        for memory_pages_hashes in memory_pages_indexes:
+        for memory_pages_hashes in self.fact_memory_pages_map.values():
             for memory_page_hash in memory_pages_hashes[1:]:
                 transaction_str = self.memory_page_transactions_map[
                     int.from_bytes(memory_page_hash, "big")
@@ -261,35 +215,47 @@ def load_contracts(
 
 
 def main():
-    # TODO: read from .env
-    GOERLI_NODE = 'https://goerli.infura.io/v3/efaaed1253b8458abf2b8669ae9e9223'
+
+    with open('./deployments/goerli/dai.json', 'r') as f:
+        dai = json.load(f)
+    DAI_ADDRESS = hex(int(dai['address'], 16))
+    DAI_BLOCK = int(dai['block'])
+
+    with open('./deployments/goerli/registry.json', 'r') as f:
+        registry = json.load(f)
+    REGISTRY_ADDRESS = hex(int(registry['address'], 16))
+    REGISTRY_BLOCK = int(registry['block'])
+
+    contracts = os.listdir('./deployments/goerli')
+    account_contracts = filter(lambda x: x.startswith('account'), contracts)
+    account_addresses = {}
+    for contract in account_contracts:
+        account_name = contract.split('-')[1].split('.')[0]
+        with open('./deployments/goerli/account-%s.json' % (account_name), 'r') as f:
+            address = int(json.load(f)['address'], 16)
+            account_addresses.update({ account_name: address})
+
+    load_dotenv()
+    GOERLI_NODE = os.environ["GOERLI_NODE"]
     contract_names = ["GpsStatementVerifier", "MemoryPageFactRegistry"]
 
     parser = argparse.ArgumentParser()
 
     # Note that Registration of memory pages happens before the state update transaction, hence
     # make sure to use from_block which preceeds (~500 blocks) the block of the state transition fact
-    parser.add_argument('--from_block', dest='from_block', default=5610000,
-                        help='find memory pages written after this block')
-
-    parser.add_argument('--web3_node', dest='web3_node', default=GOERLI_NODE,
-                        help='rpc node url')
-
-    parser.add_argument('--contracts_abi_file', dest='contracts_abi_file', default="contracts.json",
-                        help='name of the json file containing the abi of the GpsVerifier and MemoryPageFactRegistry')
 
     # TODO: do we need this?
     parser.add_argument('--fact', dest='fact',
         help='the fact whose associated memory pages will be returned')
 
-    # TODO: add argument: l2 address
+    parser.add_argument('--l2_address', dest='l2_address')
 
     args = parser.parse_args()
 
-    w3 = web3.Web3(web3.HTTPProvider(args.web3_node))
-    assert w3.isConnected(), f"Cannot connect to http provider {args.web3_node}."
+    w3 = web3.Web3(web3.HTTPProvider(GOERLI_NODE))
+    assert w3.isConnected(), f"Cannot connect to http provider {GOERLI_NODE}."
 
-    contracts_path = os.path.join(os.path.dirname(__file__), args.contracts_abi_file)
+    contracts_path = os.path.join(os.path.dirname(__file__), "contracts.json")
     contracts_dict = load_contracts(
         web3=w3, contracts_file=contracts_path, contracts_names=contract_names
     )
@@ -320,17 +286,6 @@ def main():
     print(balance)
     print(l1_address)
 
-# TODO: move address extraction to main
-with open('./deployments/goerli/dai.json', 'r') as f:
-    dai = json.load(f)
-with open('./deployments/goerli/registry.json', 'r') as f:
-    registry = json.load(f)
-with open('./deployments/goerli/account-user.json', 'r') as f:
-    L2_ADDRESS = int(json.load(f)['address'], 16)
-DAI_ADDRESS = hex(int(dai['address'], 16))
-DAI_BLOCK = int(dai['block'])
-REGISTRY_ADDRESS = hex(int(registry['address'], 16))
-REGISTRY_BLOCK = int(registry['block'])
 
 # TODO: add parameter: contract_addresses
 def get_diffs(diffs):
