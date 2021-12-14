@@ -65,9 +65,13 @@ def _initialize_fact_memory_hashes_map(
         for event in statement_verifier_events
     }
 
+# TODO: function name seems inaccurate, function seem to return list of memory pages hashes,
+# unless it is a map from integer to a memory page. Python idiom?
+# it should be possible to use _initialize_fact_memory_hashes_map to simplify implementation
 def _initialize_index_memory_hashes_map(
     statement_verifier_impl_contracts: List[Contract], from_block: int, to_block: int
 ) -> List[bytes]:
+    # TODO: fix description
     """
     Given a list of statement verifier implementation contracts and block numbers, returns a mapping
     between Cairo job's fact and the memory pages hashes for each verifier contract.
@@ -130,7 +134,7 @@ class MemoryPagesFetcher:
         """
         Creates an initialized instance by reading contract logs from the given web3 provider.
         If is_verifier_proxied is true, then gps_statement_verifier_contract is the proxy contract
-        rather than the statement verifier implemantation.
+        rather than the statement verifier implementation.
         """
         last_block = web3.eth.block_number
         memory_page_transactions_map = _initialize_memory_page_map(
@@ -169,6 +173,7 @@ class MemoryPagesFetcher:
             )
         return self.fact_memory_pages_map[fact_hash]
 
+    # TODO:
     def get_memory_pages_from_fact(self, fact_hash: bytes) -> List[List[int]]:
         """
         Given a fact hash, retrieves the memory pages which are relevant for that fact.
@@ -256,6 +261,7 @@ def load_contracts(
 
 
 def main():
+    # TODO: read from .env
     GOERLI_NODE = 'https://goerli.infura.io/v3/efaaed1253b8458abf2b8669ae9e9223'
     contract_names = ["GpsStatementVerifier", "MemoryPageFactRegistry"]
 
@@ -272,8 +278,11 @@ def main():
     parser.add_argument('--contracts_abi_file', dest='contracts_abi_file', default="contracts.json",
                         help='name of the json file containing the abi of the GpsVerifier and MemoryPageFactRegistry')
 
+    # TODO: do we need this?
     parser.add_argument('--fact', dest='fact',
         help='the fact whose associated memory pages will be returned')
+
+    # TODO: add argument: l2 address
 
     args = parser.parse_args()
 
@@ -311,7 +320,7 @@ def main():
     print(balance)
     print(l1_address)
 
-
+# TODO: move address extraction to main
 with open('./deployments/goerli/dai.json', 'r') as f:
     dai = json.load(f)
 with open('./deployments/goerli/registry.json', 'r') as f:
@@ -323,6 +332,7 @@ DAI_BLOCK = int(dai['block'])
 REGISTRY_ADDRESS = hex(int(registry['address'], 16))
 REGISTRY_BLOCK = int(registry['block'])
 
+# TODO: add parameter: contract_addresses
 def get_diffs(diffs):
     dai_diffs = {}
     registry_diffs = {}
