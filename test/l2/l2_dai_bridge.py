@@ -135,7 +135,7 @@ async def check_balances(
 
         assert user1_balance.result == (to_split_uint(expected_user1_balance),)
         assert user2_balance.result == (to_split_uint(expected_user2_balance),)
-        assert user3_balance.result == (to_split_uint(expected_user3_balance),)
+        assert user3_balance.result == (to_split_uint(0),)
         assert total_supply.result == (
                 to_split_uint(expected_user1_balance+expected_user2_balance),)
 

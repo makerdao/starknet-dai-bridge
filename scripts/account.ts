@@ -3,7 +3,6 @@ import { ec } from "starknet";
 const { getKeyPair, getStarkKey } = ec;
 
 import { getAddress, save } from "./utils";
-const { privateToStarkKey } = require("./signature");
 
 task("account:get", "Get L2 account information")
   .addOptionalParam("name", "Account name")
