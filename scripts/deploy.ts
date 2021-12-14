@@ -17,7 +17,6 @@ const { genKeyPair, getStarkKey } = ec;
 
 import { getAddress, save, Signer } from "./utils";
 
-
 async function main(): Promise<void> {
   const [l1Signer] = await hre.ethers.getSigners();
 

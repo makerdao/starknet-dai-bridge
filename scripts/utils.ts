@@ -1,4 +1,3 @@
-import { execSync } from "child_process";
 import { ethers } from "ethers";
 import fs from "fs";
 import { StarknetContract } from "hardhat/types/runtime";
@@ -180,7 +179,7 @@ export class Signer {
       contract.address,
       selector,
       _calldata,
-      nonce.toString(),
+      nonce.toString()
     );
 
     const sig = this.sign(msgHash);
