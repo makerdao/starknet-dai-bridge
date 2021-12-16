@@ -19,7 +19,7 @@ task("invoke:l2", "Invoke an L2 contract")
     const accountInstance = accountFactory.getContractAt(accountAddress);
 
     const _calldata = parseCalldataL2(calldata, NETWORK, contract, func);
-    const ECDSA_PRIVATE_KEY = process.env[`${_name}_ECDSA_PRIVATE_KEY`];
+    const ECDSA_PRIVATE_KEY = process.env[`${_name.toUpperCase()}_ECDSA_PRIVATE_KEY`];
     if (!ECDSA_PRIVATE_KEY) {
       throw new Error(`Set ${_name}_ECDSA_PRIVATE_KEY in .env`);
     }
