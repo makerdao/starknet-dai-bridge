@@ -101,18 +101,26 @@ class MemoryPagesFetcher:
         rather than the statement verifier implementation.
         """
         last_block = web3.eth.block_number
-        memory_page_transactions_map = _initialize_memory_page_map(
-            memory_page_fact_registry_contract=memory_page_fact_registry_contract,
-            from_block=from_block,
-            to_block=last_block,
-        )
+        memory_page_transactions_map = {}
+        fact_memory_pages_map = {}
         gps_statement_verifier_impl_contracts = [gps_statement_verifier_contract]
 
-        fact_memory_pages_map = _initialize_fact_memory_hashes_map(
-            statement_verifier_impl_contracts=gps_statement_verifier_impl_contracts,
-            from_block=from_block,
-            to_block=last_block,
-        )
+        batch_size = 10000
+        for start in range(from_block, last_block, batch_size+1):
+            end = start + batch_size
+            if end > last_block:
+                end = last_block
+            memory_page_transactions_map.update(_initialize_memory_page_map(
+                memory_page_fact_registry_contract=memory_page_fact_registry_contract,
+                from_block=start,
+                to_block=end,
+            ))
+
+            fact_memory_pages_map.update(_initialize_fact_memory_hashes_map(
+                statement_verifier_impl_contracts=gps_statement_verifier_impl_contracts,
+                from_block=start,
+                to_block=end,
+            ))
 
         return cls(
             web3=web3,
@@ -165,12 +173,12 @@ class MemoryPagesFetcher:
         return memory_pages
 
 
-DEFUALT_GET_LOGS_MAX_CHUNK_SIZE = 10 ** 6
+DEFAULT_GET_LOGS_MAX_CHUNK_SIZE = 10 ** 6
 def get_contract_events(
     contract_event,
     from_block: int,
     to_block: int,
-    get_logs_max_chunk_size: int = DEFUALT_GET_LOGS_MAX_CHUNK_SIZE,
+    get_logs_max_chunk_size: int = DEFAULT_GET_LOGS_MAX_CHUNK_SIZE,
 ) -> list:
     """
     Given a contract event and block numbers, retrieves a list of events in blocks
@@ -216,44 +224,28 @@ def load_contracts(
 
 def main():
 
-    with open('./deployments/goerli/dai.json', 'r') as f:
-        dai = json.load(f)
-    DAI_ADDRESS = hex(int(dai['address'], 16))
-    DAI_BLOCK = int(dai['block'])
-
-    with open('./deployments/goerli/registry.json', 'r') as f:
-        registry = json.load(f)
-    REGISTRY_ADDRESS = hex(int(registry['address'], 16))
-    REGISTRY_BLOCK = int(registry['block'])
-
-    contracts = os.listdir('./deployments/goerli')
-    account_contracts = filter(lambda x: x.startswith('account'), contracts)
+    deployed_contracts = os.listdir('./deployments/goerli')
+    account_contracts = filter(lambda x: x.startswith('account'), deployed_contracts)
     account_addresses = {}
     for contract in account_contracts:
         account_name = contract.split('-')[1].split('.')[0]
         with open('./deployments/goerli/account-%s.json' % (account_name), 'r') as f:
             address = int(json.load(f)['address'], 16)
-            account_addresses.update({ account_name: address})
+            account_addresses.update({address: account_name})
 
     load_dotenv()
-    GOERLI_NODE = os.environ["GOERLI_NODE"]
+    INFURA_API_KEY = os.environ["INFURA_API_KEY"]
     contract_names = ["GpsStatementVerifier", "MemoryPageFactRegistry"]
 
     parser = argparse.ArgumentParser()
-
-    # Note that Registration of memory pages happens before the state update transaction, hence
-    # make sure to use from_block which preceeds (~500 blocks) the block of the state transition fact
-
-    # TODO: do we need this?
-    parser.add_argument('--fact', dest='fact',
-        help='the fact whose associated memory pages will be returned')
-
-    parser.add_argument('--l2_address', dest='l2_address')
+    parser.add_argument('--chain', dest='chain', default='goerli')
+    parser.add_argument('--contract', dest='contracts', default='dai,registry')
 
     args = parser.parse_args()
 
-    w3 = web3.Web3(web3.HTTPProvider(GOERLI_NODE))
-    assert w3.isConnected(), f"Cannot connect to http provider {GOERLI_NODE}."
+    node_url = 'https://%s.infura.io/v3/%s' % (args.chain, INFURA_API_KEY)
+    w3 = web3.Web3(web3.HTTPProvider(node_url))
+    assert w3.isConnected(), f"Cannot connect to http provider {node_url}."
 
     contracts_path = os.path.join(os.path.dirname(__file__), "contracts.json")
     contracts_dict = load_contracts(
@@ -261,7 +253,17 @@ def main():
     )
     (gps_statement_verifier_contract, memory_pages_contract) = [contracts_dict[contract_name] for contract_name in contract_names]
 
-    from_block = min(DAI_BLOCK, REGISTRY_BLOCK)
+    contracts = args.contracts.split(',')
+    contract_addresses = {}
+    contract_blocks = []
+    for contract_name in contracts:
+        with open('./deployments/goerli/%s.json' % (contract_name), 'r') as f:
+            contract = json.load(f)
+        address = hex(int(contract['address'], 16))
+        block = int(contract['block'])
+        contract_addresses.update({address: contract_name})
+        contract_blocks.append(block)
+    from_block = min(contract_blocks)
     memory_pages_fetcher = MemoryPagesFetcher.create(
         web3=w3,
         from_block=from_block,
@@ -269,28 +271,22 @@ def main():
         memory_page_fact_registry_contract=memory_pages_contract
     )
 
-    if args.fact:
-        pages = memory_pages_fetcher.get_memory_pages_from_fact(bytes.fromhex(args.fact))
-        state_diffs = pages[1:]
-    else:
-        pages = memory_pages_fetcher.get_memory_pages()
-        state_diffs = []
-        for index, page in enumerate(pages):
-            state_diffs.append(page)
+    pages = memory_pages_fetcher.get_memory_pages()
+    state_diffs = []
+    for index, page in enumerate(pages):
+        state_diffs.append(page)
 
     diffs = [item for page in state_diffs for item in page]
-    dai_diffs, registry_diffs = get_diffs(diffs)
+    filtered_diffs = get_diffs(diffs, contract_addresses)
 
-    balance = get_balance(dai_diffs, L2_ADDRESS)
-    l1_address = get_l1_address(registry_diffs, L2_ADDRESS)
-    print(balance)
-    print(l1_address)
+    balances = get_balances(filtered_diffs['dai'], account_addresses)
+    l1_addresses = get_l1_addresses(filtered_diffs['registry'], account_addresses)
+    print(balances)
+    print(l1_addresses)
 
 
-# TODO: add parameter: contract_addresses
-def get_diffs(diffs):
-    dai_diffs = {}
-    registry_diffs = {}
+def get_diffs(diffs, contract_addresses):
+    filtered_diffs = {contract_name: {} for contract_name in contract_addresses.values()}
     while len(diffs) > 0:
         len_deployments = diffs.pop(0)
         for _ in range(len_deployments):
@@ -302,28 +298,32 @@ def get_diffs(diffs):
             contract_address = hex(int(diffs.pop(0)))
             num_updates = diffs.pop(0)
             for _ in range(num_updates):
-                if contract_address == DAI_ADDRESS:
+                if contract_address in contract_addresses.keys():
+                    contract_name = contract_addresses[contract_address]
                     storage_var_address = diffs.pop(0)
-                    dai_diffs[storage_var_address] = diffs.pop(0)
-                elif contract_address == REGISTRY_ADDRESS:
-                    storage_var_address = diffs.pop(0)
-                    registry_diffs[storage_var_address] = diffs.pop(0)
+                    filtered_diffs[contract_name][storage_var_address] = diffs.pop(0)
                 else:
                     diffs.pop(0)
                     diffs.pop(0)
-    return dai_diffs, registry_diffs
+    return filtered_diffs
 
 
-def get_balance(diffs, l2_address):
-    storage_var_address = get_storage_var_address('_balances', l2_address)
-    if storage_var_address in diffs.keys():
-        return diffs[storage_var_address]
+def get_balances(diffs, contract_addresses):
+    balances = {}
+    for contract_address, contract_name in contract_addresses.items():
+        storage_var_address = get_storage_var_address('_balances', contract_address)
+        if storage_var_address in diffs.keys():
+            balances.update({contract_name: diffs[storage_var_address]})
+    return balances
 
 
-def get_l1_address(diffs, l2_address):
-    storage_var_address = get_storage_var_address('_l1_addresses', l2_address)
-    if storage_var_address in diffs.keys():
-        return diffs[storage_var_address]
+def get_l1_addresses(diffs, contract_addresses):
+    l1_addresses = {}
+    for contract_address, contract_name in contract_addresses.items():
+        storage_var_address = get_storage_var_address('_l1_addresses', contract_address)
+        if storage_var_address in diffs.keys():
+            l1_addresses.update({contract_name: diffs[storage_var_address]})
+    return l1_addresses
 
 
 if __name__ == "__main__":
