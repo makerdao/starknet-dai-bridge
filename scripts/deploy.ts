@@ -130,38 +130,23 @@ async function main(): Promise<void> {
   await waitForTx(l1GovernanceRelay.deny(await l1Signer.getAddress()));
 
   console.log("Finalizing permissions for L2DAI...");
-  await l2Signer.sendTransaction(
-    account,
-    l2DAI,
-    "rely",
-    [asDec(l2DAIBridge.address)],
-  );
-  await l2Signer.sendTransaction(
-    account,
-    l2DAI,
-    "rely",
-    [asDec(l2GovernanceRelay.address)],
-  );
-  await l2Signer.sendTransaction(
-    account,
-    l2DAI,
-    "deny",
-    [asDec(account.address)],
-  );
+  await l2Signer.sendTransaction(account, l2DAI, "rely", [
+    asDec(l2DAIBridge.address),
+  ]);
+  await l2Signer.sendTransaction(account, l2DAI, "rely", [
+    asDec(l2GovernanceRelay.address),
+  ]);
+  await l2Signer.sendTransaction(account, l2DAI, "deny", [
+    asDec(account.address),
+  ]);
 
   console.log("Finalizing permissions for L2DAITokenBridge...");
-  await l2Signer.sendTransaction(
-    account,
-    l2DAIBridge,
-    "rely",
-    [asDec(l2GovernanceRelay.address)],
-  );
-  await l2Signer.sendTransaction(
-    account,
-    l2DAIBridge,
-    "deny",
-    [asDec(account.address)],
-  );
+  await l2Signer.sendTransaction(account, l2DAIBridge, "rely", [
+    asDec(l2GovernanceRelay.address),
+  ]);
+  await l2Signer.sendTransaction(account, l2DAIBridge, "deny", [
+    asDec(account.address),
+  ]);
 
   console.log("L1 permission sanity checks...");
   expect(await getActiveWards(l1Escrow as any)).to.deep.eq([
