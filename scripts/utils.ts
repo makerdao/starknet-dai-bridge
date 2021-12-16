@@ -1,6 +1,10 @@
 import { ethers } from "ethers";
 import fs from "fs";
 import { StarknetContract } from "hardhat/types/runtime";
+import { ec, hash } from "starknet";
+const { getKeyPair, getStarkKey, sign, verify } = ec;
+const { hashMessage } = hash;
+import type { KeyPair, Signature } from "starknet";
 
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
@@ -134,4 +138,61 @@ function flatten(calldata: any): any[] {
     }
   });
   return res;
+}
+
+export class Signer {
+  privateKey;
+  keyPair: KeyPair;
+  publicKey;
+
+  constructor(privateKey: string) {
+    this.privateKey = privateKey;
+    this.keyPair = getKeyPair(this.privateKey);
+    this.publicKey = getStarkKey(this.keyPair);
+  }
+
+  sign(msgHash: string): Signature {
+    return sign(this.keyPair, msgHash);
+  }
+
+  verify(msgHash: string, sig: Signature): boolean {
+    return verify(this.keyPair, msgHash, sig);
+  }
+
+  async sendTransaction(
+    caller: StarknetContract,
+    contract: StarknetContract,
+    selectorName: string,
+    calldata: any[] | any,
+    nonce: number = 0
+  ) {
+    if (nonce === 0) {
+      const executionInfo = await caller.call("get_nonce");
+      nonce = executionInfo.res;
+    }
+
+    const selector = getSelectorFromName(selectorName);
+    const contractAddress = BigInt(contract.address).toString();
+    const _calldata = flatten(calldata);
+    const msgHash = hashMessage(
+      caller.address,
+      contract.address,
+      selector,
+      _calldata,
+      nonce.toString()
+    );
+
+    const sig = this.sign(msgHash);
+    // const verified = this.verify(msgHash, sig);
+
+    return caller.invoke(
+      "execute",
+      {
+        to: contractAddress,
+        selector,
+        calldata: _calldata,
+      },
+      [sig.r, sig.s]
+    );
+  }
 }

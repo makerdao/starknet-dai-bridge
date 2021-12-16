@@ -12,8 +12,10 @@ import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dis
 import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
 import { expect } from "chai";
 import hre from "hardhat";
+import { ec } from "starknet";
+const { genKeyPair, getStarkKey } = ec;
 
-import { callFrom, getAddress, save } from "./utils";
+import { getAddress, save, Signer } from "./utils";
 
 async function main(): Promise<void> {
   const [l1Signer] = await hre.ethers.getSigners();
@@ -30,9 +32,15 @@ async function main(): Promise<void> {
 
   console.log(`Deploying on ${NETWORK}/${STARKNET_NETWORK}`);
 
-  // TODO: use `grown up` account implementation when available
-  console.warn("Using toy acccount implementation. Do not use for mainnet!");
-  const account = await deployL2("account", {}, "account-auth");
+  const keyPair = genKeyPair();
+  const privateKey = keyPair.priv;
+  const publicKey = BigInt(getStarkKey(keyPair));
+  const l2Signer = new Signer(privateKey);
+  const account = await deployL2(
+    "account",
+    { _public_key: publicKey },
+    "account-deployer"
+  );
 
   save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
   const DAIAddress = getAddress("DAI", NETWORK);
@@ -122,15 +130,23 @@ async function main(): Promise<void> {
   await waitForTx(l1GovernanceRelay.deny(await l1Signer.getAddress()));
 
   console.log("Finalizing permissions for L2DAI...");
-  await callFrom(account, l2DAI, "rely", [asDec(l2DAIBridge.address)]);
-  await callFrom(account, l2DAI, "rely", [asDec(l2GovernanceRelay.address)]);
-  await callFrom(account, l2DAI, "deny", [asDec(account.address)]);
-
-  console.log("Finalizing permissions for L2DAITokenBridge...");
-  await callFrom(account, l2DAIBridge, "rely", [
+  await l2Signer.sendTransaction(account, l2DAI, "rely", [
+    asDec(l2DAIBridge.address),
+  ]);
+  await l2Signer.sendTransaction(account, l2DAI, "rely", [
     asDec(l2GovernanceRelay.address),
   ]);
-  await callFrom(account, l2DAIBridge, "deny", [asDec(account.address)]);
+  await l2Signer.sendTransaction(account, l2DAI, "deny", [
+    asDec(account.address),
+  ]);
+
+  console.log("Finalizing permissions for L2DAITokenBridge...");
+  await l2Signer.sendTransaction(account, l2DAIBridge, "rely", [
+    asDec(l2GovernanceRelay.address),
+  ]);
+  await l2Signer.sendTransaction(account, l2DAIBridge, "deny", [
+    asDec(account.address),
+  ]);
 
   console.log("L1 permission sanity checks...");
   expect(await getActiveWards(l1Escrow as any)).to.deep.eq([
@@ -159,7 +175,7 @@ function printAddresses() {
   const NETWORK = hre.network.name;
 
   const contracts = [
-    "account-auth",
+    "account-deployer",
     "dai",
     "registry",
     "L1Escrow",
