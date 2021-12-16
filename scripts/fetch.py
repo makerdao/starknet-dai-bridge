@@ -159,6 +159,9 @@ class MemoryPagesFetcher:
         return memory_pages
 
     def get_memory_pages(self) -> List[List[int]]:
+        """
+        Retrieves all of the memory pages.
+        """
         memory_pages = []
         for memory_pages_hashes in self.fact_memory_pages_map.values():
             for memory_page_hash in memory_pages_hashes[1:]:
@@ -224,6 +227,7 @@ def load_contracts(
 
 def main():
 
+    # get all deployed account contracts
     deployed_contracts = os.listdir('./deployments/goerli')
     account_contracts = filter(lambda x: x.startswith('account'), deployed_contracts)
     account_addresses = {}
@@ -240,7 +244,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--chain', dest='chain', default='goerli')
     parser.add_argument('--contract', dest='contracts', default='dai,registry')
-
     args = parser.parse_args()
 
     node_url = 'https://%s.infura.io/v3/%s' % (args.chain, INFURA_API_KEY)
@@ -253,6 +256,7 @@ def main():
     )
     (gps_statement_verifier_contract, memory_pages_contract) = [contracts_dict[contract_name] for contract_name in contract_names]
 
+    # get contracts whose state we want
     contracts = args.contracts.split(',')
     contract_addresses = {}
     contract_blocks = []
@@ -263,6 +267,8 @@ def main():
         block = int(contract['block'])
         contract_addresses.update({address: contract_name})
         contract_blocks.append(block)
+
+    # get the memory pages starting at the block when the oldest contract was deployed
     from_block = min(contract_blocks)
     memory_pages_fetcher = MemoryPagesFetcher.create(
         web3=w3,
@@ -270,19 +276,23 @@ def main():
         gps_statement_verifier_contract=gps_statement_verifier_contract,
         memory_page_fact_registry_contract=memory_pages_contract
     )
-
     pages = memory_pages_fetcher.get_memory_pages()
-    state_diffs = []
-    for index, page in enumerate(pages):
-        state_diffs.append(page)
 
-    diffs = [item for page in state_diffs for item in page]
+    # flatten the memory pages
+    diffs = [item for page in pages for item in page]
+
+    # filter to get most recent state of each variable of each contract in contract_addresses
     filtered_diffs = get_diffs(diffs, contract_addresses)
 
     balances = get_balances(filtered_diffs['dai'], account_addresses)
     l1_addresses = get_l1_addresses(filtered_diffs['registry'], account_addresses)
-    print(balances)
-    print(l1_addresses)
+    print('Balances:')
+    for account_name, value in balances.items():
+        print(' ', account_name + ':', value)
+    print()
+    print('L1 Addresses:')
+    for account_name, value in l1_addresses.items():
+        print(' ', account_name + ':', value)
 
 
 def get_diffs(diffs, contract_addresses):
