@@ -135,21 +135,18 @@ async function main(): Promise<void> {
     l2DAI,
     "rely",
     [asDec(l2DAIBridge.address)],
-    0
   );
   await l2Signer.sendTransaction(
     account,
     l2DAI,
     "rely",
     [asDec(l2GovernanceRelay.address)],
-    1
   );
   await l2Signer.sendTransaction(
     account,
     l2DAI,
     "deny",
     [asDec(account.address)],
-    2
   );
 
   console.log("Finalizing permissions for L2DAITokenBridge...");
@@ -158,14 +155,12 @@ async function main(): Promise<void> {
     l2DAIBridge,
     "rely",
     [asDec(l2GovernanceRelay.address)],
-    3
   );
   await l2Signer.sendTransaction(
     account,
     l2DAIBridge,
     "deny",
     [asDec(account.address)],
-    4
   );
 
   console.log("L1 permission sanity checks...");
