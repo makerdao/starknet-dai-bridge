@@ -62,6 +62,8 @@ func symbol{} () -> (res: felt):
     return ('DAI')
 end
 
+# TODO version?
+
 @view
 func totalSupply{
     syscall_ptr : felt*,
@@ -132,7 +134,7 @@ func mint{
     # update balance
     let (balance : Uint256) = _balances.read(account)
     let (new_balance : Uint256, balance_carry : felt) = uint256_add(balance, amount)
-    assert balance_carry = 0
+    assert balance_carry = 0 # TODO: remove as it is checked for total_supply
     _balances.write(account, new_balance)
 
     # update total supply
@@ -178,7 +180,7 @@ func burn{
     if caller != account:
       let (allowance : Uint256) = _allowances.read(account, caller)
       let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
-      let (local eq) = uint256_eq(allowance, MAX)
+      let (eq) = uint256_eq(allowance, MAX)
       if eq == 0:
         let (is_le) = uint256_le(amount, allowance)
         assert is_le = 1
@@ -186,18 +188,18 @@ func burn{
         _allowances.write(account, caller, new_allowance)
 
         tempvar syscall_ptr : felt* = syscall_ptr
-        tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
+        tempvar pedersen_ptr : HashBuiltin* = pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
         tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
       else:
         tempvar syscall_ptr : felt* = syscall_ptr
-        tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
+        tempvar pedersen_ptr : HashBuiltin* = pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
         tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
       end
     else:
       tempvar syscall_ptr : felt* = syscall_ptr
-      tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
+      tempvar pedersen_ptr : HashBuiltin* = pedersen_ptr
       tempvar range_check_ptr = range_check_ptr
       tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
     end
@@ -256,7 +258,7 @@ func transferFrom{
     if caller != sender:
       let (allowance : Uint256) = _allowances.read(sender, caller)
       let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
-      let (local max_allowance) = uint256_eq(allowance, MAX)
+      let (max_allowance) = uint256_eq(allowance, MAX)
       if max_allowance == 0:
         let (is_le) = uint256_le(amount, allowance)
         assert is_le = 1
@@ -368,12 +370,12 @@ func _transfer{
     let (local sender_balance : Uint256) = _balances.read(sender)
     let (is_le) = uint256_le(amount, sender_balance)
     assert is_le = 1
-    let (local new_balance: Uint256) = uint256_sub(sender_balance, amount)
+    let (new_balance: Uint256) = uint256_sub(sender_balance, amount)
     _balances.write(sender, new_balance)
 
     # increase recipient balance
-    let (local recipient_balance : Uint256) = _balances.read(recipient)
-    let (local sum : Uint256, carry : felt) = uint256_add(recipient_balance, amount)
+    let (recipient_balance : Uint256) = _balances.read(recipient)
+    let (sum : Uint256, carry : felt) = uint256_add(recipient_balance, amount)
     assert carry = 0
     _balances.write(recipient, sum)
 
