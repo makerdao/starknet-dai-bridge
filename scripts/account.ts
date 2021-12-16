@@ -23,7 +23,7 @@ task("account:create", "Create new L2 account")
     const ECDSA_PRIVATE_KEY =
       process.env[`${_name.toUpperCase()}_ECDSA_PRIVATE_KEY`];
     if (!ECDSA_PRIVATE_KEY) {
-      throw new Error(`Set ${_name}_ECDSA_PRIVATE_KEY in .env`);
+      throw new Error(`Set ${_name.toUpperCase()}_ECDSA_PRIVATE_KEY in .env`);
     }
     console.log(`Deploying account ${_name} on ${NETWORK}`);
     const accountFactory = await hre.starknet.getContractFactory("account");

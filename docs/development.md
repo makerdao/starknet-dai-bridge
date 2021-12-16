@@ -17,7 +17,7 @@ Setup environment variables.
 cp .env.example .env
 ```
 
-In `.env` set the `INFURA_API_KEY` and `MNEMONIC` variables.
+In `.env` set the `INFURA_API_KEY`, `MNEMONIC`, and `DEFAULT_ECDSA_PRIVATE_KEY` variables.
 
 
 ## Run goerli environment
@@ -31,10 +31,17 @@ The deploy contracts and abi are stored in a json in `./deployments/NETWORK/CONT
 
 ## Interactions
 
+Three types of interaction calls:
+ - `call:l1` - use for all layer 1 view and external functions
+ - `call:l2` - use for layer 2 view functions
+ - `invoke:l2` - use for layer 2 external functions; requires an account contract to be called, if `--name` is not specified it will use `default` account
+
 ### Create Account
 ```
 yarn account:create --name ACCOUNT_NAME
 ```
+
+The account will be initialized with the environment variable set at `[ACCOUNT_NAME]_ECDSA_PRIVATE_KEY`.
 
 ### Get Account address
 ```
@@ -79,3 +86,6 @@ yarn call:l1 --contract L1DAIBridge --func withdraw --calldata AMOUNT,L1_ADDRESS
 yarn account:get --name user
 yarn invoke:l2 --contract dai --func transfer --calldata ACCOUNT_NAME,AMOUNT
 ```
+
+## Data Reconstruction Script
+A detailed explanation of how state diffs are stored on L1: [Starknet On-Chain Data](https://starknet.io/on-chain-data/)
