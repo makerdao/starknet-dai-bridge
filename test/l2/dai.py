@@ -331,10 +331,12 @@ async def test_should_not_allow_minting_to_address_beyond_max(
     auth_user: StarknetContract,
     user3: StarknetContract,
 ):
+    assert (await dai.totalSupply().call()).result != (to_split_uint(0),)
+
     with pytest.raises(StarkException):
         await dai.mint(
-                user3.contract_address,
-                to_split_uint(2**256)).invoke(auth_user.contract_address)
+            user3.contract_address,
+            to_split_uint(2**256-1)).invoke(auth_user.contract_address)
 
 
 @pytest.mark.asyncio
@@ -374,7 +376,6 @@ async def test_should_not_burn_other(
                 user1.contract_address,
                 to_split_uint(10),
             ).invoke(user2.contract_address)
-
 
 @pytest.mark.asyncio
 async def test_deployer_should_not_be_able_to_burn(

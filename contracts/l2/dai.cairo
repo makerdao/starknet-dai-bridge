@@ -133,8 +133,9 @@ func mint{
 
     # update balance
     let (balance : Uint256) = _balances.read(account)
-    let (new_balance : Uint256, balance_carry : felt) = uint256_add(balance, amount)
-    assert balance_carry = 0 # TODO: remove as it is checked for total_supply
+    # overflow check disabled since later amount + total_supply is checked for overflow
+    # and total_supply >= balance
+    let (new_balance : Uint256, _) = uint256_add(balance, amount)
     _balances.write(account, new_balance)
 
     # update total supply
@@ -171,9 +172,7 @@ func burn{
     # decrease supply
     let (local total_supply : Uint256) = _total_supply.read()
 
-    ## overflow check disabled for effeciency
-    # let (is_le) = uint256_le(amount, total_supply)
-    # assert is_le = 1
+    # underflow check disabled since amount <= balance <= total_amount
     let (new_total_supply : Uint256) = uint256_sub(total_supply, amount)
     _total_supply.write(new_total_supply)
 
@@ -313,7 +312,6 @@ func increaseAllowance{
     let (local caller) = get_caller_address()
     let (allowance : Uint256) = _allowances.read(caller, spender)
     let (new_allowance: Uint256, carry : felt) = uint256_add(amount, allowance)
-    # check overflow
     assert carry = 0
     _approve(caller, spender, new_allowance)
     return (res=1)
