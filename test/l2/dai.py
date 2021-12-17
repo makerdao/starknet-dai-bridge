@@ -377,6 +377,7 @@ async def test_should_not_burn_other(
                 to_split_uint(10),
             ).invoke(user2.contract_address)
 
+
 @pytest.mark.asyncio
 async def test_deployer_should_not_be_able_to_burn(
     dai: StarknetContract,

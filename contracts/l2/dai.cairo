@@ -62,8 +62,6 @@ func symbol{} () -> (res: felt):
     return ('DAI')
 end
 
-# TODO version?
-
 @view
 func totalSupply{
     syscall_ptr : felt*,
@@ -189,7 +187,7 @@ func burn{
         tempvar syscall_ptr = syscall_ptr
         tempvar pedersen_ptr = pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
-        tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+        tempvar bitwise_ptr = bitwise_ptr
       else:
         tempvar syscall_ptr = syscall_ptr
         tempvar pedersen_ptr = pedersen_ptr
