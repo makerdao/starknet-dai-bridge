@@ -70,7 +70,7 @@ func totalSupply{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> (res : Uint256):
-    let (res : Uint256) = _total_supply.read()
+    let (res) = _total_supply.read()
     return (res)
 end
 
@@ -80,7 +80,7 @@ func balanceOf{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt) -> (res : Uint256):
-    let (res : Uint256) = _balances.read(user=user)
+    let (res) = _balances.read(user=user)
     return (res)
 end
 
@@ -90,7 +90,7 @@ func allowance{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(owner : felt, spender : felt) -> (res : Uint256):
-    let (res : Uint256) = _allowances.read(owner, spender)
+    let (res) = _allowances.read(owner, spender)
     return (res)
 end
 
@@ -100,7 +100,7 @@ func wards{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt) -> (res : felt):
-    let (res : felt) = _wards.read(user)
+    let (res) = _wards.read(user)
     return (res)
 end
 
@@ -132,15 +132,15 @@ func mint{
     uint256_check(amount)
 
     # update balance
-    let (balance : Uint256) = _balances.read(account)
+    let (balance) = _balances.read(account)
     # overflow check disabled since later amount + total_supply is checked for overflow
     # and total_supply >= balance
-    let (new_balance : Uint256, _) = uint256_add(balance, amount)
+    let (new_balance, _) = uint256_add(balance, amount)
     _balances.write(account, new_balance)
 
     # update total supply
-    let (total : Uint256) = _total_supply.read()
-    let (new_total : Uint256, total_carry : felt) = uint256_add(total, amount)
+    let (total) = _total_supply.read()
+    let (new_total, total_carry) = uint256_add(total, amount)
     assert total_carry = 0
     _total_supply.write(new_total)
 
@@ -162,45 +162,45 @@ func burn{
     uint256_check(amount)
 
     # update balance
-    let (local balance : Uint256) = _balances.read(account)
+    let (local balance) = _balances.read(account)
 
     let (is_le) = uint256_le(amount, balance)
     assert is_le = 1
-    let (new_balance : Uint256) = uint256_sub(balance, amount)
+    let (new_balance) = uint256_sub(balance, amount)
     _balances.write(account, new_balance)
 
     # decrease supply
-    let (local total_supply : Uint256) = _total_supply.read()
+    let (local total_supply) = _total_supply.read()
 
     # underflow check disabled since amount <= balance <= total_amount
-    let (new_total_supply : Uint256) = uint256_sub(total_supply, amount)
+    let (new_total_supply) = uint256_sub(total_supply, amount)
     _total_supply.write(new_total_supply)
 
     if caller != account:
-      let (allowance : Uint256) = _allowances.read(account, caller)
+      let (allowance) = _allowances.read(account, caller)
       let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (eq) = uint256_eq(allowance, MAX)
       if eq == 0:
         let (is_le) = uint256_le(amount, allowance)
         assert is_le = 1
-        let (new_allowance : Uint256) = uint256_sub(allowance, amount)
+        let (new_allowance) = uint256_sub(allowance, amount)
         _allowances.write(account, caller, new_allowance)
 
-        tempvar syscall_ptr : felt* = syscall_ptr
-        tempvar pedersen_ptr : HashBuiltin* = pedersen_ptr
+        tempvar syscall_ptr = syscall_ptr
+        tempvar pedersen_ptr = pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
         tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
       else:
-        tempvar syscall_ptr : felt* = syscall_ptr
-        tempvar pedersen_ptr : HashBuiltin* = pedersen_ptr
+        tempvar syscall_ptr = syscall_ptr
+        tempvar pedersen_ptr = pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
-        tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+        tempvar bitwise_ptr = bitwise_ptr
       end
     else:
-      tempvar syscall_ptr : felt* = syscall_ptr
-      tempvar pedersen_ptr : HashBuiltin* = pedersen_ptr
+      tempvar syscall_ptr = syscall_ptr
+      tempvar pedersen_ptr = pedersen_ptr
       tempvar range_check_ptr = range_check_ptr
-      tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+      tempvar bitwise_ptr = bitwise_ptr
     end
 
     return ()
@@ -255,7 +255,7 @@ func transferFrom{
     _transfer(sender, recipient, amount)
 
     if caller != sender:
-      let (allowance : Uint256) = _allowances.read(sender, caller)
+      let (allowance) = _allowances.read(sender, caller)
       let MAX = Uint256(low=ALL_ONES, high=ALL_ONES)
       let (max_allowance) = uint256_eq(allowance, MAX)
       if max_allowance == 0:
@@ -265,21 +265,21 @@ func transferFrom{
 
         _allowances.write(sender, caller, new_allowance)
 
-        tempvar syscall_ptr : felt* = syscall_ptr
-        tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
+        tempvar syscall_ptr = syscall_ptr
+        tempvar pedersen_ptr = pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
-        tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+        tempvar bitwise_ptr = bitwise_ptr
       else:
-        tempvar syscall_ptr : felt* = syscall_ptr
-        tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
+        tempvar syscall_ptr = syscall_ptr
+        tempvar pedersen_ptr = pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
-        tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+        tempvar bitwise_ptr = bitwise_ptr
       end
     else:
-      tempvar syscall_ptr : felt* = syscall_ptr
-      tempvar pedersen_ptr : HashBuiltin*= pedersen_ptr
+      tempvar syscall_ptr = syscall_ptr
+      tempvar pedersen_ptr = pedersen_ptr
       tempvar range_check_ptr = range_check_ptr
-      tempvar bitwise_ptr : BitwiseBuiltin* = bitwise_ptr
+      tempvar bitwise_ptr = bitwise_ptr
     end
 
     return (res=1)
@@ -310,8 +310,8 @@ func increaseAllowance{
 
     uint256_check(amount)
     let (local caller) = get_caller_address()
-    let (allowance : Uint256) = _allowances.read(caller, spender)
-    let (new_allowance: Uint256, carry : felt) = uint256_add(amount, allowance)
+    let (allowance) = _allowances.read(caller, spender)
+    let (new_allowance, carry) = uint256_add(amount, allowance)
     assert carry = 0
     _approve(caller, spender, new_allowance)
     return (res=1)
@@ -328,10 +328,10 @@ func decreaseAllowance{
 
     uint256_check(amount)
     let (local caller) = get_caller_address()
-    let (local allowance : Uint256) = _allowances.read(caller, spender)
+    let (local allowance) = _allowances.read(caller, spender)
     let (is_le) = uint256_le(amount, allowance)
     assert is_le = 1
-    let (new_allowance : Uint256) = uint256_sub(allowance, amount)
+    let (new_allowance) = uint256_sub(allowance, amount)
     _approve(caller, spender, new_allowance)
     return (res=1)
 end
@@ -365,15 +365,15 @@ func _transfer{
     assert_not_equal(recipient, contract_address)
 
     # decrease sender balance
-    let (local sender_balance : Uint256) = _balances.read(sender)
+    let (local sender_balance) = _balances.read(sender)
     let (is_le) = uint256_le(amount, sender_balance)
     assert is_le = 1
-    let (new_balance: Uint256) = uint256_sub(sender_balance, amount)
+    let (new_balance) = uint256_sub(sender_balance, amount)
     _balances.write(sender, new_balance)
 
     # increase recipient balance
-    let (recipient_balance : Uint256) = _balances.read(recipient)
-    let (sum : Uint256, carry : felt) = uint256_add(recipient_balance, amount)
+    let (recipient_balance) = _balances.read(recipient)
+    let (sum, carry) = uint256_add(recipient_balance, amount)
     assert carry = 0
     _balances.write(recipient, sum)
 
