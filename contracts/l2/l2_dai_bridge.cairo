@@ -73,7 +73,7 @@ func is_open{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> (res : felt):
-    let (res : felt) = _is_open.read()
+    let (res) = _is_open.read()
     return (res)
 end
 
@@ -83,7 +83,7 @@ func dai{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> (res : felt):
-    let (res : felt) = _dai.read()
+    let (res) = _dai.read()
     return (res)
 end
 
@@ -93,7 +93,7 @@ func registry{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> (res : felt):
-    let (res : felt) = _registry.read()
+    let (res) = _registry.read()
     return (res)
 end
 
@@ -103,7 +103,7 @@ func bridge{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> (res : felt):
-    let (res : felt) = _bridge.read()
+    let (res) = _bridge.read()
     return (res)
 end
 
@@ -113,7 +113,7 @@ func wards{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(user : felt) -> (res : felt):
-    let (res : felt) = _wards.read(user)
+    let (res) = _wards.read(user)
     return (res)
 end
 
@@ -252,7 +252,7 @@ func handle_force_withdrawal{
 
     # check l2 DAI balance
     let amount = Uint256(low=amount_low, high=amount_high)
-    let (balance : Uint256) = IDAI.balanceOf(dai, l2_sender)
+    let (balance) = IDAI.balanceOf(dai, l2_sender)
     let (balance_check) = uint256_le(amount, balance)
     if balance_check == 0:
         return ()
@@ -260,7 +260,7 @@ func handle_force_withdrawal{
 
     # check allowance
     let (contract_address) = get_contract_address()
-    let (allowance : Uint256) = IDAI.allowance(dai, l2_sender, contract_address)
+    let (allowance) = IDAI.allowance(dai, l2_sender, contract_address)
     let (allowance_check) = uint256_le(amount, allowance)
     if allowance_check == 0:
         return ()
@@ -280,7 +280,7 @@ func send_handle_withdraw{
     # check valid L1 address
     assert_l1_address(l1_recipient)
 
-    let (payload : felt*) = alloc()
+    let (payload) = alloc()
     assert payload[0] = FINALIZE_WITHDRAW
     assert payload[1] = l1_recipient
     assert payload[2] = amount.low

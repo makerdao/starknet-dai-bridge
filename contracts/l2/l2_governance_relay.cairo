@@ -49,7 +49,7 @@ func relay{
     let (l1_governance_relay) = _l1_governance_relay.read()
     assert l1_governance_relay = from_address
 
-    let (calldata : felt*) = alloc()
+    let (calldata) = alloc()
     delegate_call(spell, EXECUTE_SELECTOR, 0, calldata)
 
     return ()
