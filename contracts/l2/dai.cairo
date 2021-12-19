@@ -183,22 +183,10 @@ func burn{
         assert is_le = 1
         let (new_allowance) = uint256_sub(allowance, amount)
         _allowances.write(account, caller, new_allowance)
-
-        tempvar syscall_ptr = syscall_ptr
-        tempvar pedersen_ptr = pedersen_ptr
-        tempvar range_check_ptr = range_check_ptr
-        tempvar bitwise_ptr = bitwise_ptr
+        return ()
       else:
-        tempvar syscall_ptr = syscall_ptr
-        tempvar pedersen_ptr = pedersen_ptr
-        tempvar range_check_ptr = range_check_ptr
-        tempvar bitwise_ptr = bitwise_ptr
+        return ()
       end
-    else:
-      tempvar syscall_ptr = syscall_ptr
-      tempvar pedersen_ptr = pedersen_ptr
-      tempvar range_check_ptr = range_check_ptr
-      tempvar bitwise_ptr = bitwise_ptr
     end
 
     return ()
@@ -260,26 +248,12 @@ func transferFrom{
         let (is_le) = uint256_le(amount, allowance)
         assert is_le = 1
         let (new_allowance: Uint256) = uint256_sub(allowance, amount)
-
         _allowances.write(sender, caller, new_allowance)
-
-        tempvar syscall_ptr = syscall_ptr
-        tempvar pedersen_ptr = pedersen_ptr
-        tempvar range_check_ptr = range_check_ptr
-        tempvar bitwise_ptr = bitwise_ptr
+        return (res=1)
       else:
-        tempvar syscall_ptr = syscall_ptr
-        tempvar pedersen_ptr = pedersen_ptr
-        tempvar range_check_ptr = range_check_ptr
-        tempvar bitwise_ptr = bitwise_ptr
+        return (res=1)
       end
-    else:
-      tempvar syscall_ptr = syscall_ptr
-      tempvar pedersen_ptr = pedersen_ptr
-      tempvar range_check_ptr = range_check_ptr
-      tempvar bitwise_ptr = bitwise_ptr
     end
-
     return (res=1)
 end
 
