@@ -3,10 +3,10 @@
 from starkware.starknet.services.api.gateway.contract_address import calculate_contract_address
 from starkware.starknet.services.api.contract_definition import ContractDefinition
 import json
-import os
 import marshmallow_dataclass
 import multiprocessing as mp
 import random
+import argparse
 
 def build_salt_to_address(contract, calldata, caller):
     return lambda salt: calculate_contract_address(
@@ -14,6 +14,14 @@ def build_salt_to_address(contract, calldata, caller):
     )
 
 def main():
+
+    parser = argparse.ArgumentParser(description='Find salt for DAI deplyment that results with contract address with prefix = da1')
+    parser.add_argument('--ward', type=lambda x: int(x, 0))
+    parser.add_argument('--start_from', type=int, default=1)
+
+    ward = parser.parse_args().ward
+    start_from = parser.parse_args().start_from
+
     random.seed(31415)
 
     contract_schema = marshmallow_dataclass.class_schema(ContractDefinition)()
@@ -21,26 +29,31 @@ def main():
     file = './starknet-artifacts/contracts/l2/dai.cairo/dai.json'
 
     dai = contract_schema.load(json.load(open(file)))
-    calldata = [123]
+    calldata = [ward]
     caller = 0
 
     salt_to_address = build_salt_to_address(dai, calldata, caller)
 
+    for i in range(start_from):
+        random.getrandbits(251)
+
+    i += 1
 
     print('Searching for vanity address...')
-
-    i = 1
+    print('starting from:', i)
+    print('with calldata =', calldata)
 
     while True:
         salt = random.getrandbits(251)
         address = salt_to_address(salt)
         prefix = hex(address)[2:5]
-        print(i, ':', prefix, end=',', flush=True)
+        print( f'{i}:{prefix}', end=', ', flush=True)
         if (prefix == 'da1'):
             print()
-            print(salt, address, hex(address))
+            print('Found:')
+            print('salt:', salt)
+            print('address:', hex(address))
             return
         i += 1
-
 
 main()
