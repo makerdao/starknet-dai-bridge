@@ -87,5 +87,19 @@ yarn account:get --name user
 yarn invoke:l2 --contract dai --func transfer --calldata ACCOUNT_NAME,AMOUNT
 ```
 
+## Testing on mainnet fork
+Fork mainnet in local chain
+```
+yarn fork
+```
+
+Set ETH and DAI balance
+```
+yarn setBalance --address [ETH_ADDRESS] --balance [AMOUNT_IN_ETH]
+yarn setDaiBalance --address [ETH_ADDRESS] --balance [AMOUNT_IN_DAI]
+```
+If `--address` is not specified, it will default to the address of the `MNEMONIC` environment variable.
+
+
 ## Data Reconstruction Script
 A detailed explanation of how state diffs are stored on L1: [Starknet On-Chain Data](https://starknet.io/on-chain-data/)
