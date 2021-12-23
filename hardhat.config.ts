@@ -6,6 +6,7 @@ import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
 import "./scripts/interact";
 import "./scripts/account";
+import "./scripts/fork";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
@@ -33,6 +34,11 @@ const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
 if (!infuraApiKey) {
   throw new Error("Please set your INFURA_API_KEY in a .env file");
 }
+const alchemyApiKey: string | undefined = process.env.ALCHEMY_API_KEY;
+if (!alchemyApiKey) {
+  throw new Error("Please set your ALCHEMY_API_KEY in a .env file");
+}
+
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;
@@ -52,8 +58,27 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     goerli: getChainConfig("goerli"),
-    localhost: {
+    fork: {
       url: "http://127.0.0.1:8545",
+      accounts: {
+        count: 10,
+        mnemonic,
+        path: "m/44'/60'/0'/0",
+      },
+    },
+    hardhat: {
+      forking: {
+        url: `https://eth-mainnet.alchemyapi.io/v2/${alchemyApiKey}`,
+      },
+      mining: {
+        auto: false,
+        interval: 5000,
+      },
+      accounts: {
+        count: 10,
+        mnemonic,
+        path: "m/44'/60'/0'/0",
+      },
     },
   },
   paths: {

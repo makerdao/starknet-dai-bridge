@@ -20,7 +20,12 @@ import { getAddress, save, Signer } from "./utils";
 async function main(): Promise<void> {
   const [l1Signer] = await hre.ethers.getSigners();
 
-  const NETWORK = hre.network.name;
+  let NETWORK;
+  if (hre.network.name === "fork") {
+    NETWORK = "mainnet";
+  } else {
+    NETWORK = hre.network.name;
+  }
   const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
 
   const L1_DAI_ADDRESS = getRequiredEnv(
