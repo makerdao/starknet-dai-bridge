@@ -11,13 +11,48 @@ import { getOptionalEnv } from "@makerdao/hardhat-utils/dist/env";
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
 import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
 import { expect } from "chai";
+import { writeFileSync } from "fs";
 import hre from "hardhat";
-import { ec } from "starknet";
-const { genKeyPair, getStarkKey } = ec;
+import { isEmpty } from 'lodash'
+import {ec, KeyPair} from "starknet";
+
+const { genKeyPair, getStarkKey, } = ec;
 
 import { getAddress, save, Signer } from "./utils";
 
-async function main(): Promise<void> {
+async function genAndSaveKeyPair(): Promise<KeyPair> {
+  const keyPair = genKeyPair();
+  writeFileSync('.env.deployer', `DEPLOYER_ECDSA_PRIVATE_KEY=${keyPair.priv.toString()}`);
+  return keyPair
+}
+
+
+export async function deployDeployer() {
+  const NETWORK = hre.network.name;
+  const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
+
+  const [l1Signer] = await hre.ethers.getSigners();
+
+  // @ts-ignore
+  const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
+
+  console.log(`Deploying deployer on ${NETWORK}/${STARKNET_NETWORK}`);
+
+  const keyPair = await genAndSaveKeyPair();
+  const publicKey = BigInt(getStarkKey(keyPair));
+
+  await deployL2(
+    "account",
+    BLOCK_NUMBER,
+    { _public_key: publicKey },
+    "account-deployer"
+  );
+
+  writeFileSync('deployer-key.json', JSON.stringify({priv: keyPair.priv.toString()}));
+
+}
+
+export async function deployBridge(): Promise<void> {
   const [l1Signer] = await hre.ethers.getSigners();
 
   const NETWORK = hre.network.name;
@@ -30,21 +65,24 @@ async function main(): Promise<void> {
     `${NETWORK.toUpperCase()}_L1_STARKNET_ADDRESS`
   );
 
+  const L2_DAI_ADDRESS = getOptionalEnv(
+    `${NETWORK.toUpperCase()}_L2_DAI_ADDRESS`
+  );
+
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
-  console.log(`Deploying on ${NETWORK}/${STARKNET_NETWORK}`);
+  console.log(`Deploying bridge on ${NETWORK}/${STARKNET_NETWORK}`);
 
-  const keyPair = genKeyPair();
-  const privateKey = keyPair.priv;
-  const publicKey = BigInt(getStarkKey(keyPair));
-  const l2Signer = new Signer(privateKey);
-  const account = await deployL2(
+  const DEPLOYER_KEY = getRequiredEnv(`DEPLOYER_ECDSA_PRIVATE_KEY`);
+  const l2Signer = new Signer(DEPLOYER_KEY);
+
+  const deployer = await getL2ContractAt(
     "account",
-    BLOCK_NUMBER,
-    { _public_key: publicKey },
-    "account-deployer"
+    getAddress("account-deployer", NETWORK)
   );
+
+  console.log(`Deploying from account: ${deployer.address.toString()}`)
 
   save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
   const DAIAddress = getAddress("DAI", NETWORK);
@@ -71,10 +109,16 @@ async function main(): Promise<void> {
     "futureL1GovRelayAddress != l1GovernanceRelay.address"
   );
 
-  const l2DAI = await deployL2("dai", BLOCK_NUMBER, {
-    ward: asDec(account.address),
-  });
+  if(L2_DAI_ADDRESS) {
+    save("dai", {address: L2_DAI_ADDRESS}, NETWORK);
+  }
 
+  const l2DAI = L2_DAI_ADDRESS
+    ? await getL2ContractAt("dai", L2_DAI_ADDRESS) 
+    : await deployL2("dai", BLOCK_NUMBER, {
+      ward: asDec(deployer.address),
+    });
+  
   const REGISTRY_ADDRESS = getOptionalEnv(
     `${NETWORK.toUpperCase()}_REGISTRY_ADDRESS`
   );
@@ -94,7 +138,7 @@ async function main(): Promise<void> {
   );
 
   const l2DAIBridge = await deployL2("l2_dai_bridge", BLOCK_NUMBER, {
-    ward: asDec(account.address),
+    ward: asDec(deployer.address),
     dai: asDec(l2DAI.address),
     bridge: asDec(futureL1DAIBridgeAddress),
     registry: asDec(registry.address),
@@ -140,22 +184,22 @@ async function main(): Promise<void> {
   await waitForTx(l1GovernanceRelay.deny(await l1Signer.getAddress()));
 
   console.log("Finalizing permissions for L2DAI...");
-  await l2Signer.sendTransaction(account, l2DAI, "rely", [
+  await l2Signer.sendTransaction(deployer, l2DAI, "rely", [
     asDec(l2DAIBridge.address),
   ]);
-  await l2Signer.sendTransaction(account, l2DAI, "rely", [
+  await l2Signer.sendTransaction(deployer, l2DAI, "rely", [
     asDec(l2GovernanceRelay.address),
   ]);
-  await l2Signer.sendTransaction(account, l2DAI, "deny", [
-    asDec(account.address),
+  await l2Signer.sendTransaction(deployer, l2DAI, "deny", [
+    asDec(deployer.address),
   ]);
 
   console.log("Finalizing permissions for L2DAITokenBridge...");
-  await l2Signer.sendTransaction(account, l2DAIBridge, "rely", [
+  await l2Signer.sendTransaction(deployer, l2DAIBridge, "rely", [
     asDec(l2GovernanceRelay.address),
   ]);
-  await l2Signer.sendTransaction(account, l2DAIBridge, "deny", [
-    asDec(account.address),
+  await l2Signer.sendTransaction(deployer, l2DAIBridge, "deny", [
+    asDec(deployer.address),
   ]);
 
   console.log("L1 permission sanity checks...");
@@ -172,20 +216,21 @@ async function main(): Promise<void> {
     L1_ESM_ADDRESS,
   ]);
 
-  console.log("L2 permission sanity checks...");
+  console.log("L2 bridge permission sanity checks...");
   expect(await wards(l2DAIBridge, l2GovernanceRelay)).to.deep.eq(BigInt(1));
-  expect(await wards(l2DAIBridge, account)).to.deep.eq(BigInt(0));
+  expect(await wards(l2DAIBridge, deployer)).to.deep.eq(BigInt(0));
 
+  console.log("L2 dai permission sanity checks...");
   expect(await wards(l2DAI, l2GovernanceRelay)).to.deep.eq(BigInt(1));
   expect(await wards(l2DAI, l2DAIBridge)).to.deep.eq(BigInt(1));
-  expect(await wards(l2DAI, account)).to.deep.eq(BigInt(0));
+  expect(await wards(l2DAI, deployer)).to.deep.eq(BigInt(0));
 }
 
-function printAddresses() {
+export function printAddresses() {
   const NETWORK = hre.network.name;
 
   const contracts = [
-    "account-deployer",
+    "deployer",
     "dai",
     "registry",
     "L1Escrow",
@@ -227,6 +272,9 @@ async function deployL2(
   const contractFactory = await hre.starknet.getContractFactory(name);
   const contract = await contractFactory.deploy(calldata);
   save(saveName || name, contract, hre.network.name, blockNumber);
+
+  console.log(`Deployed: ${saveName || name} to: ${contract.address}`)
+
   return contract;
 }
 
@@ -240,11 +288,13 @@ async function deployL1(
   const contractFactory = await hre.ethers.getContractFactory(name);
   const contract = await contractFactory.deploy(...calldata);
   save(saveName || name, contract, hre.network.name, blockNumber);
+
+  console.log(`Deployed: ${saveName || name} to: ${contract.address}`)
+  console.log(
+    `To verify: npx hardhat verify ${contract.address} ${calldata
+      .filter((a: any) => !isEmpty(a))
+      .join(' ')}`,
+  )
   await contract.deployed();
   return contract;
 }
-
-main()
-  .then(() => console.log("Successfully deployed"))
-  .then(() => printAddresses())
-  .catch((err) => console.log(err));

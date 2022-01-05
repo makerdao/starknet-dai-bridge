@@ -13,7 +13,8 @@
     "compile:l1": "hardhat compile",
     "compile:l2": "hardhat starknet-compile",
     "compile": "yarn compile:l1 && yarn compile:l2",
-    "deploy:goerli": "hardhat run ./scripts/deploy.ts --network goerli",
+    "deploy-deployer:goerli": "hardhat run --network goerli ./scripts/deploy-deployer.ts",
+    "deploy-bridge:goerli": "hardhat run --network goerli ./scripts/deploy-bridge.ts",
     "account:create": "hardhat account:create --network goerli",
     "account:get": "hardhat account:get --network goerli",
     "call:l1": "hardhat call:l1 --network goerli",
@@ -76,12 +77,14 @@
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "3.4.2-solc-0.7",
     "@shardlabs/starknet-hardhat-plugin": "0.3.7",
+    "@types/yargs": "^17.0.7",
     "eslint-config-typestrict": "^1.0.2",
     "eslint-plugin-no-only-tests": "^2.6.0",
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "eslint-plugin-sonarjs": "^0.10.0",
     "eslint-plugin-unused-imports": "^1.1.5",
     "lodash": "^4.17.21",
-    "starknet": "^2.3.1"
+    "starknet": "^2.3.1",
+    "yargs": "^17.3.0"
   }
 }
