@@ -7,6 +7,6 @@ struct WormholeGUID {
   address receiver;
   address operator;
   uint128 amount;
-  uint80 nonce;
-  uint48 timestamp;
+  // uint80 nonce;
+  // uint48 timestamp;
 }
