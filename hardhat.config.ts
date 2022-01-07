@@ -58,29 +58,32 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     goerli: getChainConfig("goerli"),
-    fork: {
+    localhost: {
       url: "http://127.0.0.1:8545",
-      accounts: {
-        count: 10,
-        mnemonic,
-        path: "m/44'/60'/0'/0",
-      },
     },
-    hardhat: {
-      forking: {
-        url: `https://mainnet.infura.io/v3/${infuraApiKey}`
-        // url: `https://eth-mainnet.alchemyapi.io/v2/${alchemyApiKey}`,
-      },
-      mining: {
-        auto: false,
-        interval: 5000,
-      },
-      accounts: {
-        count: 10,
-        mnemonic,
-        path: "m/44'/60'/0'/0",
-      },
-    },
+    // fork: {
+    //   url: "http://127.0.0.1:8545",
+    //   accounts: {
+    //     count: 10,
+    //     mnemonic,
+    //     path: "m/44'/60'/0'/0",
+    //   },
+    // },
+    // hardhat: {
+    //   forking: {
+    //     // url: `https://mainnet.infura.io/v3/${infuraApiKey}`
+    //     url: `https://eth-mainnet.alchemyapi.io/v2/${alchemyApiKey}`,
+    //   },
+    //   mining: {
+    //     auto: false,
+    //     interval: 5000,
+    //   },
+    //   accounts: {
+    //     count: 10,
+    //     mnemonic,
+    //     path: "m/44'/60'/0'/0",
+    //   },
+    // },
   },
   paths: {
     artifacts: "./artifacts",
