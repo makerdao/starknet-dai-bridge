@@ -34,6 +34,9 @@ async function main(): Promise<void> {
   const L1_STARKNET_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_STARKNET_ADDRESS`
   );
+  const L1_WORMHOLE_ROUTER_ADDRESS = getRequiredEnv(
+    `${NETWORK.toUpperCase()}_L1_WORMHOLE_ROUTER_ADDRESS`
+  );
 
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
@@ -97,12 +100,21 @@ async function main(): Promise<void> {
   const futureL1DAIBridgeAddress = await getAddressOfNextDeployedContract(
     l1Signer
   );
-
   const l2DAIBridge = await deployL2("l2_dai_bridge", BLOCK_NUMBER, {
     ward: asDec(account.address),
     dai: asDec(l2DAI.address),
     bridge: asDec(futureL1DAIBridgeAddress),
     registry: asDec(registry.address),
+  });
+
+  const futureL1DAIWormholeBridgeAddress = await getAddressOfNextDeployedContract(
+    l1Signer
+  );
+  const l2DAIWormholeBridge = await deployL2("l2_dai_wormhole_bridge", BLOCK_NUMBER, {
+    ward: asDec(account.address),
+    l2_token: asDec(l2DAI.address),
+    wormhole_bridge: asDec(futureL1DAIWormholeBridgeAddress),
+    domain: asDec(registry.address),
   });
 
   const l1DAIBridge = await deployL1("L1DAIBridge", BLOCK_NUMBER, [
@@ -112,14 +124,26 @@ async function main(): Promise<void> {
     l1Escrow.address,
     l2DAIBridge.address,
   ]);
-
   expect(
     futureL1DAIBridgeAddress === l1DAIBridge.address,
     "futureL1DAIBridgeAddress != l1DAIBridge.address"
   );
 
+  const l1DAIWormholeBridge = await deployL1("L1DAIWormholeBridge", BLOCK_NUMBER, [
+    L1_STARKNET_ADDRESS,
+    L1_DAI_ADDRESS,
+    l2DAIWormholeBridge.address,
+    l1Escrow.address,
+    L1_WORMHOLE_ROUTER_ADDRESS,
+  ]);
+  expect(
+    futureL1DAIWormholeBridgeAddress === l1DAIWormholeBridge.address,
+    "futureL1DAIWormholeBridgeAddress != l1DAIWormholeBridge.address"
+  );
+
   const MAX = BigInt(2 ** 256) - BigInt(1);
   await l1Escrow.approve(DAIAddress, l1DAIBridge.address, MAX);
+  await l1Escrow.approve(DAIAddress, l1DAIWormholeBridge.address, MAX);
 
   const L1_PAUSE_PROXY_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_PAUSE_PROXY_ADDRESS`
@@ -139,7 +163,7 @@ async function main(): Promise<void> {
   await waitForTx(l1DAIBridge.rely(L1_ESM_ADDRESS));
   await waitForTx(l1DAIBridge.deny(await l1Signer.getAddress()));
 
-  console.log("Finalizing permissions for l1GovernanceRelay...");
+  console.log("Finalizing permissions for L1GovernanceRelay...");
   await waitForTx(l1GovernanceRelay.rely(L1_PAUSE_PROXY_ADDRESS));
   await waitForTx(l1GovernanceRelay.rely(L1_ESM_ADDRESS));
   await waitForTx(l1GovernanceRelay.deny(await l1Signer.getAddress()));
@@ -163,6 +187,14 @@ async function main(): Promise<void> {
     asDec(account.address),
   ]);
 
+  console.log("Finalizing permissions for L2DAIWormholeBridge...");
+  await l2Signer.sendTransaction(account, l2DAIWormholeBridge, "rely", [
+    asDec(l2GovernanceRelay.address),
+  ]);
+  await l2Signer.sendTransaction(account, l2DAIWormholeBridge, "deny", [
+    asDec(account.address),
+  ]);
+
   console.log("L1 permission sanity checks...");
   expect(await getActiveWards(l1Escrow as any)).to.deep.eq([
     L1_PAUSE_PROXY_ADDRESS,
@@ -181,8 +213,12 @@ async function main(): Promise<void> {
   expect(await wards(l2DAIBridge, l2GovernanceRelay)).to.deep.eq(BigInt(1));
   expect(await wards(l2DAIBridge, account)).to.deep.eq(BigInt(0));
 
+  expect(await wards(l2DAIWormholeBridge, l2GovernanceRelay)).to.deep.eq(BigInt(1));
+  expect(await wards(l2DAIWormholeBridge, account)).to.deep.eq(BigInt(0));
+
   expect(await wards(l2DAI, l2GovernanceRelay)).to.deep.eq(BigInt(1));
   expect(await wards(l2DAI, l2DAIBridge)).to.deep.eq(BigInt(1));
+  expect(await wards(l2DAI, l2DAIWormholeBridge)).to.deep.eq(BigInt(1));
   expect(await wards(l2DAI, account)).to.deep.eq(BigInt(0));
 }
 
