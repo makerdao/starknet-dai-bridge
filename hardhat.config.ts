@@ -6,8 +6,8 @@ import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
 import "./scripts/interact";
 import "./scripts/account";
-//import "./scripts/fork";
 
+//import "./scripts/fork";
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import { NetworkUserConfig } from "hardhat/types";
@@ -34,11 +34,10 @@ const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
 if (!infuraApiKey) {
   throw new Error("Please set your INFURA_API_KEY in a .env file");
 }
-const alchemyApiKey: string | undefined = process.env.ALCHEMY_API_KEY;
+// const alchemyApiKey: string | undefined = process.env.ALCHEMY_API_KEY;
 // if (!alchemyApiKey) {
 //   throw new Error("Please set your ALCHEMY_API_KEY in a .env file");
 // }
-
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;
