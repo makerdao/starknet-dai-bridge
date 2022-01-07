@@ -66,7 +66,7 @@ const config: HardhatUserConfig = {
     },
     hardhat: {
       forking: {
-        url: `https://eth-mainnet.alchemyapi.io/v2/${alchemyApiKey}`,
+        url: `https://mainnet.infura.io/v3/${infuraApiKey}`,
       },
       accounts: {
         count: 10,
