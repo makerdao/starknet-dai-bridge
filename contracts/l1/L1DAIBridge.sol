@@ -15,28 +15,7 @@
 
 pragma solidity ^0.7.6;
 
-interface TokenLike {
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external returns (bool success);
-
-    function balanceOf(address account) external view returns (uint256);
-}
-
-interface StarkNetLike {
-    function sendMessageToL2(
-        uint256 to,
-        uint256 selector,
-        uint256[] calldata payload
-    ) external;
-
-    function consumeMessageFromL2(
-        uint256 from,
-        uint256[] calldata payload
-    ) external;
-}
+import "./interfaces.sol";
 
 contract L1DAIBridge {
     // --- Auth ---

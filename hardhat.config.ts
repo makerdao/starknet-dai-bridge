@@ -58,6 +58,9 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     goerli: getChainConfig("goerli"),
+    localhost: {
+      url: "http://127.0.0.1:8545",
+    },
     fork: {
       url: "http://127.0.0.1:8545",
       accounts: {
@@ -69,10 +72,6 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         url: `https://eth-mainnet.alchemyapi.io/v2/${alchemyApiKey}`,
-      },
-      mining: {
-        auto: false,
-        interval: 5000,
       },
       accounts: {
         count: 10,
