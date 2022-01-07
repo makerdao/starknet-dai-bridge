@@ -62,6 +62,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         url: `https://mainnet.infura.io/v3/${infuraApiKey}`,
+        enabled: process.env.NODE_ENV !== 'test',
       },
       accounts: {
         count: 10,
