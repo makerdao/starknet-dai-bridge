@@ -100,6 +100,16 @@ yarn setDaiBalance --address [ETH_ADDRESS] --balance [AMOUNT_IN_DAI]
 ```
 If `--address` is not specified, it will default to the address of the `MNEMONIC` environment variable.
 
+## Running e2e tests
+Warning: still work in progress. First start local l2 testnet:
+```
+yarn node:l2
+```
+then:
+```
+yarn test:e2e
+```
+
 
 ## Data Reconstruction Script
 A detailed explanation of how state diffs are stored on L1: [Starknet On-Chain Data](https://starknet.io/on-chain-data/)

@@ -62,7 +62,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         url: `https://mainnet.infura.io/v3/${infuraApiKey}`,
-        enabled: process.env.NODE_ENV !== "test",
+        enabled: process.env.NODE_ENV !== "test" && process.env.NODE_ENV !== "e2e",
       },
       accounts: {
         count: 10,
@@ -78,7 +78,7 @@ const config: HardhatUserConfig = {
     artifacts: "./artifacts",
     cache: "./cache",
     sources: "./contracts",
-    tests: "./test",
+    tests: process.env.NODE_ENV == "e2e" ? "./test/e2e" : "./test/l1",
     starknetSources: "./contracts",
     starknetArtifacts: "./starknet-artifacts",
   },
@@ -97,6 +97,11 @@ const config: HardhatUserConfig = {
           optimizer: {
             enabled: true,
             runs: 800,
+          },
+          outputSelection: {
+            "*": {
+              "*": ["storageLayout"]
+            }
           },
         },
       },
