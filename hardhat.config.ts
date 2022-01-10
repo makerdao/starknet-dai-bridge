@@ -34,10 +34,6 @@ const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
 if (!infuraApiKey) {
   throw new Error("Please set your INFURA_API_KEY in a .env file");
 }
-// const alchemyApiKey: string | undefined = process.env.ALCHEMY_API_KEY;
-// if (!alchemyApiKey) {
-//   throw new Error("Please set your ALCHEMY_API_KEY in a .env file");
-// }
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;
@@ -60,29 +56,23 @@ const config: HardhatUserConfig = {
     localhost: {
       url: "http://127.0.0.1:8545",
     },
-    // fork: {
-    //   url: "http://127.0.0.1:8545",
-    //   accounts: {
-    //     count: 10,
-    //     mnemonic,
-    //     path: "m/44'/60'/0'/0",
-    //   },
-    // },
-    // hardhat: {
-    //   forking: {
-    //     // url: `https://mainnet.infura.io/v3/${infuraApiKey}`
-    //     url: `https://eth-mainnet.alchemyapi.io/v2/${alchemyApiKey}`,
-    //   },
-    //   mining: {
-    //     auto: false,
-    //     interval: 5000,
-    //   },
-    //   accounts: {
-    //     count: 10,
-    //     mnemonic,
-    //     path: "m/44'/60'/0'/0",
-    //   },
-    // },
+    l2: {
+      url: "http://127.0.0.1:5000",
+    },
+    hardhat: {
+      forking: {
+        url: `https://mainnet.infura.io/v3/${infuraApiKey}`,
+        enabled: process.env.NODE_ENV !== "test",
+      },
+      accounts: {
+        count: 10,
+        mnemonic,
+        path: "m/44'/60'/0'/0",
+      },
+    },
+  },
+  mocha: {
+    starknetNetwork: "l2",
   },
   paths: {
     artifacts: "./artifacts",
