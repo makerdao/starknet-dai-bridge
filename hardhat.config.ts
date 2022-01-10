@@ -78,7 +78,7 @@ const config: HardhatUserConfig = {
     artifacts: "./artifacts",
     cache: "./cache",
     sources: "./contracts",
-    tests: process.env.NODE_ENV == "e2e" ? "./test/e2e" : "./test/l1",
+    tests: process.env.NODE_ENV === "e2e" ? "./test/e2e" : "./test/l1",
     starknetSources: "./contracts",
     starknetArtifacts: "./starknet-artifacts",
   },

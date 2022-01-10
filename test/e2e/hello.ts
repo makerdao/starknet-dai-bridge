@@ -1,9 +1,10 @@
-import hre from "hardhat";
 import {smock} from "@defi-wonderland/smock";
+import {parseFixed} from "@ethersproject/bignumber";
 import {simpleDeploy} from "@makerdao/hardhat-utils";
 import {expect} from "chai";
+import hre from "hardhat";
+
 import {eth} from "../l1/l1DAIBridge";
-import {parseFixed} from "@ethersproject/bignumber";
 
 const DEPOSIT = parseFixed(
   "1285101517810983806491589552491143496277809242732141897358598292095611420389"
@@ -14,7 +15,7 @@ function toSplitUint(value: any) {
   return [BigInt(`0x${bits.slice(32)}`), BigInt(`0x${bits.slice(0, 32)}`)];
 }
 
-describe.only("Integration", function () {
+describe("Integration", function () {
   it("hello", async () => {
 
     const {
@@ -63,8 +64,6 @@ async function setupTest() {
   const dai = await simpleDeploy("DAIMock", []);
 
   const escrow = await simpleDeploy("L1Escrow", []);
-
-  console.log('hre.starknet', hre.starknet)
 
   console.log('Deploying registry...')
   const registryFactory = await hre.starknet.getContractFactory("registry");
