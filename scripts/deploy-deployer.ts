@@ -1,4 +1,3 @@
-import {deployDeployer} from "./deploy";
+import { deployDeployer } from "./deploy";
 
-deployDeployer()
-    .catch((err) => console.log(err))
+deployDeployer().catch((err) => console.log(err));

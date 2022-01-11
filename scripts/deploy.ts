@@ -13,19 +13,21 @@ import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types"
 import { expect } from "chai";
 import { writeFileSync } from "fs";
 import hre from "hardhat";
-import { isEmpty } from 'lodash'
-import {ec, KeyPair} from "starknet";
+import { isEmpty } from "lodash";
+import { ec, KeyPair } from "starknet";
 
-const { genKeyPair, getStarkKey, } = ec;
+const { genKeyPair, getStarkKey } = ec;
 
 import { getAddress, save, Signer } from "./utils";
 
 async function genAndSaveKeyPair(): Promise<KeyPair> {
   const keyPair = genKeyPair();
-  writeFileSync('.env.deployer', `DEPLOYER_ECDSA_PRIVATE_KEY=${keyPair.priv.toString()}`);
-  return keyPair
+  writeFileSync(
+    ".env.deployer",
+    `DEPLOYER_ECDSA_PRIVATE_KEY=${keyPair.priv.toString()}`
+  );
+  return keyPair;
 }
-
 
 export async function deployDeployer() {
   const NETWORK = hre.network.name;
@@ -48,16 +50,24 @@ export async function deployDeployer() {
     "account-deployer"
   );
 
-  writeFileSync('deployer-key.json', JSON.stringify({priv: keyPair.priv.toString()}));
+  writeFileSync(
+    "deployer-key.json",
+    JSON.stringify({ priv: keyPair.priv.toString() })
+  );
 
-  console.log(`Next steps:`)
-  console.log(`If You want to deploy dai contract now:`)
-  console.log(`starknet deploy --inputs ${deployer.address} --contract starknet-artifacts/contracts/l2/dai.cairo/dai.json --salt <insert salt here>`)
-  console.log(`After manual dai deployment dai contract address should be added to .env:`)
-  console.log(`${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS=...`)
-  console.log('To find salt that will result in dai address staring with \'da1\' prefix:')
-  console.log(`./scripts/vanity.py --ward ${deployer.address}`)
-
+  console.log(`Next steps:`);
+  console.log(`If You want to deploy dai contract now:`);
+  console.log(
+    `starknet deploy --inputs ${deployer.address} --contract starknet-artifacts/contracts/l2/dai.cairo/dai.json --salt <insert salt here>`
+  );
+  console.log(
+    `After manual dai deployment dai contract address should be added to .env:`
+  );
+  console.log(`${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS=...`);
+  console.log(
+    "To find salt that will result in dai address staring with 'da1' prefix:"
+  );
+  console.log(`./scripts/vanity.py --ward ${deployer.address}`);
 }
 
 export async function deployBridge(): Promise<void> {
@@ -90,7 +100,7 @@ export async function deployBridge(): Promise<void> {
     getAddress("account-deployer", NETWORK)
   );
 
-  console.log(`Deploying from account: ${deployer.address.toString()}`)
+  console.log(`Deploying from account: ${deployer.address.toString()}`);
 
   save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
   const DAIAddress = getAddress("DAI", NETWORK);
@@ -117,15 +127,15 @@ export async function deployBridge(): Promise<void> {
     "futureL1GovRelayAddress != l1GovernanceRelay.address"
   );
 
-  if(L2_DAI_ADDRESS) {
-    save("dai", {address: L2_DAI_ADDRESS}, NETWORK);
+  if (L2_DAI_ADDRESS) {
+    save("dai", { address: L2_DAI_ADDRESS }, NETWORK);
   }
 
   const l2DAI = L2_DAI_ADDRESS
     ? await getL2ContractAt("dai", L2_DAI_ADDRESS)
     : await deployL2("dai", BLOCK_NUMBER, {
-      ward: asDec(deployer.address),
-    });
+        ward: asDec(deployer.address),
+      });
 
   const REGISTRY_ADDRESS = getOptionalEnv(
     `${NETWORK.toUpperCase()}_REGISTRY_ADDRESS`
@@ -281,7 +291,7 @@ async function deployL2(
   const contract = await contractFactory.deploy(calldata);
   save(saveName || name, contract, hre.network.name, blockNumber);
 
-  console.log(`Deployed: ${saveName || name} to: ${contract.address}`)
+  console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
 
   return contract;
 }
@@ -297,12 +307,12 @@ async function deployL1(
   const contract = await contractFactory.deploy(...calldata);
   save(saveName || name, contract, hre.network.name, blockNumber);
 
-  console.log(`Deployed: ${saveName || name} to: ${contract.address}`)
+  console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
   console.log(
     `To verify: npx hardhat verify ${contract.address} ${calldata
       .filter((a: any) => !isEmpty(a))
-      .join(' ')}`,
-  )
+      .join(" ")}`
+  );
   await contract.deployed();
   return contract;
 }
