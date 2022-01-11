@@ -41,7 +41,7 @@ export async function deployDeployer() {
   const keyPair = await genAndSaveKeyPair();
   const publicKey = BigInt(getStarkKey(keyPair));
 
-  await deployL2(
+  const deployer = await deployL2(
     "account",
     BLOCK_NUMBER,
     { _public_key: publicKey },
@@ -49,6 +49,14 @@ export async function deployDeployer() {
   );
 
   writeFileSync('deployer-key.json', JSON.stringify({priv: keyPair.priv.toString()}));
+
+  console.log(`Next steps:`)
+  console.log(`If You want to deploy dai contract now:`)
+  console.log(`starknet deploy --inputs ${deployer.address} --contract starknet-artifacts/contracts/l2/dai.cairo/dai.json --salt <insert salt here>`)
+  console.log(`After manual dai deployment dai contract address should be added to .env:`)
+  console.log(`${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS=...`)
+  console.log('To find salt that will result in dai address staring with \'da1\' prefix:')
+  console.log(`./scripts/vanity.py --ward ${deployer.address}`)
 
 }
 
@@ -66,7 +74,7 @@ export async function deployBridge(): Promise<void> {
   );
 
   const L2_DAI_ADDRESS = getOptionalEnv(
-    `${NETWORK.toUpperCase()}_L2_DAI_ADDRESS`
+    `${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS`
   );
 
   // @ts-ignore
@@ -114,11 +122,11 @@ export async function deployBridge(): Promise<void> {
   }
 
   const l2DAI = L2_DAI_ADDRESS
-    ? await getL2ContractAt("dai", L2_DAI_ADDRESS) 
+    ? await getL2ContractAt("dai", L2_DAI_ADDRESS)
     : await deployL2("dai", BLOCK_NUMBER, {
       ward: asDec(deployer.address),
     });
-  
+
   const REGISTRY_ADDRESS = getOptionalEnv(
     `${NETWORK.toUpperCase()}_REGISTRY_ADDRESS`
   );
@@ -230,7 +238,7 @@ export function printAddresses() {
   const NETWORK = hre.network.name;
 
   const contracts = [
-    "deployer",
+    "account-deployer",
     "dai",
     "registry",
     "L1Escrow",

@@ -48,11 +48,11 @@ def main():
         address = salt_to_address(salt)
         prefix = hex(address)[2:5]
         print( f'{i}:{prefix}', end=', ', flush=True)
-        if (prefix == 'da1'):
+        if (prefix == 'da1' or i == 1):
             print()
             print('Found:')
-            print('salt:', salt)
-            print('address:', hex(address))
+            print('salt:', hex(salt))
+            print('dai address:', hex(address))
             return
         i += 1
 
