@@ -21,7 +21,7 @@ from starkware.starknet.common.messages import send_message_to_l1
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
 from starkware.cairo.common.math import (assert_le)
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
-from starkware.cairo.common.uint256 import (Uint256, uint256_le, uint256_add, uint256_check)
+from starkware.cairo.common.uint256 import (Uint256, uint256_lt, uint256_add, uint256_check)
 
 const FINALIZE_REGISTER_WORMHOLE = 0
 const FINALIZE_FLUSH = 1
@@ -282,7 +282,7 @@ func flush{
 
     let (dai_to_flush : Uint256) = _batched_dai_to_flush.read(target_domain)
     let uint256_zero = Uint256(low=0, high=0)
-    let (dai_to_flush_check : felt) = uint256_le(uint256_zero, dai_to_flush)
+    let (dai_to_flush_check : felt) = uint256_lt(uint256_zero, dai_to_flush)
     assert dai_to_flush_check = 1
 
     local syscall_ptr : felt* = syscall_ptr
