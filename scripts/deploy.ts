@@ -107,15 +107,18 @@ async function main(): Promise<void> {
     registry: asDec(registry.address),
   });
 
-  const futureL1DAIWormholeBridgeAddress = await getAddressOfNextDeployedContract(
-    l1Signer
+  const futureL1DAIWormholeBridgeAddress =
+    await getAddressOfNextDeployedContract(l1Signer);
+  const l2DAIWormholeBridge = await deployL2(
+    "l2_dai_wormhole_bridge",
+    BLOCK_NUMBER,
+    {
+      ward: asDec(account.address),
+      l2_token: asDec(l2DAI.address),
+      wormhole_bridge: asDec(futureL1DAIWormholeBridgeAddress),
+      domain: asDec(registry.address),
+    }
   );
-  const l2DAIWormholeBridge = await deployL2("l2_dai_wormhole_bridge", BLOCK_NUMBER, {
-    ward: asDec(account.address),
-    l2_token: asDec(l2DAI.address),
-    wormhole_bridge: asDec(futureL1DAIWormholeBridgeAddress),
-    domain: asDec(registry.address),
-  });
 
   const l1DAIBridge = await deployL1("L1DAIBridge", BLOCK_NUMBER, [
     L1_STARKNET_ADDRESS,
@@ -129,13 +132,17 @@ async function main(): Promise<void> {
     "futureL1DAIBridgeAddress != l1DAIBridge.address"
   );
 
-  const l1DAIWormholeBridge = await deployL1("L1DAIWormholeBridge", BLOCK_NUMBER, [
-    L1_STARKNET_ADDRESS,
-    L1_DAI_ADDRESS,
-    l2DAIWormholeBridge.address,
-    l1Escrow.address,
-    L1_WORMHOLE_ROUTER_ADDRESS,
-  ]);
+  const l1DAIWormholeBridge = await deployL1(
+    "L1DAIWormholeBridge",
+    BLOCK_NUMBER,
+    [
+      L1_STARKNET_ADDRESS,
+      L1_DAI_ADDRESS,
+      l2DAIWormholeBridge.address,
+      l1Escrow.address,
+      L1_WORMHOLE_ROUTER_ADDRESS,
+    ]
+  );
   expect(
     futureL1DAIWormholeBridgeAddress === l1DAIWormholeBridge.address,
     "futureL1DAIWormholeBridgeAddress != l1DAIWormholeBridge.address"
@@ -213,7 +220,9 @@ async function main(): Promise<void> {
   expect(await wards(l2DAIBridge, l2GovernanceRelay)).to.deep.eq(BigInt(1));
   expect(await wards(l2DAIBridge, account)).to.deep.eq(BigInt(0));
 
-  expect(await wards(l2DAIWormholeBridge, l2GovernanceRelay)).to.deep.eq(BigInt(1));
+  expect(await wards(l2DAIWormholeBridge, l2GovernanceRelay)).to.deep.eq(
+    BigInt(1)
+  );
   expect(await wards(l2DAIWormholeBridge, account)).to.deep.eq(BigInt(0));
 
   expect(await wards(l2DAI, l2GovernanceRelay)).to.deep.eq(BigInt(1));

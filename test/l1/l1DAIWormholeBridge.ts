@@ -11,12 +11,20 @@ const allowanceLimit = 100;
 
 describe.only("L1DAIWormholeBridge", () => {
   it("initializes properly", async () => {
-    const { admin, dai, starkNetFake, escrow, l1WormholeBridge, l2WormholeBridgeAddress } =
-      await setupTest();
+    const {
+      admin,
+      dai,
+      starkNetFake,
+      escrow,
+      l1WormholeBridge,
+      l2WormholeBridgeAddress,
+    } = await setupTest();
 
     expect(await l1WormholeBridge.starkNet()).to.be.eq(starkNetFake.address);
     expect(await l1WormholeBridge.dai()).to.be.eq(dai.address);
-    expect(await l1WormholeBridge.l2DaiWormholeBridge()).to.be.eq(l2WormholeBridgeAddress);
+    expect(await l1WormholeBridge.l2DaiWormholeBridge()).to.be.eq(
+      l2WormholeBridgeAddress
+    );
     expect(await l1WormholeBridge.escrow()).to.be.eq(escrow.address);
 
     expect(await dai.balanceOf(admin.address)).to.be.eq(eth("1000000"));
@@ -29,17 +37,27 @@ describe.only("L1DAIWormholeBridge", () => {
   });
   describe("finalizeFlush", () => {
     it("finalizeFlush", async () => {
-      const { admin, dai, escrow, starkNetFake, wormholeRouterFake, l1WormholeBridge, l2WormholeBridgeAddress } = await setupTest();
+      const {
+        admin,
+        dai,
+        escrow,
+        starkNetFake,
+        wormholeRouterFake,
+        l1WormholeBridge,
+        l2WormholeBridgeAddress,
+      } = await setupTest();
 
       const daiToFlush = 1;
       await dai.connect(admin).transfer(escrow.address, daiToFlush);
 
-      const targetDomain = hre.ethers.utils.formatBytes32String('optimism');
+      const targetDomain = hre.ethers.utils.formatBytes32String("optimism");
       await l1WormholeBridge.finalizeFlush(targetDomain, daiToFlush);
 
       expect(await dai.balanceOf(escrow.address)).to.be.eq(0);
-      expect(await dai.balanceOf(l1WormholeBridge.address)).to.be.eq(daiToFlush);
- 
+      expect(await dai.balanceOf(l1WormholeBridge.address)).to.be.eq(
+        daiToFlush
+      );
+
       const HANDLE_FLUSH = 1;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
@@ -56,14 +74,22 @@ describe.only("L1DAIWormholeBridge", () => {
       expect(wormholeRouterFake.settle).to.have.been.calledOnce;
       expect(wormholeRouterFake.settle).to.have.been.calledWith(
         targetDomain,
-        daiToFlush,
+        daiToFlush
       );
     });
   });
 
   describe("finalizeRegisterWormhole", () => {
     it("finalizeRegisterWormhole", async () => {
-      const { l1WormholeBridge, l1Alice, l1Bob, dai, escrow, starkNetFake, l2WormholeBridgeAddress } = await setupTest();
+      const {
+        l1WormholeBridge,
+        l1Alice,
+        l1Bob,
+        dai,
+        escrow,
+        starkNetFake,
+        l2WormholeBridgeAddress,
+      } = await setupTest();
 
       expect(await dai.allowance(escrow.address, l1Alice.address)).to.be.eq(0);
 
@@ -74,8 +100,8 @@ describe.only("L1DAIWormholeBridge", () => {
       );
 
       const wormhole = [
-        hre.ethers.utils.formatBytes32String('starknet'), // sourceDomain
-        hre.ethers.utils.formatBytes32String('optimism'), // targetDomain
+        hre.ethers.utils.formatBytes32String("starknet"), // sourceDomain
+        hre.ethers.utils.formatBytes32String("optimism"), // targetDomain
         l1Alice.address, // receiver
         l1Bob.address, // operator
         0, // amount
@@ -116,7 +142,9 @@ async function setupTest() {
   ]);
 
   const MAX = BigInt(2 ** 256) - BigInt(1);
-  await escrow.connect(admin).approve(dai.address, l1WormholeBridge.address, MAX);
+  await escrow
+    .connect(admin)
+    .approve(dai.address, l1WormholeBridge.address, MAX);
 
   return {
     admin: admin as any,
