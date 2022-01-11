@@ -33,7 +33,9 @@ describe("L1DAIWormholeBridge", () => {
     );
     expect(await l1WormholeBridge.escrow()).to.be.eq(escrow.address);
 
-    expect(await dai.balanceOf(admin.address)).to.be.eq(eth((1000000 - 100).toString()));
+    expect(await dai.balanceOf(admin.address)).to.be.eq(
+      eth((1000000 - 100).toString())
+    );
   });
 
   it("has correct public interface", async () => {
@@ -46,7 +48,6 @@ describe("L1DAIWormholeBridge", () => {
   describe("finalizeFlush", () => {
     it("calls the router to settle the dai debt", async () => {
       const {
-        admin,
         dai,
         escrow,
         starkNetFake,
@@ -71,9 +72,11 @@ describe("L1DAIWormholeBridge", () => {
       expect(wormholeRouterFake.settle).to.have.been.calledOnce;
       expect(wormholeRouterFake.settle).to.have.been.calledWith(
         TARGET_DOMAIN,
-        AMOUNT,
+        AMOUNT
       );
-      expect(await dai.balanceOf(escrow.address)).to.be.eq(INITIAL_ESCROW_BALANCE - AMOUNT);
+      expect(await dai.balanceOf(escrow.address)).to.be.eq(
+        INITIAL_ESCROW_BALANCE - AMOUNT
+      );
     });
   });
 
@@ -119,7 +122,7 @@ describe("L1DAIWormholeBridge", () => {
       expect(wormholeRouterFake.requestMint).to.have.been.calledOnce;
       expect(wormholeRouterFake.requestMint).to.have.been.calledWith(
         wormhole,
-        0,
+        0
       );
     });
   });
