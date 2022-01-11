@@ -1,10 +1,10 @@
-import {smock} from "@defi-wonderland/smock";
-import {parseFixed} from "@ethersproject/bignumber";
-import {simpleDeploy} from "@makerdao/hardhat-utils";
-import {expect} from "chai";
+import { smock } from "@defi-wonderland/smock";
+import { parseFixed } from "@ethersproject/bignumber";
+import { simpleDeploy } from "@makerdao/hardhat-utils";
+import { expect } from "chai";
 import hre from "hardhat";
 
-import {eth} from "../l1/l1DAIBridge";
+import { eth } from "../l1/l1DAIBridge";
 
 const DEPOSIT = parseFixed(
   "1285101517810983806491589552491143496277809242732141897358598292095611420389"
@@ -17,7 +17,6 @@ function toSplitUint(value: any) {
 
 describe("Integration", function () {
   it("hello", async () => {
-
     const {
       admin,
       l1Alice,
@@ -58,17 +57,17 @@ async function setupTest() {
 
   // const starkNetFake = await smock.fake("StarkNetLike");
 
-  const starkNetMockFactory = await smock.mock('StarkNetMock');
+  const starkNetMockFactory = await smock.mock("StarkNetMock");
   const starkNetMock = await starkNetMockFactory.deploy();
 
   const dai = await simpleDeploy("DAIMock", []);
 
   const escrow = await simpleDeploy("L1Escrow", []);
 
-  console.log('Deploying registry...')
+  console.log("Deploying registry...");
   const registryFactory = await hre.starknet.getContractFactory("registry");
-  const registry = await registryFactory.deploy()
-  console.log('Registry deployed!')
+  const registry = await registryFactory.deploy();
+  console.log("Registry deployed!");
 
   const L2_DAI_BRIDGE_ADDRESS = 31415;
   const L2_DAI_ADDRESS = 27182;
@@ -93,6 +92,6 @@ async function setupTest() {
     l1Bridge: l1Bridge as any,
     l2BridgeAddress: L2_DAI_BRIDGE_ADDRESS,
     l2DaiAddress: L2_DAI_ADDRESS,
-    registry: registry as any
+    registry: registry as any,
   };
 }

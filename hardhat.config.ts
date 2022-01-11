@@ -62,7 +62,8 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         url: `https://mainnet.infura.io/v3/${infuraApiKey}`,
-        enabled: process.env.NODE_ENV !== "test" && process.env.NODE_ENV !== "e2e",
+        enabled:
+          process.env.NODE_ENV !== "test" && process.env.NODE_ENV !== "e2e",
       },
       accounts: {
         count: 10,
@@ -100,8 +101,8 @@ const config: HardhatUserConfig = {
           },
           outputSelection: {
             "*": {
-              "*": ["storageLayout"]
-            }
+              "*": ["storageLayout"],
+            },
           },
         },
       },
