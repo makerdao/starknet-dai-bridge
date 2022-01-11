@@ -9,7 +9,7 @@ import hre from "hardhat";
 
 const allowanceLimit = 100;
 
-describe.only("L1DAIWormholeBridge", () => {
+describe("L1DAIWormholeBridge", () => {
   it("initializes properly", async () => {
     const {
       admin,
