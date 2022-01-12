@@ -32,7 +32,8 @@ async function genAndSaveKeyPair(): Promise<KeyPair> {
 export async function deployDeployer() {
   const NETWORK = hre.network.name;
 
-  const STARKNET_NETWORK = hre.config.mocha.starknetNetwork || DEFAULT_STARKNET_NETWORK;
+  const STARKNET_NETWORK =
+    hre.config.mocha.starknetNetwork || DEFAULT_STARKNET_NETWORK;
 
   const [l1Signer] = await hre.ethers.getSigners();
 
@@ -57,6 +58,10 @@ export async function deployDeployer() {
     JSON.stringify({ priv: keyPair.priv.toString() })
   );
 
+  console.log(
+    `Deployer private key is in deployer-key.json. It should be added to .env under DEPLOYER_ECDSA_PRIVATE_KEY`
+  );
+
   console.log(`Next steps:`);
   console.log(`If You want to deploy dai contract now:`);
   console.log(
@@ -67,7 +72,9 @@ export async function deployDeployer() {
   );
   console.log(`${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS=...`);
 
-  console.log(`To verify dai: npx hardhat starknet-verify --starknet-network ${STARKNET_NETWORK} --path contracts/l2/dai.cairo --address <L2_DAI_ADDRESS>`);
+  console.log(
+    `To verify dai: npx hardhat starknet-verify --starknet-network ${STARKNET_NETWORK} --path contracts/l2/dai.cairo --address <L2_DAI_ADDRESS>`
+  );
 
   console.log(
     "To find salt that will result in dai address staring with 'da1' prefix:"
@@ -128,10 +135,12 @@ export async function deployBridge(): Promise<void> {
     }
   );
 
-  const l1GovernanceRelay = await deployL1(NETWORK,"L1GovernanceRelay", BLOCK_NUMBER, [
-    L1_STARKNET_ADDRESS,
-    l2GovernanceRelay.address,
-  ]);
+  const l1GovernanceRelay = await deployL1(
+    NETWORK,
+    "L1GovernanceRelay",
+    BLOCK_NUMBER,
+    [L1_STARKNET_ADDRESS, l2GovernanceRelay.address]
+  );
 
   expect(
     futureL1GovRelayAddress === l1GovernanceRelay.address,
@@ -166,12 +175,17 @@ export async function deployBridge(): Promise<void> {
     l1Signer
   );
 
-  const l2DAIBridge = await deployL2(STARKNET_NETWORK, "l2_dai_bridge", BLOCK_NUMBER, {
-    ward: asDec(deployer.address),
-    dai: asDec(l2DAI.address),
-    bridge: asDec(futureL1DAIBridgeAddress),
-    registry: asDec(registry.address),
-  });
+  const l2DAIBridge = await deployL2(
+    STARKNET_NETWORK,
+    "l2_dai_bridge",
+    BLOCK_NUMBER,
+    {
+      ward: asDec(deployer.address),
+      dai: asDec(l2DAI.address),
+      bridge: asDec(futureL1DAIBridgeAddress),
+      registry: asDec(registry.address),
+    }
+  );
 
   const l1DAIBridge = await deployL1(NETWORK, "L1DAIBridge", BLOCK_NUMBER, [
     L1_STARKNET_ADDRESS,
@@ -300,16 +314,17 @@ async function deployL2(
 ) {
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
   const contractFactory = await hre.starknet.getContractFactory(name);
-  console.log('contractFactory.gatewayUrl', (contractFactory as any).gatewayUrl)
+  console.log(
+    "contractFactory.gatewayUrl",
+    (contractFactory as any).gatewayUrl
+  );
 
   const contract = await contractFactory.deploy(calldata);
   save(saveName || name, contract, hre.network.name, blockNumber);
 
   console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
   console.log(
-    `To verify: npx hardhat starknet-verify --starknet-network ${network} --path contracts/l2/${name}.cairo --address ${
-      contract.address
-    }`
+    `To verify: npx hardhat starknet-verify --starknet-network ${network} --path contracts/l2/${name}.cairo --address ${contract.address}`
   );
   return contract;
 }
