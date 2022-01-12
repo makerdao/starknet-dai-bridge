@@ -314,10 +314,6 @@ async function deployL2(
 ) {
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
   const contractFactory = await hre.starknet.getContractFactory(name);
-  console.log(
-    "contractFactory.gatewayUrl",
-    (contractFactory as any).gatewayUrl
-  );
 
   const contract = await contractFactory.deploy(calldata);
   save(saveName || name, contract, hre.network.name, blockNumber);

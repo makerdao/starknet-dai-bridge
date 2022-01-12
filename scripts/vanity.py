@@ -7,6 +7,7 @@ import marshmallow_dataclass
 import multiprocessing as mp
 import random
 import argparse
+import datetime
 
 def build_salt_to_address(contract, calldata, caller):
     return lambda salt: calculate_contract_address(
@@ -34,6 +35,8 @@ def main():
 
     salt_to_address = build_salt_to_address(dai, calldata, caller)
 
+    started = datetime.datetime.now()
+
     for i in range(start_from):
         random.getrandbits(251)
 
@@ -48,11 +51,15 @@ def main():
         address = salt_to_address(salt)
         prefix = hex(address)[2:5]
         print( f'{i}:{prefix}', end=', ', flush=True)
-        if (prefix == 'da1' or i == 1):
+        if (prefix == 'da1'):
             print()
-            print('Found:')
-            print('salt:', hex(salt))
-            print('dai address:', hex(address))
+            print('Found salt!')
+            print('\tstarted from:', start_from)
+            print('\titerations:', i - start_from + 1)
+            print('\twhich took:', datetime.datetime.now() - started)
+            print('\tsalt:', hex(salt))
+            print('\tcalldata', calldata)
+            print('\tdai address:', hex(address))
             return
         i += 1
 
