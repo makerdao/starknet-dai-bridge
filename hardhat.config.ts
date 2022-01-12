@@ -6,6 +6,7 @@ import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
 import "./scripts/interact";
 import "./scripts/account";
+import "./scripts/fork";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
@@ -52,9 +53,26 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     goerli: getChainConfig("goerli"),
-    localhost: {
+    fork: {
       url: "http://127.0.0.1:8545",
     },
+    l2: {
+      url: "http://127.0.0.1:5000",
+    },
+    hardhat: {
+      forking: {
+        url: `https://mainnet.infura.io/v3/${infuraApiKey}`,
+        enabled: process.env.NODE_ENV !== "test",
+      },
+      accounts: {
+        count: 10,
+        mnemonic,
+        path: "m/44'/60'/0'/0",
+      },
+    },
+  },
+  mocha: {
+    starknetNetwork: "l2",
   },
   paths: {
     artifacts: "./artifacts",
