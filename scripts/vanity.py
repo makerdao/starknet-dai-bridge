@@ -18,12 +18,10 @@ def main():
 
     parser = argparse.ArgumentParser(description='Find salt for DAI deplyment that results with contract address with prefix = da1')
     parser.add_argument('--ward', type=lambda x: int(x, 0))
-    parser.add_argument('--start_from', type=int, default=1)
 
     ward = parser.parse_args().ward
-    start_from = parser.parse_args().start_from
 
-    random.seed(31415)
+    random.seed(2718281)
 
     contract_schema = marshmallow_dataclass.class_schema(ContractDefinition)()
 
@@ -37,20 +35,19 @@ def main():
 
     started = datetime.datetime.now()
 
-    for i in range(start_from):
-        random.getrandbits(251)
-
-    i += 1
+    i = 0
 
     print('Searching for vanity address...')
-    print('starting from:', i)
     print('with calldata =', calldata)
+
+    prefixes = set()
 
     while True:
         salt = random.getrandbits(251)
         address = salt_to_address(salt)
         prefix = hex(address)[2:5]
-        print( f'{i}:{prefix}', end=', ', flush=True)
+        prefixes.add(prefix)
+        print( f'{i}:{prefix}({"{:.2%}".format(len(prefixes)/4096)})\033[K', flush=True, end='\r')
         if (prefix == 'da1'):
             print()
             print('Found salt!')
