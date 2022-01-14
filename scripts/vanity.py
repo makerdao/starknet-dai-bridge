@@ -18,6 +18,9 @@ def main():
 
     parser = argparse.ArgumentParser(description='Find salt for DAI deplyment that results with contract address with prefix = da1')
     parser.add_argument('--ward', type=lambda x: int(x, 0))
+    parser.add_argument('--start_from', type=int, default=1)
+
+    start_from = parser.parse_args().start_from
 
     ward = parser.parse_args().ward
 
@@ -35,10 +38,14 @@ def main():
 
     started = datetime.datetime.now()
 
-    i = 0
+    for i in range(start_from ):
+        random.getrandbits(251)
+
+    i = i + 1
 
     print('Searching for vanity address...')
     print('with calldata =', calldata)
+    print('starting from:', i)
 
     prefixes = set()
 
@@ -53,6 +60,7 @@ def main():
             print('Found salt!')
             print('\tstarted from:', start_from)
             print('\titerations:', i - start_from + 1)
+            print('\tprefixes:', len(prefixes))
             print('\twhich took:', datetime.datetime.now() - started)
             print('\tsalt:', hex(salt))
             print('\tcalldata', calldata)
