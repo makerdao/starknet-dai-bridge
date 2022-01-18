@@ -6,6 +6,7 @@ from starkware.starknet.testing.starknet import Starknet
 from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
 from starkware.starknet.public.abi import get_selector_from_name
+from starkware.crypto.signature.fast_pedersen_hash import pedersen_hash
 
 
 L1_ADDRESS = 0x1
@@ -14,6 +15,7 @@ L1_WORMHOLE_BRIDGE_ADDRESS = 0x1
 DOMAIN = get_selector_from_name("starknet")
 TARGET_DOMAIN = get_selector_from_name("optimism")
 INVALID_DOMAIN = get_selector_from_name("invalid_domain")
+VALID_DOMAINS = 36637008923134637018442198643
 WORMHOLE_AMOUNT = 10
 FINALIZE_REGISTER_WORMHOLE = 0
 FINALIZE_FLUSH = 1
@@ -160,7 +162,7 @@ async def before_all(
             l2_wormhole_bridge.contract_address,
         ).invoke(auth_user.contract_address)
     await l2_wormhole_bridge.file(
-            0, TARGET_DOMAIN, 1,
+            VALID_DOMAINS, TARGET_DOMAIN, 1,
         ).invoke(auth_user.contract_address)
 
 
@@ -241,7 +243,7 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     await l2_wormhole_bridge.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
-            to_split_uint(WORMHOLE_AMOUNT),
+            WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
 
     wormhole = [
@@ -249,7 +251,7 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
         TARGET_DOMAIN, # targetDomain
         user1.contract_address, # receiver
         user1.contract_address, # operator
-        to_split_uint(WORMHOLE_AMOUNT)[0], # amount.low
+        WORMHOLE_AMOUNT, # amount
         # nonce
         # timestamp
     ]
@@ -259,6 +261,12 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT),)
 
     payload = [FINALIZE_REGISTER_WORMHOLE, *wormhole]
+    '''
+    # create hash
+    hash_val = pedersen_hash(payload[0], payload[1])
+    for i in range(2, len(payload)):
+        hash_val = pedersen_hash(hash_val, payload[i])
+    '''
     starknet.consume_message_from_l2(
         from_address=l2_wormhole_bridge.contract_address,
         to_address=L1_WORMHOLE_BRIDGE_ADDRESS,
@@ -276,7 +284,7 @@ async def test_reverts_when_insufficient_funds(
         await l2_wormhole_bridge.initiate_wormhole(
                 TARGET_DOMAIN,
                 user2.contract_address,
-                to_split_uint(WORMHOLE_AMOUNT),
+                WORMHOLE_AMOUNT,
                 user2.contract_address).invoke(user2.contract_address)
 
 
@@ -294,7 +302,7 @@ async def test_reverts_when_bridge_is_closed(
         await l2_wormhole_bridge.initiate_wormhole(
                 TARGET_DOMAIN,
                 user2.contract_address,
-                to_split_uint(WORMHOLE_AMOUNT),
+                WORMHOLE_AMOUNT,
                 user2.contract_address).invoke(user1.contract_address)
 
 
@@ -309,7 +317,7 @@ async def test_reverts_when_domain_is_not_whitelisted(
         await l2_wormhole_bridge.initiate_wormhole(
                 INVALID_DOMAIN,
                 user2.contract_address,
-                to_split_uint(WORMHOLE_AMOUNT),
+                WORMHOLE_AMOUNT,
                 user2.contract_address).invoke(user1.contract_address)
 
 
@@ -325,12 +333,12 @@ async def test_flushes_batched_dai(
     await l2_wormhole_bridge.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
-            to_split_uint(WORMHOLE_AMOUNT),
+            WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
     await l2_wormhole_bridge.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
-            to_split_uint(WORMHOLE_AMOUNT),
+            WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
     batched_dai_to_flush = await l2_wormhole_bridge.batched_dai_to_flush(TARGET_DOMAIN).call()
     assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT * 2),)
