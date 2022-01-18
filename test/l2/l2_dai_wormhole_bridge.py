@@ -232,6 +232,51 @@ async def test_reverts_when_not_called_by_owner(
 
 ## initiateWormhole()
 @pytest.mark.asyncio
+async def test_burns_dai_marks_it_for_future_flush(
+    starknet: Starknet,
+    l2_wormhole_bridge: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    check_balances,
+):
+    await dai.approve(l2_wormhole_bridge.contract_address, to_split_uint(WORMHOLE_AMOUNT)).invoke(user1.contract_address)
+    tx = await l2_wormhole_bridge.initiate_wormhole(
+            TARGET_DOMAIN,
+            user1.contract_address,
+            WORMHOLE_AMOUNT,
+            user1.contract_address).invoke(user1.contract_address)
+    assert tx.main_call_events[0] == (
+        DOMAIN,
+        TARGET_DOMAIN,
+        user1.contract_address,
+        user1.contract_address,
+        WORMHOLE_AMOUNT
+    )
+
+    wormhole = [
+        DOMAIN, # sourceDomain
+        TARGET_DOMAIN, # targetDomain
+        user1.contract_address, # receiver
+        user1.contract_address, # operator
+        WORMHOLE_AMOUNT, # amount
+        # nonce
+        # timestamp
+    ]
+
+    await check_balances(user1_balance - WORMHOLE_AMOUNT)
+    batched_dai_to_flush = await l2_wormhole_bridge.batched_dai_to_flush(TARGET_DOMAIN).call()
+    assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT),)
+
+    payload = [FINALIZE_REGISTER_WORMHOLE, *wormhole]
+    with pytest.raises(AssertionError):
+        starknet.consume_message_from_l2(
+            from_address=l2_wormhole_bridge.contract_address,
+            to_address=L1_WORMHOLE_BRIDGE_ADDRESS,
+            payload=payload,
+        )
+
+
+@pytest.mark.asyncio
 async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     starknet: Starknet,
     l2_wormhole_bridge: StarknetContract,
@@ -240,7 +285,19 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     check_balances,
 ):
     await dai.approve(l2_wormhole_bridge.contract_address, to_split_uint(WORMHOLE_AMOUNT)).invoke(user1.contract_address)
-    await l2_wormhole_bridge.initiate_wormhole(
+    tx = await l2_wormhole_bridge.initiate_wormhole(
+            TARGET_DOMAIN,
+            user1.contract_address,
+            WORMHOLE_AMOUNT,
+            user1.contract_address).invoke(user1.contract_address)
+    assert tx.main_call_events[0] == (
+        DOMAIN,
+        TARGET_DOMAIN,
+        user1.contract_address,
+        user1.contract_address,
+        WORMHOLE_AMOUNT
+    )
+    await l2_wormhole_bridge.finalize_register_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
@@ -261,12 +318,6 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT),)
 
     payload = [FINALIZE_REGISTER_WORMHOLE, *wormhole]
-    '''
-    # create hash
-    hash_val = pedersen_hash(payload[0], payload[1])
-    for i in range(2, len(payload)):
-        hash_val = pedersen_hash(hash_val, payload[i])
-    '''
     starknet.consume_message_from_l2(
         from_address=l2_wormhole_bridge.contract_address,
         to_address=L1_WORMHOLE_BRIDGE_ADDRESS,
@@ -343,9 +394,10 @@ async def test_flushes_batched_dai(
     batched_dai_to_flush = await l2_wormhole_bridge.batched_dai_to_flush(TARGET_DOMAIN).call()
     assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT * 2),)
 
-    await l2_wormhole_bridge.flush(
+    tx = await l2_wormhole_bridge.flush(
             TARGET_DOMAIN,
         ).invoke(user1.contract_address)
+    assert tx.main_call_events[0] == (TARGET_DOMAIN, to_split_uint(WORMHOLE_AMOUNT * 2))
 
     payload = [
         FINALIZE_FLUSH,
