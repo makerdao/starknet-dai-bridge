@@ -47,6 +47,18 @@ namespace IRegistry:
     end
 end
 
+@event
+func rely_called(user : felt):
+end
+
+@event
+func deny_called(user : felt):
+end
+
+@event
+func close_called():
+end
+
 @storage_var
 func _is_open() -> (res : felt):
 end
@@ -137,7 +149,7 @@ func rely{
     auth()
     _wards.write(user, 1)
 
-    # emit event
+    rely_called.emit(user)
 
     return ()
 end
@@ -151,7 +163,7 @@ func deny{
     auth()
     _wards.write(user, 0)
 
-    # emit event
+    deny_called.emit(user)
 
     return ()
 end
@@ -165,7 +177,7 @@ func close{
     auth()
     _is_open.write(0)
 
-    # emit event
+    close_called.emit()
 
     return ()
 end

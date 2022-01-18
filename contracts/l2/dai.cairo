@@ -31,6 +31,22 @@ from starkware.cairo.common.uint256 import (
 
 const ALL_ONES = 2 ** 128 - 1
 
+@event
+func rely_called(user : felt):
+end
+
+@event
+func deny_called(user : felt):
+end
+
+@event
+func transfer_called(from : felt, to : felt, value : Uint256):
+end
+
+@event
+func approval_called(owner : felt, spender : felt, value : Uint256):
+end
+
 @storage_var
 func _wards(user : felt) -> (res : felt):
 end
@@ -201,7 +217,7 @@ func rely{
     auth()
     _wards.write(user, 1)
 
-    # emit event
+    rely_called.emit(user)
 
     return ()
 end
@@ -215,7 +231,7 @@ func deny{
     auth()
     _wards.write(user, 0)
 
-    # emit event
+    deny_called.emit(user)
 
     return ()
 end
@@ -230,7 +246,7 @@ func transfer{
     let (caller) = get_caller_address()
     _transfer(caller, recipient, amount)
 
-    # emit event
+    transfer_called.emit()
 
     return (res=1)
 end
@@ -248,7 +264,7 @@ func transferFrom{
 
     _transfer(sender, recipient, amount)
 
-    # emit event
+    transfer_called.emit(from=sender, to=recipient, value=amount)
 
     if caller != sender:
       let (allowance) = _allowances.read(sender, caller)
@@ -278,7 +294,7 @@ func approve{
     let (caller) = get_caller_address()
     _approve(caller, spender, amount)
 
-    # emit event
+    approval_called.emit(owner=caller, spender=spender, value=amount)
 
     return (res=1)
 end
