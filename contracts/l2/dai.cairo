@@ -200,6 +200,9 @@ func rely{
   }(user : felt):
     auth()
     _wards.write(user, 1)
+
+    # emit event
+
     return ()
 end
 
@@ -211,6 +214,9 @@ func deny{
   }(user : felt):
     auth()
     _wards.write(user, 0)
+
+    # emit event
+
     return ()
 end
 
@@ -223,6 +229,8 @@ func transfer{
   }(recipient : felt, amount : Uint256) -> (res : felt):
     let (caller) = get_caller_address()
     _transfer(caller, recipient, amount)
+
+    # emit event
 
     return (res=1)
 end
@@ -239,6 +247,8 @@ func transferFrom{
     let (local caller) = get_caller_address()
 
     _transfer(sender, recipient, amount)
+
+    # emit event
 
     if caller != sender:
       let (allowance) = _allowances.read(sender, caller)
@@ -267,6 +277,8 @@ func approve{
     uint256_check(amount)
     let (caller) = get_caller_address()
     _approve(caller, spender, amount)
+
+    # emit event
 
     return (res=1)
 end

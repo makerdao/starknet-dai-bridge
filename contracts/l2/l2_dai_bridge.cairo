@@ -136,6 +136,9 @@ func rely{
   }(user : felt):
     auth()
     _wards.write(user, 1)
+
+    # emit event
+
     return ()
 end
 
@@ -147,6 +150,9 @@ func deny{
   }(user : felt):
     auth()
     _wards.write(user, 0)
+
+    # emit event
+
     return ()
 end
 
@@ -158,6 +164,9 @@ func close{
   }():
     auth()
     _is_open.write(0)
+
+    # emit event
+
     return ()
 end
 
