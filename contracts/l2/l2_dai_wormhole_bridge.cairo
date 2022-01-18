@@ -37,6 +37,29 @@ namespace Mintable:
     end
 end
 
+@event
+func close_called():
+end
+
+@event
+func rely_called(user : felt):
+end
+
+@event
+func deny_called(user : felt):
+end
+
+@event
+func file_called(what : felt, domain : felt, data : Uint256):
+end
+
+@event
+func wormhole_initialized(wormhole):
+end
+
+@event
+func flushed(target_domain : felt, dai : Uint256):
+end
 
 @storage_var
 func _is_open() -> (res : felt):
@@ -154,6 +177,9 @@ func rely{
   }(user : felt):
     auth()
     _wards.write(user, 1)
+
+    rely_called.emit(user)
+
     return ()
 end
 
@@ -165,6 +191,9 @@ func deny{
   }(user : felt):
     auth()
     _wards.write(user, 0)
+
+    deny_called.emit(user)
+
     return ()
 end
 
@@ -176,6 +205,9 @@ func close{
   }():
     auth()
     _is_open.write(0)
+
+    close_called.emit()
+
     return ()
 end
 
@@ -216,7 +248,7 @@ func file{
 
     _valid_domains.write(domain, data)
 
-    # emit event
+    file_called.emit(what, domain, data)
 
     return ()
 end
@@ -284,7 +316,7 @@ func initiate_wormhole{
 
     send_message_to_l1(wormhole_bridge, 6, payload)
 
-    # emit event
+    wormhole_initialized.emit(payload)
 
     return ()
 end
@@ -322,7 +354,7 @@ func flush{
 
     send_message_to_l1(wormhole_bridge, 4, payload)
 
-    # emit event
+    flushed.emit(target_domain=target_domain, dai=dai_to_flush)
 
     return (res=dai_to_flush)
 end
