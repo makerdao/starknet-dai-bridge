@@ -20,7 +20,8 @@ from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
 from starkware.cairo.common.hash import hash2
-from starkware.cairo.common.math import (assert_le)
+from starkware.cairo.common.math import (assert_le, assert_not_zero)
+from starkware.cairo.common.math_cmp import (is_not_zero)
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
 from starkware.cairo.common.uint256 import (Uint256, uint256_lt, uint256_add, uint256_check)
 
@@ -50,11 +51,16 @@ func deny_called(user : felt):
 end
 
 @event
-func file_called(what : felt, domain : felt, data : Uint256):
+func file_called(what : felt, domain : felt, data : felt):
 end
 
 @event
-func wormhole_initialized(wormhole):
+func wormhole_initialized(
+  source_domain : felt,
+  target_domain : felt,
+  receiver : felt,
+  operator : felt,
+  amount : felt):
 end
 
 @event
@@ -87,6 +93,10 @@ end
 
 @storage_var
 func _wards(user : felt) -> (res : felt):
+end
+
+@storage_var
+func _message_hashes(hash : felt) -> (res : felt):
 end
 
 @view
@@ -273,8 +283,7 @@ func initiate_wormhole{
     
     # amount should be uint128
     let amount_uint256 = Uint256(low=amount, high=0)
-    let (check) = uint256_check(amount_uint256)
-    assert check = 1
+    uint256_check(amount_uint256)
 
     let (dai_to_flush) = _batched_dai_to_flush.read(target_domain)
     let (new_dai_to_flush, dai_to_flush_carry) = uint256_add(dai_to_flush, amount_uint256)
@@ -297,26 +306,67 @@ func initiate_wormhole{
     # assert payload[6] = nonce
     # assert payload[7] = timestamp
 
-    #let (hash) = alloc()
-    #let (_hash1) = hash2{hash_ptr=pedersen_ptr}(payload[0], payload[1])
-    #assert hash[0] = _hash1
-    #let (_hash2) = hash2{hash_ptr=pedersen_ptr}(hash[0], payload[2])
-    #assert hash[1] = _hash2
-    #let (_hash3) = hash2{hash_ptr=pedersen_ptr}(hash[1], payload[3])
-    #assert hash[2] = _hash3
-    #let (_hash4) = hash2{hash_ptr=pedersen_ptr}(hash[2], payload[4])
-    #assert hash[3] = _hash4
-    #let (_hash5) = hash2{hash_ptr=pedersen_ptr}(hash[3], payload[5])
-    #assert hash[4] = _hash5
+    wormhole_initialized.emit(
+      source_domain=domain,
+      target_domain=target_domain,
+      receiver=receiver,
+      operator=operator,
+      amount=amount)
 
-    #let (hash_list) = alloc()
-    #assert hash_list[0] = hash[4]
+    let (hash) = hash_message(payload)
+    _message_hashes.write(hash, 1)
+
+    return ()
+end
+
+func hash_message{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(
+    payload : felt*,
+  ) -> (hash : felt):
+    let (_hash1) = hash2{hash_ptr=pedersen_ptr}([payload], [payload+1])
+    let (_hash2) = hash2{hash_ptr=pedersen_ptr}(_hash1, [payload+2])
+    let (_hash3) = hash2{hash_ptr=pedersen_ptr}(_hash2, [payload+3])
+    let (_hash4) = hash2{hash_ptr=pedersen_ptr}(_hash3, [payload+4])
+    let (hash) = hash2{hash_ptr=pedersen_ptr}(_hash4, [payload+5])
+
+    return (hash)
+end
+
+@external
+func finalize_register_wormhole{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(
+    target_domain : felt,
+    receiver : felt,
+    amount : felt,
+    operator : felt,
+  ):
+    let (is_open) = _is_open.read()
+    assert is_open = 1
+    let (domain) = _domain.read()
+
+    let (payload) = alloc()
+    assert payload[0] = FINALIZE_REGISTER_WORMHOLE
+    assert payload[1] = domain
+    assert payload[2] = target_domain
+    assert payload[3] = receiver
+    assert payload[4] = operator
+    assert payload[5] = amount
+    # assert payload[6] = nonce
+    # assert payload[7] = timestamp
+
+    let (hash) = hash_message(payload)
+    let (hash_exists) = _message_hashes.read(hash)
+    assert hash_exists = 1
+    _message_hashes.write(hash, 0)
 
     let (wormhole_bridge) = _wormhole_bridge.read()
-
     send_message_to_l1(wormhole_bridge, 6, payload)
-
-    wormhole_initialized.emit(payload)
 
     return ()
 end
@@ -342,6 +392,7 @@ func flush{
 
     local syscall_ptr : felt* = syscall_ptr
 
+    let uint256_zero = Uint256(low=0, high=0)
     _batched_dai_to_flush.write(target_domain, uint256_zero)
 
     let (payload) = alloc()
