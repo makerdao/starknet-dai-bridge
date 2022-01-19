@@ -32,19 +32,19 @@ from starkware.cairo.common.uint256 import (
 const ALL_ONES = 2 ** 128 - 1
 
 @event
-func rely_called(user : felt):
+func Rely(user : felt):
 end
 
 @event
-func deny_called(user : felt):
+func Deny(user : felt):
 end
 
 @event
-func transfer_called(sender : felt, recipient : felt, value : Uint256):
+func Transfer(sender : felt, recipient : felt, value : Uint256):
 end
 
 @event
-func approval_called(owner : felt, spender : felt, value : Uint256):
+func Approval(owner : felt, spender : felt, value : Uint256):
 end
 
 @storage_var
@@ -217,7 +217,7 @@ func rely{
     auth()
     _wards.write(user, 1)
 
-    rely_called.emit(user)
+    Rely.emit(user)
 
     return ()
 end
@@ -231,7 +231,7 @@ func deny{
     auth()
     _wards.write(user, 0)
 
-    deny_called.emit(user)
+    Deny.emit(user)
 
     return ()
 end
@@ -245,7 +245,7 @@ func transfer{
   }(recipient : felt, amount : Uint256) -> (res : felt):
 
     let (caller) = get_caller_address()
-    transfer_called.emit(caller, recipient, amount)
+    Transfer.emit(caller, recipient, amount)
     _transfer(caller, recipient, amount)
 
     return (res=1)
@@ -261,7 +261,7 @@ func transferFrom{
     alloc_locals
 
     let (local caller) = get_caller_address()
-    transfer_called.emit(sender, recipient, amount)
+    Transfer.emit(sender, recipient, amount)
     _transfer(sender, recipient, amount)
 
     if caller != sender:
@@ -290,7 +290,7 @@ func approve{
 
     uint256_check(amount)
     let (caller) = get_caller_address()
-    approval_called.emit(caller, spender, amount)
+    Approval.emit(caller, spender, amount)
     _approve(caller, spender, amount)
 
     return (res=1)
