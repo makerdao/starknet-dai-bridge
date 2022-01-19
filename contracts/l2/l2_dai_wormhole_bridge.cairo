@@ -257,7 +257,7 @@ func file{
 
     _valid_domains.write(domain, data)
 
-    Filed.emit(what, domain, data)
+    File.emit(what, domain, data)
 
     return ()
 end
