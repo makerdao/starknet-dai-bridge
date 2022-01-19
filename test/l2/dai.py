@@ -438,7 +438,7 @@ async def test_can_burn_other_if_approved(
     user2: StarknetContract,
     check_balances,
 ):
-    await dai.approve(
+    tx = await dai.approve(
             user2.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
     assert tx.main_call_events[0] == (
