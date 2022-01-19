@@ -39,23 +39,23 @@ namespace Mintable:
 end
 
 @event
-func close_called():
+func Closed():
 end
 
 @event
-func rely_called(user : felt):
+func Rely(user : felt):
 end
 
 @event
-func deny_called(user : felt):
+func Deny(user : felt):
 end
 
 @event
-func file_called(what : felt, domain : felt, data : felt):
+func File(what : felt, domain : felt, data : felt):
 end
 
 @event
-func wormhole_initialized(
+func WormholeInitialized(
   source_domain : felt,
   target_domain : felt,
   receiver : felt,
@@ -64,7 +64,7 @@ func wormhole_initialized(
 end
 
 @event
-func flushed(target_domain : felt, dai : Uint256):
+func Flushed(target_domain : felt, dai : Uint256):
 end
 
 @storage_var
@@ -188,7 +188,7 @@ func rely{
     auth()
     _wards.write(user, 1)
 
-    rely_called.emit(user)
+    Rely.emit(user)
 
     return ()
 end
@@ -202,7 +202,7 @@ func deny{
     auth()
     _wards.write(user, 0)
 
-    deny_called.emit(user)
+    Deny.emit(user)
 
     return ()
 end
@@ -216,7 +216,7 @@ func close{
     auth()
     _is_open.write(0)
 
-    close_called.emit()
+    Closed.emit()
 
     return ()
 end
@@ -258,7 +258,7 @@ func file{
 
     _valid_domains.write(domain, data)
 
-    file_called.emit(what, domain, data)
+    Filed.emit(what, domain, data)
 
     return ()
 end
@@ -306,7 +306,7 @@ func initiate_wormhole{
     # assert payload[6] = nonce
     # assert payload[7] = timestamp
 
-    wormhole_initialized.emit(
+    WormholeInitialized.emit(
       source_domain=domain,
       target_domain=target_domain,
       receiver=receiver,
@@ -405,7 +405,7 @@ func flush{
 
     send_message_to_l1(wormhole_bridge, 4, payload)
 
-    flushed.emit(target_domain=target_domain, dai=dai_to_flush)
+    Flushed.emit(target_domain=target_domain, dai=dai_to_flush)
 
     return (res=dai_to_flush)
 end
