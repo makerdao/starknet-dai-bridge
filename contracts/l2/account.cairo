@@ -1,5 +1,4 @@
 %lang starknet
-%builtins pedersen range_check ecdsa
 
 from starkware.cairo.common.registers import get_fp_and_pc
 from starkware.starknet.common.syscalls import get_contract_address
@@ -112,7 +111,7 @@ end
 func is_valid_signature{
         syscall_ptr : felt*,
         pedersen_ptr : HashBuiltin*,
-        range_check_ptr, 
+        range_check_ptr,
         ecdsa_ptr: SignatureBuiltin*
     }(
         hash: felt,
@@ -140,7 +139,7 @@ end
 func execute{
         syscall_ptr : felt*,
         pedersen_ptr : HashBuiltin*,
-        range_check_ptr, 
+        range_check_ptr,
         ecdsa_ptr: SignatureBuiltin*
     }(
         to: felt,

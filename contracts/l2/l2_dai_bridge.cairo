@@ -14,7 +14,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 %lang starknet
-%builtins pedersen range_check bitwise
 
 from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
@@ -194,6 +193,7 @@ func constructor{
     registry : felt,
   ):
     _wards.write(ward, 1)
+    Rely.emit(ward)
 
     _is_open.write(1)
     _dai.write(dai)
@@ -219,6 +219,8 @@ func initiate_withdraw{
 
     send_handle_withdraw(l1_recipient, amount)
 
+    # TODO: emit WithdrawalInitiated (align with StarkWare!)
+
     return ()
 end
 
@@ -241,6 +243,8 @@ func handle_deposit{
     let (dai) = _dai.read()
     IDAI.mint(dai, l2_recipient, amount)
 
+    # TODO: emit DepositHandled (align with StarkWare!)
+
     return ()
 end
 
@@ -257,6 +261,8 @@ func handle_force_withdrawal{
     amount_high : felt
   ):
     alloc_locals
+
+    # TODO: emit ForcedWithdrawalHandled (align with StarkWare!)
 
     # check l1 message sender
     let (bridge) = _bridge.read()
@@ -289,6 +295,7 @@ func handle_force_withdrawal{
 
     IDAI.burn(dai, l2_sender, amount)
     send_handle_withdraw(l1_recipient, amount)
+
     return ()
 end
 
