@@ -75,7 +75,7 @@ const config: HardhatUserConfig = {
     },
   },
   mocha: {
-    starknetNetwork: "l2",
+    starknetNetwork: `${process.env.STARKNET_NETWORK}`,
   },
   paths: {
     artifacts: "./artifacts",

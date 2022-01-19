@@ -14,5 +14,7 @@ cache
 artifacts
 starknet-artifacts
 deployments/localhost
-
 contracts/l2/sample_spell.cairo
+deployer-key.json
+deployments
+yarn-error.log
