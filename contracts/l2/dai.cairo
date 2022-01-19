@@ -40,7 +40,7 @@ func deny_called(user : felt):
 end
 
 @event
-func transfer_called(from : felt, to : felt, value : Uint256):
+func transfer_called(sender : felt, recipient : felt, value : Uint256):
 end
 
 @event
@@ -243,10 +243,10 @@ func transfer{
     range_check_ptr,
     bitwise_ptr : BitwiseBuiltin*
   }(recipient : felt, amount : Uint256) -> (res : felt):
-    let (caller) = get_caller_address()
-    _transfer(caller, recipient, amount)
 
-    transfer_called.emit()
+    let (caller) = get_caller_address()
+    transfer_called.emit(caller, recipient, amount)
+    _transfer(caller, recipient, amount)
 
     return (res=1)
 end
@@ -261,10 +261,8 @@ func transferFrom{
     alloc_locals
 
     let (local caller) = get_caller_address()
-
+    transfer_called.emit(sender, recipient, amount)
     _transfer(sender, recipient, amount)
-
-    transfer_called.emit(from=sender, to=recipient, value=amount)
 
     if caller != sender:
       let (allowance) = _allowances.read(sender, caller)
@@ -292,9 +290,8 @@ func approve{
 
     uint256_check(amount)
     let (caller) = get_caller_address()
+    approval_called.emit(caller, spender, amount)
     _approve(caller, spender, amount)
-
-    approval_called.emit(owner=caller, spender=spender, value=amount)
 
     return (res=1)
 end

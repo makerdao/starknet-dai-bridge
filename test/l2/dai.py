@@ -211,10 +211,14 @@ async def test_transfer(
     user2: StarknetContract,
     check_balances,
 ):
-    await dai.transfer(
+    tx = await dai.transfer(
             user2.contract_address,
             to_split_uint(10),
         ).invoke(user1.contract_address)
+    assert tx.main_call_events[0] == (
+            user1.contract_address,
+            user2.contract_address,
+            to_split_uint(10))
 
     await check_balances(
         user1_balance-10,
@@ -225,12 +229,18 @@ async def test_transfer(
 async def test_transfer_to_yourself(
     dai: StarknetContract,
     user1: StarknetContract,
+    check_balances,
 ):
-    await dai.transfer(
+    tx = await dai.transfer(
             user1.contract_address,
             to_split_uint(10),
         ).invoke(user1.contract_address)
+    assert tx.main_call_events[0] == (
+            user1.contract_address,
+            user1.contract_address,
+            to_split_uint(10))
 
+    await check_balances(user1_balance, user2_balance)
 
 @pytest.mark.asyncio
 async def test_transfer_from(
@@ -243,10 +253,14 @@ async def test_transfer_from(
     await dai.approve(
             user3.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
-    await dai.transferFrom(
+    tx = await dai.transferFrom(
         user1.contract_address,
         user2.contract_address,
         to_split_uint(10)).invoke(user3.contract_address)
+    assert tx.main_call_events[0] == (
+            user1.contract_address,
+            user2.contract_address,
+            to_split_uint(10))
 
     await check_balances(
         user1_balance-10,
@@ -258,10 +272,14 @@ async def test_transfer_to_yourself_using_transfer_from(
     dai: StarknetContract,
     user1: StarknetContract,
 ):
-    await dai.transferFrom(
+    tx = await dai.transferFrom(
         user1.contract_address,
         user1.contract_address,
         to_split_uint(10)).invoke(user1.contract_address)
+    assert tx.main_call_events[0] == (
+            user1.contract_address,
+            user1.contract_address,
+            to_split_uint(10))
 
 
 @pytest.mark.asyncio
@@ -398,9 +416,13 @@ async def test_approve(
     user1: StarknetContract,
     user2: StarknetContract,
 ):
-    await dai.approve(
+    tx = await dai.approve(
             user2.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
+    assert tx.main_call_events[0] == (
+            user1.contract_address,
+            user2.contract_address,
+            to_split_uint(10))
 
     allowance = await dai.allowance(
         user1.contract_address,
@@ -419,6 +441,10 @@ async def test_can_burn_other_if_approved(
     await dai.approve(
             user2.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
+    assert tx.main_call_events[0] == (
+            user1.contract_address,
+            user2.contract_address,
+            to_split_uint(10))
 
     await dai.burn(
             user1.contract_address,
