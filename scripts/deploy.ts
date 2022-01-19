@@ -302,13 +302,13 @@ export async function deployBridge(): Promise<void> {
   console.log("L2 bridge permission sanity checks...");
   expect(await wards(l2DAIBridge, l2GovernanceRelay)).to.deep.eq(BigInt(1));
   expect(await wards(l2DAIBridge, deployer)).to.deep.eq(BigInt(0));
-  
+
   console.log("L2 wormhole bridge permission sanity checks...");
   expect(await wards(l2DAIWormholeBridge, l2GovernanceRelay)).to.deep.eq(
     BigInt(1)
   );
   expect(await wards(l2DAIWormholeBridge, deployer)).to.deep.eq(BigInt(0));
-  
+
   console.log("L2 dai permission sanity checks...");
   expect(await wards(l2DAI, l2GovernanceRelay)).to.deep.eq(BigInt(1));
   expect(await wards(l2DAI, l2DAIBridge)).to.deep.eq(BigInt(1));
