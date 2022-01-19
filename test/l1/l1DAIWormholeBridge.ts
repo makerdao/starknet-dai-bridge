@@ -101,21 +101,18 @@ describe("L1DAIWormholeBridge", () => {
         allowanceLimit
       );
 
-      const wormhole  = [
+      const wormhole = [
         SOURCE_DOMAIN, // sourceDomain
         TARGET_DOMAIN, // targetDomain
-        `0x${l1Alice.address.slice(2).padStart(64, '0')}`, // receiver
-        `0x${l1Bob.address.slice(2).padStart(64, '0')}`, // operator
+        `0x${l1Alice.address.slice(2).padStart(64, "0")}`, // receiver
+        `0x${l1Bob.address.slice(2).padStart(64, "0")}`, // operator
         AMOUNT, // amount
       ];
       await l1WormholeBridge.finalizeRegisterWormhole(wormhole);
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2WormholeBridgeAddress,
-        [
-          HANDLE_REGISTER_WORMHOLE,
-          ...wormhole,
-        ]
+        [HANDLE_REGISTER_WORMHOLE, ...wormhole]
       );
 
       expect(wormholeRouterFake.requestMint).to.have.been.calledOnce;
