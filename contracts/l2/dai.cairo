@@ -216,9 +216,7 @@ func rely{
   }(user : felt):
     auth()
     _wards.write(user, 1)
-
     Rely.emit(user)
-
     return ()
 end
 
@@ -241,7 +239,6 @@ func transfer{
     range_check_ptr,
     bitwise_ptr : BitwiseBuiltin*
   }(recipient : felt, amount : Uint256) -> (res : felt):
-
     let (caller) = get_caller_address()
     _transfer(caller, recipient, amount)
 
@@ -283,7 +280,6 @@ func approve{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(spender: felt, amount : Uint256) -> (res : felt):
-
     uint256_check(amount)
     let (caller) = get_caller_address()
     _approve(caller, spender, amount)

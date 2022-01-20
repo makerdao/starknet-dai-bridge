@@ -147,9 +147,7 @@ func rely{
   }(user : felt):
     auth()
     _wards.write(user, 1)
-
     Rely.emit(user)
-
     return ()
 end
 
@@ -161,9 +159,7 @@ func deny{
   }(user : felt):
     auth()
     _wards.write(user, 0)
-
     Deny.emit(user)
-
     return ()
 end
 
@@ -175,9 +171,7 @@ func close{
   }():
     auth()
     _is_open.write(0)
-
     Closed.emit()
-
     return ()
 end
 
@@ -194,7 +188,6 @@ func constructor{
   ):
     _wards.write(ward, 1)
     Rely.emit(ward)
-
     _is_open.write(1)
     _dai.write(dai)
     _bridge.write(bridge)
