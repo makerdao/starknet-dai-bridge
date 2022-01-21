@@ -14,7 +14,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 %lang starknet
-%builtins pedersen range_check bitwise
 
 from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
@@ -45,6 +44,18 @@ end
 namespace IRegistry:
     func get_L1_address(l2_address : felt) -> (res : felt):
     end
+end
+
+@event
+func Rely(user : felt):
+end
+
+@event
+func Deny(user : felt):
+end
+
+@event
+func Closed():
 end
 
 @storage_var
@@ -136,6 +147,7 @@ func rely{
   }(user : felt):
     auth()
     _wards.write(user, 1)
+    Rely.emit(user)
     return ()
 end
 
@@ -147,6 +159,7 @@ func deny{
   }(user : felt):
     auth()
     _wards.write(user, 0)
+    Deny.emit(user)
     return ()
 end
 
@@ -158,6 +171,7 @@ func close{
   }():
     auth()
     _is_open.write(0)
+    Closed.emit()
     return ()
 end
 
@@ -173,7 +187,7 @@ func constructor{
     registry : felt,
   ):
     _wards.write(ward, 1)
-
+    Rely.emit(ward)
     _is_open.write(1)
     _dai.write(dai)
     _bridge.write(bridge)
@@ -198,6 +212,8 @@ func initiate_withdraw{
 
     send_handle_withdraw(l1_recipient, amount)
 
+    # TODO: emit WithdrawalInitiated (align with StarkWare!)
+
     return ()
 end
 
@@ -220,6 +236,8 @@ func handle_deposit{
     let (dai) = _dai.read()
     IDAI.mint(dai, l2_recipient, amount)
 
+    # TODO: emit DepositHandled (align with StarkWare!)
+
     return ()
 end
 
@@ -236,6 +254,8 @@ func handle_force_withdrawal{
     amount_high : felt
   ):
     alloc_locals
+
+    # TODO: emit ForcedWithdrawalHandled (align with StarkWare!)
 
     # check l1 message sender
     let (bridge) = _bridge.read()
@@ -268,6 +288,7 @@ func handle_force_withdrawal{
 
     IDAI.burn(dai, l2_sender, amount)
     send_handle_withdraw(l1_recipient, amount)
+
     return ()
 end
 

@@ -14,7 +14,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 %lang starknet
-%builtins pedersen range_check bitwise
 
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
 from starkware.cairo.common.math import (assert_not_equal, assert_not_zero)
@@ -30,6 +29,22 @@ from starkware.cairo.common.uint256 import (
 )
 
 const ALL_ONES = 2 ** 128 - 1
+
+@event
+func Rely(user : felt):
+end
+
+@event
+func Deny(user : felt):
+end
+
+@event
+func Transfer(sender : felt, recipient : felt, value : Uint256):
+end
+
+@event
+func Approval(owner : felt, spender : felt, value : Uint256):
+end
 
 @storage_var
 func _wards(user : felt) -> (res : felt):
@@ -109,6 +124,7 @@ func constructor{
     range_check_ptr
   }(ward : felt):
     _wards.write(ward, 1)
+    Rely.emit(ward)
     return ()
 end
 
@@ -200,6 +216,7 @@ func rely{
   }(user : felt):
     auth()
     _wards.write(user, 1)
+    Rely.emit(user)
     return ()
 end
 
@@ -211,6 +228,7 @@ func deny{
   }(user : felt):
     auth()
     _wards.write(user, 0)
+    Deny.emit(user)
     return ()
 end
 
@@ -237,7 +255,6 @@ func transferFrom{
     alloc_locals
 
     let (local caller) = get_caller_address()
-
     _transfer(sender, recipient, amount)
 
     if caller != sender:
@@ -263,7 +280,6 @@ func approve{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(spender: felt, amount : Uint256) -> (res : felt):
-
     uint256_check(amount)
     let (caller) = get_caller_address()
     _approve(caller, spender, amount)
@@ -349,6 +365,8 @@ func _transfer{
     assert carry = 0
     _balances.write(recipient, sum)
 
+    Transfer.emit(sender, recipient, amount)
+
     return ()
 end
 
@@ -359,5 +377,6 @@ func _approve{
   }(caller: felt, spender: felt, amount: Uint256):
     assert_not_zero(spender)
     _allowances.write(caller, spender, amount)
+    Approval.emit(caller, spender, amount)
     return ()
 end
