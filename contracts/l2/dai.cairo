@@ -158,6 +158,8 @@ func mint{
     assert total_carry = 0
     _total_supply.write(new_total)
 
+    Transfer.emit(0, account, amount)
+
     return ()
 end
 
@@ -189,6 +191,8 @@ func burn{
     # underflow check disabled since amount <= balance <= total_amount
     let (new_total_supply) = uint256_sub(total_supply, amount)
     _total_supply.write(new_total_supply)
+
+    Transfer.emit(account, 0, amount)
 
     if caller != account:
       let (allowance) = _allowances.read(account, caller)
