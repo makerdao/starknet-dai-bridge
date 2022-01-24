@@ -458,7 +458,7 @@ async def test_can_burn_other_if_approved(
             user1.contract_address,
             to_split_uint(10)).invoke(user2.contract_address)
     check_transfer_event(tx, (
-        user2.contract_address,
+        user1.contract_address,
         0,
         to_split_uint(10)))
 
