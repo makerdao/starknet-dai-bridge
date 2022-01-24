@@ -256,13 +256,25 @@ async def test_burns_dai_marks_it_for_future_flush(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
+<<<<<<< HEAD
             user1.contract_address).invoke(user1.contract_address)
     check_wormhole_initialized_event(tx, (
+=======
+            user1.contract_address,
+            0).invoke(user1.contract_address)
+    assert tx.main_call_events[0][:6] == (
+>>>>>>> Add timestamps or nonce
         DOMAIN,
         TARGET_DOMAIN,
         user1.contract_address,
         user1.contract_address,
+<<<<<<< HEAD
         WORMHOLE_AMOUNT))
+=======
+        WORMHOLE_AMOUNT,
+        0
+    )
+>>>>>>> Add timestamps or nonce
 
     wormhole = [
         DOMAIN, # sourceDomain
@@ -270,8 +282,8 @@ async def test_burns_dai_marks_it_for_future_flush(
         user1.contract_address, # receiver
         user1.contract_address, # operator
         WORMHOLE_AMOUNT, # amount
-        # nonce
-        # timestamp
+        0, # nonce
+        tx.main_call_events[0][6] # timestamp
     ]
 
     await check_balances(user1_balance - WORMHOLE_AMOUNT)
@@ -300,18 +312,33 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
+<<<<<<< HEAD
             user1.contract_address).invoke(user1.contract_address)
     check_wormhole_initialized_event(tx, (
+=======
+            user1.contract_address,
+            0).invoke(user1.contract_address)
+    assert tx.main_call_events[0][:6] == (
+>>>>>>> Add timestamps or nonce
         DOMAIN,
         TARGET_DOMAIN,
         user1.contract_address,
         user1.contract_address,
+<<<<<<< HEAD
         WORMHOLE_AMOUNT))
+=======
+        WORMHOLE_AMOUNT,
+        0
+    )
+    timestamp = tx.main_call_events[0][6]
+>>>>>>> Add timestamps or nonce
     await l2_wormhole_bridge.finalize_register_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-            user1.contract_address).invoke(user1.contract_address)
+            user1.contract_address,
+            0,
+            timestamp).invoke(user1.contract_address)
 
     wormhole = [
         DOMAIN, # sourceDomain
@@ -319,8 +346,8 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
         user1.contract_address, # receiver
         user1.contract_address, # operator
         WORMHOLE_AMOUNT, # amount
-        # nonce
-        # timestamp
+        0,
+        timestamp
     ]
 
     await check_balances(user1_balance - WORMHOLE_AMOUNT)
@@ -346,7 +373,8 @@ async def test_reverts_when_insufficient_funds(
                 TARGET_DOMAIN,
                 user2.contract_address,
                 WORMHOLE_AMOUNT,
-                user2.contract_address).invoke(user2.contract_address)
+                user2.contract_address,
+                0).invoke(user2.contract_address)
 
 
 @pytest.mark.asyncio
@@ -364,7 +392,8 @@ async def test_reverts_when_bridge_is_closed(
                 TARGET_DOMAIN,
                 user2.contract_address,
                 WORMHOLE_AMOUNT,
-                user2.contract_address).invoke(user1.contract_address)
+                user2.contract_address,
+                0).invoke(user1.contract_address)
 
 
 @pytest.mark.asyncio
@@ -379,7 +408,8 @@ async def test_reverts_when_domain_is_not_whitelisted(
                 INVALID_DOMAIN,
                 user2.contract_address,
                 WORMHOLE_AMOUNT,
-                user2.contract_address).invoke(user1.contract_address)
+                user2.contract_address,
+                0).invoke(user1.contract_address)
 
 
 ## flush()
@@ -395,12 +425,14 @@ async def test_flushes_batched_dai(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-            user1.contract_address).invoke(user1.contract_address)
+            user1.contract_address,
+            0).invoke(user1.contract_address)
     await l2_wormhole_bridge.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-            user1.contract_address).invoke(user1.contract_address)
+            user1.contract_address,
+            1).invoke(user1.contract_address)
     batched_dai_to_flush = await l2_wormhole_bridge.batched_dai_to_flush(TARGET_DOMAIN).call()
     assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT * 2),)
 
