@@ -117,12 +117,14 @@ def to_uint(a):
 
 def check_transfer_event(tx, values):
     event = tx.main_call_events[0]
+    assert type(event).__name__ == 'Transfer'
     assert len(event) == 3
     assert event == values
 
 
 def check_approval_event(tx, values):
     event = tx.main_call_events[0]
+    assert type(event).__name__ == 'Approval'
     assert len(event) == 3
     assert event == values
 
