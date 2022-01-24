@@ -95,7 +95,7 @@ func _wards(user : felt) -> (res : felt):
 end
 
 @storage_var
-func _message_hashes(hash : felt) -> (res : felt):
+func _wormhole_hashes(hash : felt) -> (res : felt):
 end
 
 @view
@@ -233,6 +233,8 @@ func constructor{
   ):
     _wards.write(ward, 1)
 
+    Rely.emit(ward)
+
     _is_open.write(1)
     _dai.write(dai)
     _wormhole_bridge.write(wormhole_bridge)
@@ -313,7 +315,7 @@ func initiate_wormhole{
       amount=amount)
 
     let (hash) = hash_message(payload)
-    _message_hashes.write(hash, 1)
+    _wormhole_hashes.write(hash, 1)
 
     return ()
 end
@@ -360,9 +362,9 @@ func finalize_register_wormhole{
     # assert payload[7] = timestamp
 
     let (hash) = hash_message(payload)
-    let (hash_exists) = _message_hashes.read(hash)
+    let (hash_exists) = _wormhole_hashes.read(hash)
     assert hash_exists = 1
-    _message_hashes.write(hash, 0)
+    _wormhole_hashes.write(hash, 0)
 
     let (wormhole_bridge) = _wormhole_bridge.read()
     send_message_to_l1(wormhole_bridge, 6, payload)
@@ -370,7 +372,11 @@ func finalize_register_wormhole{
     return ()
 end
 
-func uint256_assert_not_zero(a : Uint256):
+func uint256_assert_not_zero{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(a : Uint256):
     let (low_check) = is_not_zero(a.low)
     let (high_check) = is_not_zero(a.high)
     assert_not_zero(low_check + high_check)
@@ -384,12 +390,9 @@ func flush{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(target_domain : felt) -> (res : Uint256):
-    alloc_locals
 
     let (dai_to_flush : Uint256) = _batched_dai_to_flush.read(target_domain)
     uint256_assert_not_zero(dai_to_flush)
-
-    local syscall_ptr : felt* = syscall_ptr
 
     let uint256_zero = Uint256(low=0, high=0)
     _batched_dai_to_flush.write(target_domain, uint256_zero)
