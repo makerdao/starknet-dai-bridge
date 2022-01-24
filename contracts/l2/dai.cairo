@@ -27,6 +27,7 @@ from starkware.cairo.common.uint256 import (
   uint256_le,
   uint256_check
 )
+from contracts.l2.utils import uint256_add_safe
 
 const ALL_ONES = 2 ** 128 - 1
 

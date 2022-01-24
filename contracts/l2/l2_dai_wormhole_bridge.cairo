@@ -23,6 +23,7 @@ from starkware.cairo.common.math import (assert_le, assert_not_zero)
 from starkware.cairo.common.math_cmp import (is_not_zero)
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
 from starkware.cairo.common.uint256 import (Uint256, uint256_lt, uint256_add, uint256_check)
+from contracts.l2.utils import uint256_add_safe
 
 const FINALIZE_REGISTER_WORMHOLE = 0
 const FINALIZE_FLUSH = 1
@@ -287,8 +288,7 @@ func initiate_wormhole{
     uint256_check(amount_uint256)
 
     let (dai_to_flush) = _batched_dai_to_flush.read(target_domain)
-    let (new_dai_to_flush, dai_to_flush_carry) = uint256_add(dai_to_flush, amount_uint256)
-    assert dai_to_flush_carry = 0
+    let (new_dai_to_flush) = uint256_add_safe(dai_to_flush, amount_uint256)
     _batched_dai_to_flush.write(target_domain, new_dai_to_flush)
 
     let (dai) = _dai.read()
