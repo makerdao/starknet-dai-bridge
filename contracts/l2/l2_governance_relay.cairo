@@ -16,10 +16,13 @@
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.starknet.common.syscalls import delegate_call
 from starkware.cairo.common.alloc import alloc
 
-const EXECUTE_SELECTOR = 1017745666394979726211766185068760164586829337678283062942418931026954492996
+@contract_interface
+namespace ISpell:
+    func execute():
+    end
+end
 
 @storage_var
 func _l1_governance_relay() -> (res : felt):
@@ -48,8 +51,7 @@ func relay{
     let (l1_governance_relay) = _l1_governance_relay.read()
     assert l1_governance_relay = from_address
 
-    let (calldata) = alloc()
-    delegate_call(spell, EXECUTE_SELECTOR, 0, calldata)
+    ISpell.delegate_execute(spell)
 
     return ()
 end
