@@ -21,7 +21,7 @@ from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
 from starkware.cairo.common.hash import hash2
 from starkware.cairo.common.math import (assert_le, assert_not_zero)
 from starkware.cairo.common.math_cmp import (is_not_zero)
-from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
+from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address, get_block_timestamp)
 from starkware.cairo.common.uint256 import (Uint256, uint256_lt, uint256_add, uint256_check)
 
 const FINALIZE_REGISTER_WORMHOLE = 0
@@ -59,7 +59,9 @@ func WormholeInitialized(
   target_domain : felt,
   receiver : felt,
   operator : felt,
-  amount : felt):
+  amount : felt,
+  nonce : felt,
+  timestamp : felt):
 end
 
 @event
@@ -274,6 +276,7 @@ func initiate_wormhole{
     receiver : felt,
     amount : felt,
     operator : felt,
+    nonce : felt
   ):
     let (is_open) = _is_open.read()
     assert is_open = 1
@@ -304,15 +307,18 @@ func initiate_wormhole{
     assert payload[3] = receiver
     assert payload[4] = operator
     assert payload[5] = amount
-    # assert payload[6] = nonce
-    # assert payload[7] = timestamp
+    assert payload[6] = nonce
+    let (timestamp) = get_block_timestamp()
+    assert payload[7] = timestamp
 
     WormholeInitialized.emit(
       source_domain=domain,
       target_domain=target_domain,
       receiver=receiver,
       operator=operator,
-      amount=amount)
+      amount=amount,
+      nonce=nonce,
+      timestamp=timestamp)
 
     let (hash) = hash_message(payload)
     _wormhole_hashes.write(hash, 1)
@@ -346,6 +352,8 @@ func finalize_register_wormhole{
     receiver : felt,
     amount : felt,
     operator : felt,
+    nonce : felt,
+    timestamp : felt
   ):
     let (is_open) = _is_open.read()
     assert is_open = 1
@@ -358,8 +366,8 @@ func finalize_register_wormhole{
     assert payload[3] = receiver
     assert payload[4] = operator
     assert payload[5] = amount
-    # assert payload[6] = nonce
-    # assert payload[7] = timestamp
+    assert payload[6] = nonce
+    assert payload[7] = timestamp
 
     let (hash) = hash_message(payload)
     let (hash_exists) = _wormhole_hashes.read(hash)
@@ -367,7 +375,7 @@ func finalize_register_wormhole{
     _wormhole_hashes.write(hash, 0)
 
     let (wormhole_bridge) = _wormhole_bridge.read()
-    send_message_to_l1(wormhole_bridge, 6, payload)
+    send_message_to_l1(wormhole_bridge, 8, payload)
 
     return ()
 end

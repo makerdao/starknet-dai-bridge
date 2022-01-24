@@ -72,8 +72,8 @@ contract L1DAIWormholeBridge {
     payload[3] = uint256(wormhole.receiver); // bytes32 -> uint256
     payload[4] = uint256(wormhole.operator); // bytes32 -> uint256
     payload[5] = uint256(wormhole.amount); // uint128 -> uint256
-    // payload[6] = uint256(wormhole.nonce); uint80 -> uint256
-    // payload[7] = uint256(wormhole.timestamp); uint48 -> uint256
+    payload[6] = uint256(wormhole.nonce); // uint80 -> uint256
+    payload[7] = uint256(wormhole.timestamp); // uint48 -> uint256
 
     StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeBridge, payload);
     
