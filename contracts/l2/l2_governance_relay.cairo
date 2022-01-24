@@ -51,7 +51,7 @@ func relay{
     let (l1_governance_relay) = _l1_governance_relay.read()
     assert l1_governance_relay = from_address
 
-    ISpell.delegate_execute()
+    ISpell.delegate_execute(spell)
 
     return ()
 end
