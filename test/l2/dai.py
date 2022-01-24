@@ -115,6 +115,18 @@ def to_uint(a):
     return a[0] + (a[1] << 128)
 
 
+def check_transfer_event(tx, values):
+    event = tx.main_call_events[0]
+    assert len(event) == 3
+    assert event == values
+
+
+def check_approval_event(tx, values):
+    event = tx.main_call_events[0]
+    assert len(event) == 3
+    assert event == values
+
+
 @pytest.fixture
 async def check_balances(
     dai: StarknetContract,
@@ -215,10 +227,10 @@ async def test_transfer(
             user2.contract_address,
             to_split_uint(10),
         ).invoke(user1.contract_address)
-    assert tx.main_call_events[0] == (
-            user1.contract_address,
-            user2.contract_address,
-            to_split_uint(10))
+    check_transfer_event(tx, (
+        user1.contract_address,
+        user2.contract_address,
+        to_split_uint(10)))
 
     await check_balances(
         user1_balance-10,
@@ -235,10 +247,10 @@ async def test_transfer_to_yourself(
             user1.contract_address,
             to_split_uint(10),
         ).invoke(user1.contract_address)
-    assert tx.main_call_events[0] == (
-            user1.contract_address,
-            user1.contract_address,
-            to_split_uint(10))
+    check_transfer_event(tx, (
+        user1.contract_address,
+        user1.contract_address,
+        to_split_uint(10)))
 
     await check_balances(user1_balance, user2_balance)
 
@@ -257,10 +269,10 @@ async def test_transfer_from(
         user1.contract_address,
         user2.contract_address,
         to_split_uint(10)).invoke(user3.contract_address)
-    assert tx.main_call_events[0] == (
-            user1.contract_address,
-            user2.contract_address,
-            to_split_uint(10))
+    check_approval_event(tx, (
+        user1.contract_address,
+        user2.contract_address,
+        to_split_uint(10)))
 
     await check_balances(
         user1_balance-10,
@@ -276,10 +288,10 @@ async def test_transfer_to_yourself_using_transfer_from(
         user1.contract_address,
         user1.contract_address,
         to_split_uint(10)).invoke(user1.contract_address)
-    assert tx.main_call_events[0] == (
-            user1.contract_address,
-            user1.contract_address,
-            to_split_uint(10))
+    check_transfer_event(tx, (
+        user1.contract_address,
+        user1.contract_address,
+        to_split_uint(10)))
 
 
 @pytest.mark.asyncio
@@ -419,10 +431,10 @@ async def test_approve(
     tx = await dai.approve(
             user2.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
-    assert tx.main_call_events[0] == (
-            user1.contract_address,
-            user2.contract_address,
-            to_split_uint(10))
+    check_approval_event(tx, (
+        user1.contract_address,
+        user2.contract_address,
+        to_split_uint(10)))
 
     allowance = await dai.allowance(
         user1.contract_address,
@@ -438,17 +450,17 @@ async def test_can_burn_other_if_approved(
     user2: StarknetContract,
     check_balances,
 ):
-    tx = await dai.approve(
+    await dai.approve(
             user2.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
-    assert tx.main_call_events[0] == (
-            user1.contract_address,
-            user2.contract_address,
-            to_split_uint(10))
 
-    await dai.burn(
+    tx = await dai.burn(
             user1.contract_address,
             to_split_uint(10)).invoke(user2.contract_address)
+    check_transfer_event(tx, (
+        user2.contract_address,
+        0,
+        to_split_uint(10)))
 
     await check_balances(user1_balance-10, user2_balance)
 
@@ -576,9 +588,10 @@ async def test_burn_using_burn_and_allowance(
             user2.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
 
-    await dai.burn(
+    tx = await dai.burn(
             user1.contract_address,
             to_split_uint(10)).invoke(user2.contract_address)
+    check_transfer_event(tx, (user1.contract_address, 0, to_split_uint(10)))
 
     await check_balances(user1_balance-10, user2_balance)
 
@@ -688,11 +701,15 @@ async def test_does_not_decrease_allowance_using_transfer_from(
 ):
     await dai.approve(
             user3.contract_address, MAX).invoke(user1.contract_address)
-    await dai.transferFrom(
+    tx = await dai.transferFrom(
             user1.contract_address,
             user2.contract_address,
             to_split_uint(10),
         ).invoke(user3.contract_address)
+    check_transfer_event(tx, (
+        user1.contract_address,
+        user2.contract_address,
+        to_split_uint(10)))
 
     allowance = await dai.allowance(
         user1.contract_address,
@@ -710,9 +727,13 @@ async def test_does_not_decrease_allowance_using_burn(
 ):
     await dai.approve(
             user3.contract_address, MAX).invoke(user1.contract_address)
-    await dai.burn(
+    tx = await dai.burn(
             user1.contract_address,
             to_split_uint(10)).invoke(user3.contract_address)
+    check_transfer_event(tx, (
+        user1.contract_address,
+        0,
+        to_split_uint(10)))
 
     allowance = await dai.allowance(
         user1.contract_address,
