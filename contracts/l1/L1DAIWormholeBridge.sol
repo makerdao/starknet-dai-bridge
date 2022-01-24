@@ -65,7 +65,7 @@ contract L1DAIWormholeBridge {
   function finalizeRegisterWormhole(WormholeGUID calldata wormhole)
     external
   {
-    uint256[] memory payload = new uint256[](6);
+    uint256[] memory payload = new uint256[](8);
     payload[0] = HANDLE_REGISTER_WORMHOLE;
     payload[1] = uint256(wormhole.sourceDomain); // bytes32 -> uint256
     payload[2] = uint256(wormhole.targetDomain); // bytes32 -> uint256

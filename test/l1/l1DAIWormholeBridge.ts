@@ -41,7 +41,7 @@ describe("L1DAIWormholeBridge", () => {
   it("has correct public interface", async () => {
     await assertPublicMutableMethods("L1DAIWormholeBridge", [
       "finalizeFlush(bytes32,uint256)",
-      "finalizeRegisterWormhole((bytes32,bytes32,bytes32,bytes32,uint128))",
+      "finalizeRegisterWormhole((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))",
     ]);
   });
 
@@ -107,6 +107,8 @@ describe("L1DAIWormholeBridge", () => {
         `0x${l1Alice.address.slice(2).padStart(64, "0")}`, // receiver
         `0x${l1Bob.address.slice(2).padStart(64, "0")}`, // operator
         AMOUNT, // amount
+        0, // nonce
+        0, // timestamp
       ];
       await l1WormholeBridge.finalizeRegisterWormhole(wormhole);
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
