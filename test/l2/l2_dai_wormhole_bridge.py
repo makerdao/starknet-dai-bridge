@@ -139,6 +139,18 @@ async def check_balances(
     return internal_check_balances
 
 
+def check_wormhole_initialized_event(tx, values):
+    event = tx.main_call_events[0]
+    assert len(event) == 5
+    assert event == values
+
+
+def check_flushed_event(tx, values):
+    event = tx.main_call_events[0]
+    assert len(event) == 2
+    assert event == values
+
+
 @pytest.fixture
 def event_loop():
     return asyncio.get_event_loop()
@@ -245,13 +257,12 @@ async def test_burns_dai_marks_it_for_future_flush(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    assert tx.main_call_events[0] == (
+    check_wormhole_initialized_event(tx, (
         DOMAIN,
         TARGET_DOMAIN,
         user1.contract_address,
         user1.contract_address,
-        WORMHOLE_AMOUNT
-    )
+        WORMHOLE_AMOUNT))
 
     wormhole = [
         DOMAIN, # sourceDomain
@@ -290,13 +301,12 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    assert tx.main_call_events[0] == (
+    check_wormhole_initialized_event(tx, (
         DOMAIN,
         TARGET_DOMAIN,
         user1.contract_address,
         user1.contract_address,
-        WORMHOLE_AMOUNT
-    )
+        WORMHOLE_AMOUNT))
     await l2_wormhole_bridge.finalize_register_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
@@ -397,7 +407,7 @@ async def test_flushes_batched_dai(
     tx = await l2_wormhole_bridge.flush(
             TARGET_DOMAIN,
         ).invoke(user1.contract_address)
-    assert tx.main_call_events[0] == (TARGET_DOMAIN, to_split_uint(WORMHOLE_AMOUNT * 2))
+    check_flushed_event(tx, (TARGET_DOMAIN, to_split_uint(WORMHOLE_AMOUNT * 2)))
 
     payload = [
         FINALIZE_FLUSH,
