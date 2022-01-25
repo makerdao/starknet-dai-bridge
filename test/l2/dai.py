@@ -271,7 +271,7 @@ async def test_transfer_from(
         user1.contract_address,
         user2.contract_address,
         to_split_uint(10)).invoke(user3.contract_address)
-    check_approval_event(tx, (
+    check_transfer_event(tx, (
         user1.contract_address,
         user2.contract_address,
         to_split_uint(10)))
