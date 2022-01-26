@@ -28,7 +28,6 @@ from starkware.cairo.common.uint256 import (
   uint256_le,
   uint256_check
 )
-from contracts.l2.utils import uint256_add_safe
 
 const ALL_ONES = 2 ** 128 - 1
 
@@ -139,7 +138,8 @@ func mint{
 
     # update total supply
     let (total) = _total_supply.read()
-    let (new_total) = uint256_add_safe(total, amount)
+    let (new_total, carry) = uint256_add(total, amount)
+    assert carry = 0
     _total_supply.write(new_total)
 
     return ()
@@ -283,7 +283,8 @@ func increaseAllowance{
     uint256_check(amount)
     let (local caller) = get_caller_address()
     let (allowance) = _allowances.read(caller, spender)
-    let (new_allowance) = uint256_add_safe(amount, allowance)
+    let (new_allowance, carry) = uint256_add(amount, allowance)
+    assert carry = 0
     _approve(caller, spender, new_allowance)
     return (res=1)
 end
@@ -344,7 +345,8 @@ func _transfer{
 
     # increase recipient balance
     let (recipient_balance) = _balances.read(recipient)
-    let (sum) = uint256_add_safe(recipient_balance, amount)
+    let (sum, carry) = uint256_add(recipient_balance, amount)
+    assert carry = 0
     _balances.write(recipient, sum)
 
     return ()
