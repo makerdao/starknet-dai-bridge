@@ -28,7 +28,6 @@ Bridge provides two main functions: `deposit` and `withdraw`. On L1 `deposit`, b
 
 ### Starknet DAI
 Since StarkNet execution environment is significantly different than EVM, Starknet DAI is not a one to one copy of L1 DAI. Here are the diferences:
-* snake case method names for compatibility with Cairo conventions
 * [`uint256`](https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/uint256.cairo) to represent balances, for compatibility with L1
 * no permit function - StarkNet account abstraction should be used for UX optimizations
 * `increase_allowance`, `decrease_allowance` - extra methods to prevent approval front running
@@ -81,11 +80,10 @@ In the case that a user believes they are censored, there is a `forceWithdraw` h
 ##### Evacuation procedure
 To reimburse L2 DAI users on L1, the last valid L2 state of DAI balances needs to be calculated. Since at that moment rollup data might be unavailable, L2 state needs to be reconstructed from state diffs available on L1. It is important to note that there is no general way to map StarkNet addresses to Ethereum addresses and that only L2 addresses that registered an L1 reimburse address in the L2 registry contract will be included in the evacuation procedure. What is more there might be pending deposits that have not reached L2. Those should also be included in evacuation and returned based on state of L1toL2 message queue.
 
+#### Deposit censorship
+If `DEPOSIT` message for some reason is not processed by the sequencer, user funds will be stucked in the L1 escrow. Since this situation is detectable from data available on L1(L1 to L2 message queue is in the L1 StarkNet contract) Governance Assisted Escape Hatch described above will work. Yet there is another solution to this very problem that is fully permissionless. If [L1 to L2 message cancelation](https://community.starknet.io/t/l1-to-l2-message-cancellation/212) mechanism is implemented L1DAIBridge might provide a deposit cancelation functionality, that would cancel deposit message and return funds to the user.
+
 ### Configuration mistake
 Bridge consists of several interacting contracts and it is possible to misconfigure the construction which will render bridge non functional. There are at least two ways to do that:
 * remove allowance from `L1DAIBridge` to `L1Escrow` - withdrawals won't be finalized on L1, easy to fix by resetting the allowance and repeating `finalizeWithdrawal` operation
-* remove authorization to mint L2 DAI from `l2_dai_bridge` - deposits won't be finalized on L2, probably possible to fix with the help from the sequencer: first reauthorize bridge to mint, then ask sequencer to retry `finalize_deposit` method. Retrying of `finalize_deposit` should be possible as reverted transactions are not included in the state update.
-
-## Missing parts
-StarkNet is still under active development and there are missing features for which there are no good workarounds:
-* no events - no events are emitted whatsoever, ux will suffer for certain applications
+* remove authorization to mint L2 DAI from `l2_dai_bridge` - deposits won't be finalized on L2, probably possible to fix either with planned [L1 to L2 message cancelation](https://community.starknet.io/t/l1-to-l2-message-cancellation/212) or with the help from the sequencer: first reauthorize bridge to mint, then ask sequencer to retry `finalize_deposit` method. Retrying of `finalize_deposit` should be possible as reverted transactions are not included in the state update.
