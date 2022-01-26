@@ -154,8 +154,8 @@ func mint{
 
     # update total supply
     let (total) = _total_supply.read()
-    let (new_total, total_carry) = uint256_add(total, amount)
-    assert total_carry = 0
+    let (new_total, carry) = uint256_add(total, amount)
+    assert carry = 0
     _total_supply.write(new_total)
 
     return ()

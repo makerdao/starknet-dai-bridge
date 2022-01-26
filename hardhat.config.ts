@@ -53,6 +53,9 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     goerli: getChainConfig("goerli"),
+    localhost: {
+      url: "http://127.0.0.1:8545",
+    },
     fork: {
       url: "http://127.0.0.1:8545",
     },
