@@ -8,7 +8,10 @@ import {
   waitForTx,
 } from "@makerdao/hardhat-utils";
 import { getOptionalEnv } from "@makerdao/hardhat-utils/dist/env";
-import {CHECK_STATUS_TIMEOUT, DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
+import {
+  CHECK_STATUS_TIMEOUT,
+  DEFAULT_STARKNET_NETWORK,
+} from "@shardlabs/starknet-hardhat-plugin/dist/constants";
 import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
 import { expect } from "chai";
 import { writeFileSync } from "fs";
@@ -314,8 +317,8 @@ async function deployL2(
   calldata: any = {},
   saveName?: string
 ) {
-  // @ts-ignore
-  CHECK_STATUS_TIMEOUT = 5000
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  CHECK_STATUS_TIMEOUT = 5000;
 
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
   const contractFactory = await hre.starknet.getContractFactory(name);
@@ -343,13 +346,13 @@ async function deployL1(
   save(saveName || name, contract, hre.network.name, blockNumber);
 
   console.log(`Waiting for deployment to complete`);
-  await contract.deployTransaction.wait()
+  await contract.deployTransaction.wait();
 
   console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
   console.log(
-    `To verify: npx hardhat verify --network ${network} ${contract.address} ${calldata
-      .filter((a: any) => !isEmpty(a))
-      .join(" ")}`
+    `To verify: npx hardhat verify --network ${network} ${
+      contract.address
+    } ${calldata.filter((a: any) => !isEmpty(a)).join(" ")}`
   );
   await contract.deployed();
   return contract;
