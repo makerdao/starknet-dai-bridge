@@ -82,6 +82,7 @@ contract L1DAIBridge {
     uint256 public immutable l2DaiBridge;
 
     uint256 public ceiling = 0;
+    uint256 public maxDeposit = type(uint256).max;
 
     uint256 constant HANDLE_WITHDRAW = 0;
 
@@ -100,6 +101,7 @@ contract L1DAIBridge {
         1137729855293860737061629600728503767337326808607526258057644140918272132445;
 
     event LogCeiling(uint256 ceiling);
+    event LogMaxDeposit(uint256 maxDeposit);
     event LogDeposit(address indexed l1Sender, uint256 amount, uint256 l2Recipient);
     event LogWithdrawal(address indexed l1Recipient, uint256 amount);
     event LogForceWithdrawal(
@@ -130,6 +132,11 @@ contract L1DAIBridge {
         emit LogCeiling(_ceiling);
     }
 
+    function setMaxDeposit(uint256 _maxDeposit) external auth whenOpen {
+        maxDeposit = _maxDeposit;
+        emit LogMaxDeposit(_maxDeposit);
+    }
+
     // slither-disable-next-line similar-names
     function deposit(
         uint256 amount,
@@ -138,6 +145,8 @@ contract L1DAIBridge {
         emit LogDeposit(msg.sender, amount, l2Recipient);
 
         require(l2Recipient != 0 && l2Recipient != l2Dai && l2Recipient < SN_PRIME, "L1DAIBridge/invalid-address");
+
+        require(amount <= maxDeposit, "L1DAIBridge/invalid-amount");
 
         TokenLike(dai).transferFrom(msg.sender, escrow, amount);
 
