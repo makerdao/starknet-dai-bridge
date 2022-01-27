@@ -77,7 +77,7 @@ contract L1DAIWormholeBridge {
 
     StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeBridge, payload);
     
-    wormholeRouter.requestMint(wormhole, 0);
+    wormholeRouter.requestMint(wormhole, 0, 0);
   }
 
   function toSplitUint(uint256 value) internal pure returns (uint256, uint256) {

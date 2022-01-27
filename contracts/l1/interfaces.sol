@@ -45,7 +45,11 @@ interface StarkNetLike {
 }
 
 interface WormholeRouter {
-  function requestMint(WormholeGUID calldata wormholeGUID, uint256 maxFee) external;
+  function requestMint(
+      WormholeGUID calldata wormholeGUID,
+      uint256 maxFeePercentage,
+      uint256 operatorFee
+  ) external;
 
   function settle(bytes32 targetDomain, uint256 batchedDaiToFlush) external;
 }
