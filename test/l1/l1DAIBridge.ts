@@ -48,6 +48,7 @@ describe("L1DAIBridge", function () {
       "withdraw(uint256,address)",
       "forceWithdrawal(uint256,uint256)",
       "setCeiling(uint256)",
+      "setMaxDeposit(uint256)"
     ]);
   });
   describe("deposit", function () {
