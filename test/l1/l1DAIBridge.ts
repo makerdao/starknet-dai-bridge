@@ -459,9 +459,9 @@ describe("L1DAIBridge", function () {
       const { l1Alice, l1Bridge } = await setupTest();
 
       expect(await l1Bridge.maxDeposit()).to.be.eq(MAX_UINT256);
-      await expect(l1Bridge.connect(l1Alice).setMaxDeposit(1)).to.be.revertedWith(
-        "L1DAIBridge/not-authorized"
-      );
+      await expect(
+        l1Bridge.connect(l1Alice).setMaxDeposit(1)
+      ).to.be.revertedWith("L1DAIBridge/not-authorized");
     });
   });
   describe("forceWithdrawal", function () {
