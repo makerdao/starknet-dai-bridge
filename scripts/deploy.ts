@@ -205,7 +205,7 @@ export async function deployBridge(): Promise<void> {
     "futureL1DAIBridgeAddress != l1DAIBridge.address"
   );
 
-  const MAX = BigInt(2 ** 256) - BigInt(1);
+  const MAX = hre.ethers.constants.MaxUint256
   await l1Escrow.approve(DAIAddress, l1DAIBridge.address, MAX);
 
   const L1_PAUSE_PROXY_ADDRESS = getRequiredEnv(

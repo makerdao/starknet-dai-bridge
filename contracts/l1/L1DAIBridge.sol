@@ -146,7 +146,7 @@ contract L1DAIBridge {
 
         require(l2Recipient != 0 && l2Recipient != l2Dai && l2Recipient < SN_PRIME, "L1DAIBridge/invalid-address");
 
-        require(amount <= maxDeposit, "L1DAIBridge/invalid-amount");
+        require(amount <= maxDeposit, "L1DAIBridge/above-max-deposit");
 
         TokenLike(dai).transferFrom(msg.sender, escrow, amount);
 
