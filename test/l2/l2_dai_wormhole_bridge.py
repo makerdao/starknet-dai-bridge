@@ -289,6 +289,41 @@ async def test_burns_dai_marks_it_for_future_flush(
 
 
 @pytest.mark.asyncio
+async def test_nonce_management(
+    starknet: Starknet,
+    l2_wormhole_bridge: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    check_balances,
+):
+    await dai.approve(l2_wormhole_bridge.contract_address, to_split_uint(WORMHOLE_AMOUNT*2)).invoke(user1.contract_address)
+    tx = await l2_wormhole_bridge.initiate_wormhole(
+            TARGET_DOMAIN,
+            user1.contract_address,
+            WORMHOLE_AMOUNT,
+            user1.contract_address).invoke(user1.contract_address)
+    check_wormhole_initialized_event(tx, (
+        DOMAIN,
+        TARGET_DOMAIN,
+        user1.contract_address,
+        user1.contract_address,
+        WORMHOLE_AMOUNT,
+        0))
+    tx = await l2_wormhole_bridge.initiate_wormhole(
+            TARGET_DOMAIN,
+            user1.contract_address,
+            WORMHOLE_AMOUNT,
+            user1.contract_address).invoke(user1.contract_address)
+    check_wormhole_initialized_event(tx, (
+        DOMAIN,
+        TARGET_DOMAIN,
+        user1.contract_address,
+        user1.contract_address,
+        WORMHOLE_AMOUNT,
+        1))
+
+
+@pytest.mark.asyncio
 async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     starknet: Starknet,
     l2_wormhole_bridge: StarknetContract,

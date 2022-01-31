@@ -344,6 +344,7 @@ func initiate_wormhole{
       nonce=nonce,
       timestamp=timestamp)
 
+    update_nonce()
     let (hash) = hash_message(payload)
     _wormhole_hashes.write(hash, 1)
 
