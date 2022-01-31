@@ -5,6 +5,7 @@ import asyncio
 from starkware.starknet.testing.starknet import Starknet
 from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
+from starkware.starknet.definitions.error_codes import StarknetErrorCode
 
 
 L1_ADDRESS = 0x1
@@ -232,12 +233,12 @@ async def test_initiate_withdraw(
 
 @pytest.mark.asyncio
 async def test_close_should_fail_when_not_authorized(
-    dai: StarknetContract,
+    l2_bridge: StarknetContract,
     user1: StarknetContract,
 ):
-    with pytest.raises(Exception):
-        await dai.close().invoke(user1.contract_address)
-
+    with pytest.raises(StarkException) as err:
+        await l2_bridge.close().invoke(user1.contract_address)
+    assert "l2_dai_bridge/not-authorized" in str(err.value)
 
 @pytest.mark.asyncio
 async def test_initiate_withdraw_should_fail_when_closed(
@@ -255,10 +256,11 @@ async def test_initiate_withdraw_should_fail_when_closed(
 
     await l2_bridge.close().invoke(auth_user.contract_address)
 
-    with pytest.raises(Exception):
+    with pytest.raises(StarkException) as err:
         await l2_bridge.initiate_withdraw(
                 user2.contract_address,
                 to_split_uint(10)).invoke(user1.contract_address)
+    assert "l2_dai_bridge/bridge-closed" in str(err.value)
 
     with pytest.raises(AssertionError):
         payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
@@ -273,13 +275,13 @@ async def test_initiate_withdraw_should_fail_when_closed(
 async def test_initiate_withdraw_insufficient_funds(
     starknet: Starknet,
     l2_bridge: StarknetContract,
-    user1: StarknetContract,
-    user2: StarknetContract,
+    user3: StarknetContract,
 ):
-    with pytest.raises(StarkException):
+    with pytest.raises(StarkException) as err:
         await l2_bridge.initiate_withdraw(
-                user2.contract_address,
-                to_split_uint(10)).invoke(user1.contract_address)
+                L1_ADDRESS,
+                to_split_uint(10)).invoke(user3.contract_address)
+    assert "dai/insufficient-balance" in str(err.value)
 
     with pytest.raises(AssertionError):
         payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
@@ -303,10 +305,11 @@ async def test_withdraw_invalid_l1_address(
             l2_bridge.contract_address,
             to_split_uint(10),
         ).invoke(user1.contract_address)
-    with pytest.raises(StarkException):
+    with pytest.raises(StarkException) as err:
         await l2_bridge.initiate_withdraw(
                 INVALID_L1_ADDRESS,
                 to_split_uint(10)).invoke(user1.contract_address)
+    assert "l2_dai_bridge/invalid-l1-address" in str(err.value)
 
     payload = [FINALIZE_WITHDRAW, INVALID_L1_ADDRESS, *to_split_uint(10)]
     with pytest.raises(AssertionError):

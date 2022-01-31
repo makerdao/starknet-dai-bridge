@@ -135,7 +135,9 @@ func auth{
   }():
     let (caller) = get_caller_address()
     let (ward) = _wards.read(caller)
-    assert ward = 1
+    with_attr error_message("l2_dai_bridge/not-authorized"):
+      assert ward = 1
+    end
     return ()
 end
 
@@ -203,7 +205,9 @@ func initiate_withdraw{
     range_check_ptr
   }(l1_recipient : felt, amount : Uint256):
     let (is_open) = _is_open.read()
-    assert is_open = 1
+    with_attr error_message("l2_dai_bridge/bridge-closed"):
+      assert is_open = 1
+    end
 
     let (dai) = _dai.read()
     let (caller) = get_caller_address()
@@ -230,7 +234,9 @@ func handle_deposit{
   ):
     # check l1 message sender
     let (bridge) = _bridge.read()
-    assert from_address = bridge
+    with_attr error_message("l2_dai_bridge/message-not-from-bridge"):
+      assert from_address = bridge
+    end
 
     let amount = Uint256(low=amount_low, high=amount_high)
     let (dai) = _dai.read()
@@ -259,7 +265,9 @@ func handle_force_withdrawal{
 
     # check l1 message sender
     let (bridge) = _bridge.read()
-    assert from_address = bridge
+    with_attr error_message("l2_dai_bridge/message-not-from-bridge"):
+      assert from_address = bridge
+    end
 
     # check l1 recipent address
     let (registry) = _registry.read()
@@ -314,6 +322,8 @@ func send_handle_withdraw{
 end
 
 func assert_l1_address{range_check_ptr}(l1_address : felt):
-    assert_le_felt(l1_address, MAX_L1_ADDRESS)
+    with_attr error_message("l2_dai_bridge/invalid-l1-address"):
+      assert_le_felt(l1_address, MAX_L1_ADDRESS)
+    end
     return ()
 end
