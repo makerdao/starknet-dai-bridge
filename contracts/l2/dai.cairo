@@ -27,7 +27,6 @@ from starkware.cairo.common.uint256 import (
   uint256_le,
   uint256_check
 )
-from contracts.l2.utils import uint256_add_safe
 
 const ALL_ONES = 2 ** 128 - 1
 
@@ -139,12 +138,16 @@ func mint{
     auth()
 
     # check valid recipient
-    assert_not_zero(account)
-    let (contract_address) = get_contract_address()
-    assert_not_equal(account, contract_address)
+    with_attr error_message("dai/invalid-recipient"):
+      assert_not_zero(account)
+      let (contract_address) = get_contract_address()
+      assert_not_equal(account, contract_address)
+    end
 
     # check valid amount
-    uint256_check(amount)
+    with_attr error_message("dai/invalid-amount"):
+      uint256_check(amount)
+    end
 
     # update balance
     let (balance) = _balances.read(account)
@@ -175,13 +178,17 @@ func burn{
     let (local caller) = get_caller_address()
 
     # check valid amount
-    uint256_check(amount)
+    with_attr error_message("dai/invalid-amount"):
+      uint256_check(amount)
+    end
 
     # update balance
     let (local balance) = _balances.read(account)
 
     let (is_le) = uint256_le(amount, balance)
-    assert is_le = 1
+    with_attr error_message("dai/insufficient-balance"):
+      assert is_le = 1
+    end
     let (new_balance) = uint256_sub(balance, amount)
     _balances.write(account, new_balance)
 
@@ -200,7 +207,9 @@ func burn{
       let (eq) = uint256_eq(allowance, MAX)
       if eq == 0:
         let (is_le) = uint256_le(amount, allowance)
-        assert is_le = 1
+        with_attr error_message("dai/insufficient-allowance"):
+          assert is_le = 1
+        end
         let (new_allowance) = uint256_sub(allowance, amount)
         _allowances.write(account, caller, new_allowance)
         return ()
@@ -284,7 +293,9 @@ func approve{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(spender: felt, amount : Uint256) -> (res : felt):
-    uint256_check(amount)
+    with_attr error_message("dai/invalid-amount"):
+      uint256_check(amount)
+    end
     let (caller) = get_caller_address()
     _approve(caller, spender, amount)
 
@@ -300,7 +311,9 @@ func increaseAllowance{
   }(spender : felt, amount : Uint256) -> (res : felt):
     alloc_locals
 
-    uint256_check(amount)
+    with_attr error_message("dai/invalid-amount"):
+      uint256_check(amount)
+    end
     let (local caller) = get_caller_address()
     let (allowance) = _allowances.read(caller, spender)
     let (new_allowance) = uint256_add_safe(amount, allowance)
@@ -317,11 +330,15 @@ func decreaseAllowance{
   }(spender : felt, amount : Uint256) -> (res : felt):
     alloc_locals
 
-    uint256_check(amount)
+    with_attr error_message("dai/invalid-amount"):
+      uint256_check(amount)
+    end
     let (local caller) = get_caller_address()
     let (local allowance) = _allowances.read(caller, spender)
     let (is_le) = uint256_le(amount, allowance)
-    assert is_le = 1
+    with_attr error_message("dai/insufficient-allowance"):
+      assert is_le = 1
+    end
     let (new_allowance) = uint256_sub(allowance, amount)
     _approve(caller, spender, new_allowance)
     return (res=1)
@@ -335,7 +352,9 @@ func auth{
     let (caller) = get_caller_address()
 
     let (ward) = _wards.read(caller)
-    assert ward = 1
+    with_attr error_message("dai/not-authorized"):
+      assert ward = 1
+    end
 
     return ()
 end
@@ -349,16 +368,22 @@ func _transfer{
     alloc_locals
 
     # check valid amount
-    uint256_check(amount)
+    with_attr error_message("dai/invalid-amount"):
+      uint256_check(amount)
+    end
 
-    assert_not_zero(recipient)
-    let (contract_address) = get_contract_address()
-    assert_not_equal(recipient, contract_address)
+    with_attr error_message("dai/invalid-recipient"):
+      assert_not_zero(recipient)
+      let (contract_address) = get_contract_address()
+      assert_not_equal(recipient, contract_address)
+    end
 
     # decrease sender balance
     let (local sender_balance) = _balances.read(sender)
     let (is_le) = uint256_le(amount, sender_balance)
-    assert is_le = 1
+    with_attr error_message("dai/insufficient-balance"):
+      assert is_le = 1
+    end
     let (new_balance) = uint256_sub(sender_balance, amount)
     _balances.write(sender, new_balance)
 
@@ -377,8 +402,22 @@ func _approve{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(caller: felt, spender: felt, amount: Uint256):
-    assert_not_zero(spender)
+    with_attr error_message("dai/invalid-recipient"):
+      assert_not_zero(spender)
+    end
     _allowances.write(caller, spender, amount)
     Approval.emit(caller, spender, amount)
     return ()
+end
+
+func uint256_add_safe{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(a : Uint256, b : Uint256) -> (sum : Uint256):
+    let (sum, carry) = uint256_add(a, b)
+    with_attr error_message("dai/uint256-overflow"):
+      assert carry = 0
+    end
+    return (sum)
 end
