@@ -238,8 +238,9 @@ async def test_reverts_when_not_called_by_owner(
     l2_wormhole_bridge: StarknetContract,
     user1: StarknetContract,
 ):
-    with pytest.raises(StarkException):
+    with pytest.raises(StarkException) as err:
         await l2_wormhole_bridge.close().invoke(user1.contract_address)
+    assert "l2_dai_wormhole_bridge/not-authorized" in str(err.value)
 
 
 ## initiateWormhole()
@@ -256,25 +257,16 @@ async def test_burns_dai_marks_it_for_future_flush(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-<<<<<<< HEAD
-            user1.contract_address).invoke(user1.contract_address)
-    check_wormhole_initialized_event(tx, (
-=======
             user1.contract_address,
             0).invoke(user1.contract_address)
     assert tx.main_call_events[0][:6] == (
->>>>>>> Add timestamps or nonce
         DOMAIN,
         TARGET_DOMAIN,
         user1.contract_address,
         user1.contract_address,
-<<<<<<< HEAD
-        WORMHOLE_AMOUNT))
-=======
         WORMHOLE_AMOUNT,
         0
     )
->>>>>>> Add timestamps or nonce
 
     wormhole = [
         DOMAIN, # sourceDomain
@@ -347,21 +339,13 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-<<<<<<< HEAD
-            user1.contract_address).invoke(user1.contract_address)
-    check_wormhole_initialized_event(tx, (
-=======
             user1.contract_address,
             0).invoke(user1.contract_address)
     assert tx.main_call_events[0][:6] == (
->>>>>>> Add timestamps or nonce
         DOMAIN,
         TARGET_DOMAIN,
         user1.contract_address,
         user1.contract_address,
-<<<<<<< HEAD
-        WORMHOLE_AMOUNT))
-=======
         WORMHOLE_AMOUNT,
         0
     )
@@ -403,13 +387,15 @@ async def test_reverts_when_insufficient_funds(
     l2_wormhole_bridge: StarknetContract,
     user2: StarknetContract,
 ):
-    with pytest.raises(StarkException):
+    with pytest.raises(StarkException) as err:
         await l2_wormhole_bridge.initiate_wormhole(
                 TARGET_DOMAIN,
                 user2.contract_address,
                 WORMHOLE_AMOUNT,
                 user2.contract_address,
                 0).invoke(user2.contract_address)
+                user2.contract_address).invoke(user2.contract_address)
+    assert "dai/insufficient-balance" in str(err.value)
 
 
 @pytest.mark.asyncio
@@ -422,13 +408,14 @@ async def test_reverts_when_bridge_is_closed(
 ):
     await l2_wormhole_bridge.close().invoke(auth_user.contract_address)
 
-    with pytest.raises(StarkException):
+    with pytest.raises(StarkException) as err:
         await l2_wormhole_bridge.initiate_wormhole(
                 TARGET_DOMAIN,
                 user2.contract_address,
                 WORMHOLE_AMOUNT,
                 user2.contract_address,
                 0).invoke(user1.contract_address)
+    assert "l2_dai_wormhole_bridge/bridge-closed" in str(err.value)
 
 
 @pytest.mark.asyncio
@@ -438,7 +425,7 @@ async def test_reverts_when_domain_is_not_whitelisted(
     user1: StarknetContract,
     user2: StarknetContract,
 ):
-    with pytest.raises(StarkException):
+    with pytest.raises(StarkException) as err:
         await l2_wormhole_bridge.initiate_wormhole(
                 INVALID_DOMAIN,
                 user2.contract_address,
@@ -497,5 +484,6 @@ async def test_cannot_flush_zero_debt(
     batched_dai_to_flush = await l2_wormhole_bridge.batched_dai_to_flush(TARGET_DOMAIN).call()
     assert batched_dai_to_flush.result == (to_split_uint(0),)
 
-    with pytest.raises(StarkException):
+    with pytest.raises(StarkException) as err:
         await l2_wormhole_bridge.flush(TARGET_DOMAIN).invoke(user1.contract_address)
+    assert "l2_dai_wormhole_bridge/value-is-zero" in str(err.value)
