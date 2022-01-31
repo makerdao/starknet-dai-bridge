@@ -194,14 +194,14 @@ func auth{
     return ()
 end
 
-func update_nonce{
+func read_and_update_nonce{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }():
+  }() -> (res : felt):
     let (nonce) = _nonce.read()
     _nonce.write(nonce+1)
-    return ()
+    return (res=nonce)
 end
 
 @external
@@ -322,7 +322,7 @@ func initiate_wormhole{
     Mintable.burn(dai, caller, amount_uint256)
 
     let (domain) = _domain.read()
-    let (nonce) = _nonce.read()
+    let (nonce) = read_and_update_nonce()
 
     let (payload) = alloc()
     assert payload[0] = FINALIZE_REGISTER_WORMHOLE
@@ -344,7 +344,6 @@ func initiate_wormhole{
       nonce=nonce,
       timestamp=timestamp)
 
-    update_nonce()
     let (hash) = hash_message(payload)
     _wormhole_hashes.write(hash, 1)
 
