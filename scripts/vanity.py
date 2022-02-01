@@ -8,6 +8,7 @@ import multiprocessing as mp
 import random
 import argparse
 import datetime
+import sys
 
 def build_salt_to_address(contract, calldata, caller):
     return lambda salt: calculate_contract_address(
@@ -19,12 +20,14 @@ def main():
     parser = argparse.ArgumentParser(description='Find salt for DAI deplyment that results with contract address with prefix = da1')
     parser.add_argument('--ward', type=lambda x: int(x, 0))
     parser.add_argument('--start_from', type=int, default=1)
+    parser.add_argument('--seed', type=int, default=random.randrange(sys.maxsize))
 
     start_from = parser.parse_args().start_from
 
     ward = parser.parse_args().ward
 
-    random.seed(2718281)
+    seed = parser.parse_args().seed
+    random.seed(seed)
 
     contract_schema = marshmallow_dataclass.class_schema(ContractDefinition)()
 
@@ -45,6 +48,7 @@ def main():
 
     print('Searching for vanity address...')
     print('with calldata =', calldata)
+    print('seed:', seed)
     print('starting from:', i)
 
     prefixes = set()

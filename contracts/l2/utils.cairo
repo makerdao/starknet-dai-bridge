@@ -16,42 +16,14 @@
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.uint256 import (Uint256, uint256_add)
 
-@contract_interface
-namespace ISpell:
-    func execute():
-    end
-end
-
-@storage_var
-func _l1_governance_relay() -> (res : felt):
-end
-
-@constructor
-func constructor{
+func uint256_add_safe{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(l1_governance_relay : felt):
-    _l1_governance_relay.write(l1_governance_relay)
-
-    return ()
-end
-
-@l1_handler
-func relay{
-    syscall_ptr : felt*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(
-    from_address : felt,
-    spell : felt
-  ):
-    let (l1_governance_relay) = _l1_governance_relay.read()
-    assert l1_governance_relay = from_address
-
-    ISpell.delegate_execute(spell)
-
-    return ()
+  }(a : Uint256, b : Uint256) -> (sum : Uint256):
+    let (sum, carry) = uint256_add(a, b)
+    assert carry = 0
+    return (sum)
 end
