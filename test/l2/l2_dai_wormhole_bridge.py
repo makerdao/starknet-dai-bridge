@@ -256,8 +256,7 @@ async def test_burns_dai_marks_it_for_future_flush(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-            user1.contract_address,
-            0).invoke(user1.contract_address)
+            user1.contract_address).invoke(user1.contract_address)
     check_wormhole_initialized_event(tx, (
         DOMAIN,
         TARGET_DOMAIN,
@@ -290,6 +289,41 @@ async def test_burns_dai_marks_it_for_future_flush(
 
 
 @pytest.mark.asyncio
+async def test_nonce_management(
+    starknet: Starknet,
+    l2_wormhole_bridge: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    check_balances,
+):
+    await dai.approve(l2_wormhole_bridge.contract_address, to_split_uint(WORMHOLE_AMOUNT*2)).invoke(user1.contract_address)
+    tx = await l2_wormhole_bridge.initiate_wormhole(
+            TARGET_DOMAIN,
+            user1.contract_address,
+            WORMHOLE_AMOUNT,
+            user1.contract_address).invoke(user1.contract_address)
+    check_wormhole_initialized_event(tx, (
+        DOMAIN,
+        TARGET_DOMAIN,
+        user1.contract_address,
+        user1.contract_address,
+        WORMHOLE_AMOUNT,
+        0))
+    tx = await l2_wormhole_bridge.initiate_wormhole(
+            TARGET_DOMAIN,
+            user1.contract_address,
+            WORMHOLE_AMOUNT,
+            user1.contract_address).invoke(user1.contract_address)
+    check_wormhole_initialized_event(tx, (
+        DOMAIN,
+        TARGET_DOMAIN,
+        user1.contract_address,
+        user1.contract_address,
+        WORMHOLE_AMOUNT,
+        1))
+
+
+@pytest.mark.asyncio
 async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     starknet: Starknet,
     l2_wormhole_bridge: StarknetContract,
@@ -302,8 +336,7 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-            user1.contract_address,
-            0).invoke(user1.contract_address)
+            user1.contract_address).invoke(user1.contract_address)
     check_wormhole_initialized_event(tx, (
         DOMAIN,
         TARGET_DOMAIN,
@@ -353,8 +386,7 @@ async def test_reverts_when_insufficient_funds(
                 TARGET_DOMAIN,
                 user2.contract_address,
                 WORMHOLE_AMOUNT,
-                user2.contract_address,
-                0).invoke(user2.contract_address)
+                user2.contract_address).invoke(user2.contract_address)
 
 
 @pytest.mark.asyncio
@@ -372,8 +404,7 @@ async def test_reverts_when_bridge_is_closed(
                 TARGET_DOMAIN,
                 user2.contract_address,
                 WORMHOLE_AMOUNT,
-                user2.contract_address,
-                0).invoke(user1.contract_address)
+                user2.contract_address).invoke(user1.contract_address)
 
 
 @pytest.mark.asyncio
@@ -388,8 +419,7 @@ async def test_reverts_when_domain_is_not_whitelisted(
                 INVALID_DOMAIN,
                 user2.contract_address,
                 WORMHOLE_AMOUNT,
-                user2.contract_address,
-                0).invoke(user1.contract_address)
+                user2.contract_address).invoke(user1.contract_address)
 
 
 ## flush()
@@ -405,14 +435,12 @@ async def test_flushes_batched_dai(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-            user1.contract_address,
-            0).invoke(user1.contract_address)
+            user1.contract_address).invoke(user1.contract_address)
     await l2_wormhole_bridge.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-            user1.contract_address,
-            1).invoke(user1.contract_address)
+            user1.contract_address).invoke(user1.contract_address)
     batched_dai_to_flush = await l2_wormhole_bridge.batched_dai_to_flush(TARGET_DOMAIN).call()
     assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT * 2),)
 

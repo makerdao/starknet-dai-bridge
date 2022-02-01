@@ -70,6 +70,10 @@ func Flushed(target_domain : felt, dai : Uint256):
 end
 
 @storage_var
+func _nonce() -> (res : felt):
+end
+
+@storage_var
 func _is_open() -> (res : felt):
 end
 
@@ -99,6 +103,16 @@ end
 
 @storage_var
 func _wormhole_hashes(hash : felt) -> (res : felt):
+end
+
+@view
+func nonce{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }() -> (res : felt):
+    let (res) = _nonce.read()
+    return (res)
 end
 
 @view
@@ -179,6 +193,16 @@ func auth{
     let (ward) = _wards.read(caller)
     assert ward = 1
     return ()
+end
+
+func read_and_update_nonce{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }() -> (res : felt):
+    let (nonce) = _nonce.read()
+    _nonce.write(nonce+1)
+    return (res=nonce)
 end
 
 @external
@@ -276,8 +300,7 @@ func initiate_wormhole{
     target_domain : felt,
     receiver : felt,
     amount : felt,
-    operator : felt,
-    nonce : felt
+    operator : felt
   ):
     let (is_open) = _is_open.read()
     assert is_open = 1
@@ -299,6 +322,7 @@ func initiate_wormhole{
     Mintable.burn(dai, caller, amount_uint256)
 
     let (domain) = _domain.read()
+    let (nonce) = read_and_update_nonce()
 
     let (payload) = alloc()
     assert payload[0] = FINALIZE_REGISTER_WORMHOLE
