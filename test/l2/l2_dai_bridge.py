@@ -200,6 +200,12 @@ async def before_each(
     user2_balance = to_uint(balance.result[0])
 
 
+def check_event(event_name, tx, values):
+    event = tx.main_call_events[0]
+    assert type(event).__name__ == event_name
+    assert event == values
+
+
 #########
 # TESTS #
 #########
@@ -216,9 +222,16 @@ async def test_initiate_withdraw(
             l2_bridge.contract_address,
             to_split_uint(10),
         ).invoke(user1.contract_address)
-    await l2_bridge.initiate_withdraw(
+
+    tx = await l2_bridge.initiate_withdraw(
             L1_ADDRESS,
             to_split_uint(10)).invoke(user1.contract_address)
+
+    check_event(
+        'withdraw_initiated',
+        tx,
+        ((L1_ADDRESS, to_split_uint(10), user1.contract_address))
+    )
 
     payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
     starknet.consume_message_from_l2(
@@ -326,7 +339,7 @@ async def test_handle_deposit(
     user2: StarknetContract,
     check_balances,
 ):
-    await starknet.send_message_to_l2(
+    tx = await starknet.send_message_to_l2(
         from_address=L1_BRIDGE_ADDRESS,
         to_address=l2_bridge.contract_address,
         selector="handle_deposit",
@@ -335,6 +348,10 @@ async def test_handle_deposit(
             *to_split_uint(10)
         ],
     )
+
+    # check_event(
+    #     'deposit_handled', tx, ((user2.contract_address, to_split_uint(10)))
+    # )
 
     await check_balances(user1_balance, user2_balance+10)
 
@@ -351,7 +368,8 @@ async def test_handle_force_withdrawal(
             l2_bridge.contract_address,
             to_split_uint(10),
         ).invoke(user1.contract_address)
-    await starknet.send_message_to_l2(
+
+    tx = await starknet.send_message_to_l2(
         from_address=L1_BRIDGE_ADDRESS,
         to_address=l2_bridge.contract_address,
         selector="handle_force_withdrawal",
@@ -362,12 +380,19 @@ async def test_handle_force_withdrawal(
         ],
     )
 
+    # check_event(
+    #     'force_withdrawal_handled',
+    #     tx,
+    #     ((int(L1_ADDRESS), to_split_uint(10), user1.contract_address))
+    # )
+
     payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
     starknet.consume_message_from_l2(
         from_address=l2_bridge.contract_address,
         to_address=L1_BRIDGE_ADDRESS,
         payload=payload,
     )
+
 
     await check_balances(user1_balance-10, user2_balance)
 
@@ -383,7 +408,8 @@ async def test_handle_force_withdrawal_insufficient_funds(
             l2_bridge.contract_address,
             to_split_uint(10),
         ).invoke(user3.contract_address)
-    await starknet.send_message_to_l2(
+
+    tx = await starknet.send_message_to_l2(
         from_address=L1_BRIDGE_ADDRESS,
         to_address=l2_bridge.contract_address,
         selector="handle_force_withdrawal",
@@ -393,6 +419,12 @@ async def test_handle_force_withdrawal_insufficient_funds(
             *to_split_uint(10)
         ],
     )
+
+    # check_event(
+    #     'force_withdrawal_handled',
+    #     tx,
+    #     ((int(L1_ADDRESS), to_split_uint(10), user3.contract_address))
+    # )
 
     with pytest.raises(AssertionError):
         payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
@@ -409,7 +441,7 @@ async def test_handle_force_withdrawal_insufficient_allowance(
     l2_bridge: StarknetContract,
     user1: StarknetContract,
 ):
-    await starknet.send_message_to_l2(
+    tx = await starknet.send_message_to_l2(
         from_address=L1_BRIDGE_ADDRESS,
         to_address=l2_bridge.contract_address,
         selector="handle_force_withdrawal",
@@ -419,6 +451,12 @@ async def test_handle_force_withdrawal_insufficient_allowance(
             *to_split_uint(10)
         ],
     )
+
+    # check_event(
+    #     'force_withdrawal_handled',
+    #     tx,
+    #     ((int(L1_ADDRESS), to_split_uint(10), user1.contract_address))
+    # )
 
     with pytest.raises(AssertionError):
         payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
@@ -441,7 +479,8 @@ async def test_handle_force_withdrawal_invalid_l1_address(
             l2_bridge.contract_address,
             to_split_uint(10),
         ).invoke(user1.contract_address)
-    await starknet.send_message_to_l2(
+
+    tx = await starknet.send_message_to_l2(
         from_address=L1_BRIDGE_ADDRESS,
         to_address=l2_bridge.contract_address,
         selector="handle_force_withdrawal",
@@ -452,8 +491,14 @@ async def test_handle_force_withdrawal_invalid_l1_address(
         ],
     )
 
-    payload = [FINALIZE_WITHDRAW, INVALID_L1_ADDRESS, *to_split_uint(10)]
+    # check_event(
+    #     'force_withdrawal_handled',
+    #     tx,
+    #     ((int(L1_ADDRESS), to_split_uint(10), user1.contract_address))
+    # )
+
     with pytest.raises(AssertionError):
+        payload = [FINALIZE_WITHDRAW, INVALID_L1_ADDRESS, *to_split_uint(10)]
         starknet.consume_message_from_l2(
             from_address=l2_bridge.contract_address,
             to_address=L1_BRIDGE_ADDRESS,
