@@ -513,7 +513,7 @@ async def test_decrease_allowance_should_not_accept_invalid_amount(
     user1: StarknetContract,
     user2: StarknetContract,
 ):
-    with pytest.raises(StarkException):
+    with pytest.raises(StarkException) as err:
         await dai.decreaseAllowance(
                 user2.contract_address,
                 (2**128, 2**128)).invoke(user1.contract_address)
@@ -526,7 +526,7 @@ async def test_increase_allowance_should_not_accept_invalid_amount(
     user1: StarknetContract,
     user2: StarknetContract,
 ):
-    with pytest.raises(StarkException):
+    with pytest.raises(StarkException) as err:
         await dai.increaseAllowance(
                 user2.contract_address,
                 (2**128, 2**128)).invoke(user1.contract_address)
