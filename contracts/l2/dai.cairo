@@ -370,7 +370,7 @@ func _transfer{
 
     # decrease sender balance
     let (local sender_balance) = _balances.read(sender)
-    assert_le_allowance(amount, allowance)
+    assert_le_balance(amount, sender_balance)
     let (new_balance) = uint256_sub(sender_balance, amount)
     _balances.write(sender, new_balance)
 
