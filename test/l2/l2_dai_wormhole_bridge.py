@@ -392,6 +392,21 @@ async def test_reverts_when_insufficient_funds(
 
 
 @pytest.mark.asyncio
+async def test_reverts_when_invalid_amount(
+    starknet: Starknet,
+    l2_wormhole_bridge: StarknetContract,
+    user2: StarknetContract,
+):
+    with pytest.raises(StarkException) as err:
+        await l2_wormhole_bridge.initiate_wormhole(
+                TARGET_DOMAIN,
+                user2.contract_address,
+                2**128,
+                user2.contract_address).invoke(user2.contract_address)
+    assert "l2_dai_wormhole_bridge/invalid-amount" in str(err.value)
+
+
+@pytest.mark.asyncio
 async def test_reverts_when_bridge_is_closed(
     starknet: Starknet,
     l2_wormhole_bridge: StarknetContract,

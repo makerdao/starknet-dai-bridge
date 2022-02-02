@@ -336,6 +336,19 @@ async def test_mint(
 
 
 @pytest.mark.asyncio
+async def test_mint_should_not_accept_invalid_amount(
+    dai: StarknetContract,
+    auth_user: StarknetContract,
+    user1: StarknetContract,
+):
+    with pytest.raises(StarkException) as err:
+        await dai.mint(
+                user1.contract_address,
+                (2**128, 0)).invoke(auth_user.contract_address)
+    assert "dai/invalid-amount" in str(err.value)
+
+
+@pytest.mark.asyncio
 async def test_should_not_allow_minting_to_zero_address(
     dai: StarknetContract,
     auth_user: StarknetContract,
@@ -358,7 +371,7 @@ async def test_should_not_allow_minting_to_dai_address(
 
 
 @pytest.mark.asyncio
-async def test_should_not_allow_minting_to_address_beyond_max(
+async def test_mint_should_not_allow_beyond_max(
     dai: StarknetContract,
     auth_user: StarknetContract,
     user3: StarknetContract,
@@ -383,6 +396,18 @@ async def test_burn(
     ).invoke(user1.contract_address)
 
     await check_balances(user1_balance-10, user2_balance)
+
+
+@pytest.mark.asyncio
+async def test_burn_should_not_accept_invalid_amount(
+    dai: StarknetContract,
+    user1: StarknetContract,
+):
+    with pytest.raises(StarkException) as err:
+        await dai.burn(
+                user1.contract_address,
+                (2**128, 0)).invoke(user1.contract_address)
+    assert "dai/invalid-amount" in str(err.value)
 
 
 @pytest.mark.asyncio
@@ -411,7 +436,7 @@ async def test_should_not_burn_other(
 
 
 @pytest.mark.asyncio
-async def test_deployer_should_not_be_able_to_burn(
+async def test_burn_should_not_allow_deployer(
     dai: StarknetContract,
     auth_user: StarknetContract,
     user1: StarknetContract,
@@ -446,7 +471,7 @@ async def test_approve(
 
 
 @pytest.mark.asyncio
-async def test_can_burn_other_if_approved(
+async def test_burn_other_if_approved(
     dai: StarknetContract,
     user1: StarknetContract,
     user2: StarknetContract,
@@ -474,10 +499,12 @@ async def test_approve_should_not_accept_invalid_amount(
     user1: StarknetContract,
     user2: StarknetContract,
 ):
-    with pytest.raises(StarkException):
+    with pytest.raises(StarkException) as err:
         await dai.approve(
                 user2.contract_address,
                 (2**128, 2**128)).invoke(user1.contract_address)
+    assert "dai/invalid-amount" in str(err.value)
+
 
 
 @pytest.mark.asyncio
@@ -490,6 +517,7 @@ async def test_decrease_allowance_should_not_accept_invalid_amount(
         await dai.decreaseAllowance(
                 user2.contract_address,
                 (2**128, 2**128)).invoke(user1.contract_address)
+    assert "dai/invalid-amount" in str(err.value)
 
 
 @pytest.mark.asyncio
@@ -502,6 +530,7 @@ async def test_increase_allowance_should_not_accept_invalid_amount(
         await dai.increaseAllowance(
                 user2.contract_address,
                 (2**128, 2**128)).invoke(user1.contract_address)
+    assert "dai/invalid-amount" in str(err.value)
 
 
 @pytest.mark.asyncio
