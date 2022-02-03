@@ -58,6 +58,19 @@ end
 func Closed():
 end
 
+@event
+func withdraw_initiated(l1_recipient : felt, amount : Uint256, caller : felt):
+end
+
+@event
+func deposit_handled(account : felt, amount : Uint256):
+end
+
+@event
+func force_withdrawal_handled(l1_recipient: felt, amount: Uint256, sender: felt):
+end
+
+
 @storage_var
 func _is_open() -> (res : felt):
 end
@@ -202,17 +215,19 @@ func initiate_withdraw{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(l1_recipient : felt, amount : Uint256):
+    alloc_locals
+
     let (is_open) = _is_open.read()
     assert is_open = 1
 
     let (dai) = _dai.read()
-    let (caller) = get_caller_address()
+    let (local caller) = get_caller_address()
 
     IDAI.burn(dai, caller, amount)
 
     send_handle_withdraw(l1_recipient, amount)
 
-    # TODO: emit WithdrawalInitiated (align with StarkWare!)
+    withdraw_initiated.emit(l1_recipient, amount, caller)
 
     return ()
 end
@@ -236,7 +251,7 @@ func handle_deposit{
     let (dai) = _dai.read()
     IDAI.mint(dai, l2_recipient, amount)
 
-    # TODO: emit DepositHandled (align with StarkWare!)
+    deposit_handled.emit(l2_recipient, amount)
 
     return ()
 end
@@ -255,7 +270,8 @@ func handle_force_withdrawal{
   ):
     alloc_locals
 
-    # TODO: emit ForcedWithdrawalHandled (align with StarkWare!)
+    let amount = Uint256(low=amount_low, high=amount_high)
+    force_withdrawal_handled.emit(l1_recipient, amount, l2_sender)
 
     # check l1 message sender
     let (bridge) = _bridge.read()
@@ -271,7 +287,6 @@ func handle_force_withdrawal{
     let (local dai) = _dai.read()
 
     # check l2 DAI balance
-    let amount = Uint256(low=amount_low, high=amount_high)
     let (balance) = IDAI.balanceOf(dai, l2_sender)
     let (balance_check) = uint256_le(amount, balance)
     if balance_check == 0:
