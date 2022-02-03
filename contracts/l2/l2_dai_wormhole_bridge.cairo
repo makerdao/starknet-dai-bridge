@@ -272,7 +272,7 @@ func file{
     end
 
     with_attr error_message("l2_dai_wormhole_bridge/invalid-data"):
-      assert_le(data, 1)
+      assert (1 - data)*data = 0
     end
 
     _valid_domains.write(domain, data)
