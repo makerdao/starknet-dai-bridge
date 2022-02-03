@@ -158,10 +158,7 @@ func mint{
 
     # update total supply
     let (total) = _total_supply.read()
-    let (new_total, total_carry) = uint256_add(total, amount)
-    with_attr error_message("dai/uint256-overflow"):
-      assert total_carry = 0
-    end
+    let (new_total) = uint256_add_safe(total, amount)
     _total_supply.write(new_total)
 
     Transfer.emit(0, account, amount)
@@ -321,10 +318,7 @@ func increaseAllowance{
     end
     let (local caller) = get_caller_address()
     let (allowance) = _allowances.read(caller, spender)
-    let (new_allowance, carry) = uint256_add(amount, allowance)
-    with_attr error_message("dai/uint256-overflow"):
-      assert carry = 0
-    end
+    let (new_allowance) = uint256_add_safe(amount, allowance)
     _approve(caller, spender, new_allowance)
     return (res=1)
 end
@@ -397,10 +391,7 @@ func _transfer{
 
     # increase recipient balance
     let (recipient_balance) = _balances.read(recipient)
-    let (sum, carry) = uint256_add(recipient_balance, amount)
-    with_attr error_message("dai/uint256-overflow"):
-      assert carry = 0
-    end
+    let (sum) = uint256_add_safe(recipient_balance, amount)
     _balances.write(recipient, sum)
 
     Transfer.emit(sender, recipient, amount)
@@ -419,4 +410,16 @@ func _approve{
     _allowances.write(caller, spender, amount)
     Approval.emit(caller, spender, amount)
     return ()
+end
+
+func uint256_add_safe{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(a : Uint256, b : Uint256) -> (sum : Uint256):
+    let (sum, carry) = uint256_add(a, b)
+    with_attr error_message("dai/uint256-overflow"):
+      assert carry = 0
+    end
+    return (sum)
 end
