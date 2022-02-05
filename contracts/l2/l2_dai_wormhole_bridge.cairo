@@ -31,9 +31,6 @@ const validDomains = 'validDomains'
 
 @contract_interface
 namespace Mintable:
-    func mint(usr : felt, wad : Uint256):
-    end
-
     func burn(usr : felt, wad : Uint256):
     end
 end
