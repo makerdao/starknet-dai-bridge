@@ -114,17 +114,12 @@ async function deployBridge(): Promise<void> {
     l1Signer
   );
 
-  const l2DAIBridge = await deployL2(
-    hre,
-    "l2_dai_bridge",
-    BLOCK_NUMBER,
-    {
-      ward: asDec(deployer.address),
-      dai: asDec(l2DAI.address),
-      bridge: asDec(futureL1DAIBridgeAddress),
-      registry: asDec(registry.address),
-    }
-  );
+  const l2DAIBridge = await deployL2(hre, "l2_dai_bridge", BLOCK_NUMBER, {
+    ward: asDec(deployer.address),
+    dai: asDec(l2DAI.address),
+    bridge: asDec(futureL1DAIBridgeAddress),
+    registry: asDec(registry.address),
+  });
 
   const l1DAIBridge = await deployL1(hre, "L1DAIBridge", BLOCK_NUMBER, [
     L1_STARKNET_ADDRESS,
