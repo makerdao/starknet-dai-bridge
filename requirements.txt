@@ -2,3 +2,4 @@ https://github.com/starkware-libs/cairo-lang/releases/download/v0.7.0/cairo-lang
 pytest==6.2.5
 pytest-asyncio==0.15.1
 lark==0.11.3
+dill=0.3.4
