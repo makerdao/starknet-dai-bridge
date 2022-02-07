@@ -15,7 +15,9 @@
 
 pragma solidity ^0.7.6;
 
-import "./interfaces.sol";
+interface ApproveLike {
+  function approve(address, uint256) external returns (bool success);
+}
 
 // Escrow funds on L1, manage approval rights
 contract L1Escrow {
