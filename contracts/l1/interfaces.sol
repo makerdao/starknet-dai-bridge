@@ -44,7 +44,7 @@ interface StarkNetLike {
     ) external;
 }
 
-interface WormholeRouter {
+interface WormholeRouterLike {
   function requestMint(
       WormholeGUID calldata wormholeGUID,
       uint256 maxFeePercentage,

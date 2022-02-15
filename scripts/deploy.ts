@@ -99,9 +99,6 @@ export async function deployBridge(): Promise<void> {
   const L1_STARKNET_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_STARKNET_ADDRESS`
   );
-  const L1_WORMHOLE_ROUTER_ADDRESS = getRequiredEnv(
-    `${NETWORK.toUpperCase()}_L1_WORMHOLE_ROUTER_ADDRESS`
-  );
 
   const L2_DAI_ADDRESS = getOptionalEnv(
     `${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS`
@@ -193,13 +190,14 @@ export async function deployBridge(): Promise<void> {
   const futureL1DAIWormholeBridgeAddress =
     await getAddressOfNextDeployedContract(l1Signer);
   const l2DAIWormholeBridge = await deployL2(
+    STARKNET_NETWORK,
     "l2_dai_wormhole_bridge",
     BLOCK_NUMBER,
     {
       ward: asDec(deployer.address),
-      l2_token: asDec(l2DAI.address),
+      dai: asDec(l2DAI.address),
       wormhole_bridge: asDec(futureL1DAIWormholeBridgeAddress),
-      domain: asDec(registry.address),
+      domain: asDec(l2DAI.address),
     }
   );
 
@@ -215,7 +213,45 @@ export async function deployBridge(): Promise<void> {
     "futureL1DAIBridgeAddress != l1DAIBridge.address"
   );
 
+  const l1DAI = await deployL1(
+    NETWORK,
+    "DAIMock",
+    BLOCK_NUMBER,
+    [],
+  );
+
+  const l1WormholeJoin = await deployL1(
+    NETWORK,
+    "WormholeJoin",
+    BLOCK_NUMBER,
+    [
+      l1DAI.address,
+      hre.ethers.utils.formatBytes32String('1'), // domain
+    ],
+  );
+
+  const l1WormholeRouter = await deployL1(
+    NETWORK,
+    "WormholeRouter",
+    BLOCK_NUMBER,
+    [l1DAI.address],
+  );
+
+  const l1WormholeOracleAuth = await deployL1(
+    NETWORK,
+    "WormholeOracleAuth",
+    BLOCK_NUMBER,
+    [l1WormholeJoin.address],
+  );
+  const oracleWallets = [...Array(1)].map(() => hre.ethers.Wallet.fromMnemonic('agent ancient glass legal group enact leaf impose canyon valid nest glimpse'))
+  await l1WormholeOracleAuth.addSigners([oracleWallets[0].address]);
+  await l1WormholeOracleAuth.file("threshold", 1);
+
+  await l1WormholeJoin.rely(l1WormholeOracleAuth.address);
+  await l1WormholeJoin.rely(l1WormholeRouter.address);
+
   const l1DAIWormholeBridge = await deployL1(
+    NETWORK,
     "L1DAIWormholeBridge",
     BLOCK_NUMBER,
     [
@@ -223,7 +259,7 @@ export async function deployBridge(): Promise<void> {
       L1_DAI_ADDRESS,
       l2DAIWormholeBridge.address,
       l1Escrow.address,
-      L1_WORMHOLE_ROUTER_ADDRESS,
+      l1WormholeRouter.address,
     ]
   );
   expect(

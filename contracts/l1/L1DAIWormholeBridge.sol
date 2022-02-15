@@ -24,7 +24,7 @@ contract L1DAIWormholeBridge {
   address public immutable dai;
   uint256 public immutable l2DaiWormholeBridge;
   address public immutable escrow;
-  WormholeRouter public immutable wormholeRouter;
+  WormholeRouterLike public immutable wormholeRouter;
 
   uint256 constant HANDLE_REGISTER_WORMHOLE = 0;
   uint256 constant HANDLE_FLUSH = 1;
@@ -41,7 +41,7 @@ contract L1DAIWormholeBridge {
     dai = _dai;
     l2DaiWormholeBridge = _l2DaiWormholeBridge;
     escrow = _escrow;
-    wormholeRouter = WormholeRouter(_wormholeRouter);
+    wormholeRouter = WormholeRouterLike(_wormholeRouter);
     // Approve the router to pull DAI from this contract during settle() (after the DAI has been pulled by this contract from the escrow)
     ApproveLike(_dai).approve(_wormholeRouter, type(uint256).max);
   }

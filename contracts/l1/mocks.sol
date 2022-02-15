@@ -22,4 +22,8 @@ contract DAIMock is ERC20 {
     constructor () ERC20('DAI', 'DAI') {
         _mint(msg.sender, 1_000_000 * 1 ether);
     }
+
+    function mint(address recipient, uint256 amount) external {
+        _mint(recipient, amount);
+    }
 }
