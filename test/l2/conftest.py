@@ -237,11 +237,11 @@ async def copyable_deployment(request):
 
 @pytest.fixture(scope="session")
 async def ctx_factory(copyable_deployment):
-    serialized_contracts = copyable_deployment.serialized_contracts
-    signers = copyable_deployment.signers
-    consts = copyable_deployment.consts
-
     def make():
+        serialized_contracts = copyable_deployment.serialized_contracts
+        signers = copyable_deployment.signers
+        consts = copyable_deployment.consts
+
         starknet_state = copyable_deployment.starknet.state.copy()
         contracts = {
             name: unserialize_contract(starknet_state, serialized_contract)
