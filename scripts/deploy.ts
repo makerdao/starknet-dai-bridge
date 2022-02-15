@@ -245,7 +245,7 @@ export async function deployBridge(): Promise<void> {
   );
   const oracleWallets = [...Array(1)].map(() => hre.ethers.Wallet.fromMnemonic('agent ancient glass legal group enact leaf impose canyon valid nest glimpse'))
   await l1WormholeOracleAuth.addSigners([oracleWallets[0].address]);
-  await l1WormholeOracleAuth.file("threshold", 1);
+  // await l1WormholeOracleAuth.file("threshold", 1);
 
   await l1WormholeJoin.rely(l1WormholeOracleAuth.address);
   await l1WormholeJoin.rely(l1WormholeRouter.address);

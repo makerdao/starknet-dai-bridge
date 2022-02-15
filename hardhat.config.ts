@@ -7,6 +7,7 @@ import "@shardlabs/starknet-hardhat-plugin";
 import "./scripts/interact";
 import "./scripts/account";
 import "./scripts/fork";
+import "./scripts/oracle";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
