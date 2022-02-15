@@ -270,3 +270,72 @@ async def ctx_factory(copyable_deployment):
         )
 
     return make
+
+@pytest.fixture(scope="function")
+def ctx(ctx_factory):
+    ctx = ctx_factory()
+    return ctx
+
+@pytest.fixture(scope="function")
+async def starknet(ctx) -> Starknet:
+    return ctx.starknet
+
+@pytest.fixture(scope="function")
+async def user1(ctx) -> StarknetContract:
+    return ctx.user1
+
+@pytest.fixture(scope="function")
+async def user2(ctx) -> StarknetContract:
+    return ctx.user2
+
+@pytest.fixture(scope="function")
+async def user3(ctx) -> StarknetContract:
+    return ctx.user3
+
+@pytest.fixture(scope="function")
+async def auth_user(ctx) -> StarknetContract:
+    return ctx.auth_user
+
+@pytest.fixture(scope="function")
+async def sample_spell(ctx) -> StarknetContract:
+    return ctx.sample_spell
+
+@pytest.fixture(scope="function")
+async def registry(ctx) -> StarknetContract:
+    return ctx.registry
+
+@pytest.fixture(scope="function")
+async def l2_governance_relay(ctx) -> StarknetContract:
+    return ctx.l2_governance_relay
+
+@pytest.fixture(scope="function")
+async def l2_bridge(ctx) -> StarknetContract:
+    return ctx.l2_bridge
+
+@pytest.fixture(scope="function")
+async def dai(ctx) -> StarknetContract:
+    return ctx.dai
+
+@pytest.fixture
+async def check_balances(
+    dai: StarknetContract,
+    user1: StarknetContract,
+    user2: StarknetContract,
+    user3: StarknetContract,
+):
+    async def internal_check_balances(
+        expected_user1_balance,
+        expected_user2_balance,
+    ):
+        user1_balance = await dai.balanceOf(user1.contract_address).call()
+        user2_balance = await dai.balanceOf(user2.contract_address).call()
+        user3_balance = await dai.balanceOf(user3.contract_address).call()
+        total_supply = await dai.totalSupply().call()
+
+        assert user1_balance.result == (to_split_uint(expected_user1_balance),)
+        assert user2_balance.result == (to_split_uint(expected_user2_balance),)
+        assert user3_balance.result == (to_split_uint(0),)
+        assert total_supply.result == (
+                to_split_uint(expected_user1_balance+expected_user2_balance),)
+
+    return internal_check_balances
