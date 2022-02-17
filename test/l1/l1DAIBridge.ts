@@ -482,7 +482,9 @@ describe("L1DAIBridge", function () {
 async function setupTest() {
   const [admin, l1Alice, l1Bob] = await hre.ethers.getSigners();
 
-  const starkNetFake = await smock.fake("./contracts/l1/L1DAIBridge.sol:StarkNetLike");
+  const starkNetFake = await smock.fake(
+    "./contracts/l1/L1DAIBridge.sol:StarkNetLike"
+  );
 
   const dai = await simpleDeploy("DAIMock", []);
 
