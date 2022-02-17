@@ -1,19 +1,22 @@
-import fs from "fs";
-import fetch from "node-fetch";
 import assert from "assert";
-import { task } from "hardhat/config";
 import { BigNumber, Wallet } from "ethers";
 import { arrayify, hashMessage, keccak256 } from "ethers/lib/utils";
+import fs from "fs";
+import { task } from "hardhat/config";
+import fetch from "node-fetch";
 
+// get_selector_from_name('WormholeInitialized')
+const eventKey =
+  "1345515244988659859228254809159403205747553036527527466027467944744859901062";
 
 interface WormholeGUID {
-  source_domain: string
-  target_domain: string
-  receiver: string
-  operator: string
-  amount: string
-  nonce: string
-  timestamp: string
+  sourceDomain: string;
+  targetDomain: string;
+  receiver: string;
+  operator: string;
+  amount: string;
+  nonce: number;
+  timestamp: number;
 }
 
 function getRequiredEnv(key: string): string {
@@ -26,19 +29,21 @@ function getRequiredEnv(key: string): string {
 
 async function signWormholeData(
   wormholeData: string,
-  signers: any,
+  signers: any
 ): Promise<{ signHash: string; signatures: string }> {
   signers = signers.sort((s1: any, s2: any) => {
-    const bn1 = BigNumber.from(s1.address)
-    const bn2 = BigNumber.from(s2.address)
-    if (bn1.lt(bn2)) return -1
-    if (bn1.gt(bn2)) return 1
-    return 0
+    const bn1 = BigNumber.from(s1.address);
+    const bn2 = BigNumber.from(s2.address);
+    if (bn1.lt(bn2)) return -1;
+    if (bn1.gt(bn2)) return 1;
+    return 0;
   });
 
   const guidHash = keccak256(wormholeData);
-  const sigs = await Promise.all(signers.map((signer: any) => signer.signMessage(arrayify(guidHash))));
-  const signatures = `0x${sigs.map((sig: any) => sig.slice(2)).join('')}`;
+  const sigs = await Promise.all(
+    signers.map((signer: any) => signer.signMessage(arrayify(guidHash)))
+  );
+  const signatures = `0x${sigs.map((sig: any) => sig.slice(2)).join("")}`;
   const signHash = hashMessage(arrayify(guidHash));
   return { signHash, signatures };
 }
@@ -61,123 +66,110 @@ function getAddress(contract: string, network: string) {
   }
 }
 
-async function getBlockNumber(network: string): Promise<number> {
-    let domain;
-    if (network === 'testnet') {
-        domain = 'alpha4.starknet.io';
-    } else if (network === 'localhost') {
-        domain = 'localhost:5000';
-    } else {
-        domain = 'alpha-mainnet.starknet.io';
-    }
-    const res = await fetch(`https://${domain}/feeder_gateway/get_block`);
-    const json = await res.json();
-    return json.block_number;
-}
-
-function convert(parameters: any) {
-  const res = {};
-  parameters.forEach(({ name, value }: { name: string, value: any }) => {
-    if (typeof value !== 'string') {
-      // @ts-ignore
-      res[name] = convert(value);
-    } else {
-      // @ts-ignore
-      res[name] = value;
-    }
-  });
-  return res;
-}
-
-async function getInitEvents(fromBlock: number, network: string) {
-  const eventName = 'WormholeInitialized';
-  const contractAddress = getAddress('l2_dai_wormhole_bridge', 'goerli');
-  const contractAddressFilter = `0x${BigInt(contractAddress).toString(16)}`;
-  const res = await fetch(`http://starknet.events/api/v1/get_events?from_block=${fromBlock}&name=${eventName}`);
-  const json = await res.json();
-  if (json.items) {
-    const items = json.items.filter((_: any) => _.contract === contractAddressFilter && _.chain_id === network);
-    const events: Record<string, object> = {};
-    items.forEach((event: any) => {
-      events[event.tx_hash] = convert(event.parameters);
-    });
-    return events;
-  } else {
-    return [];
-  }
-}
-
-const network = 'testnet';
-const fileName = './wormholeEvents.json';
-
-async function recordEvents() {
-  const blockNumber = await getBlockNumber(network);
-  if (!fs.existsSync(fileName)) {
-    const newJson = { events: {}, blockNumber };
-    fs.writeFileSync(fileName, JSON.stringify(newJson));
-  }
-  const eventsJson = JSON.parse(fs.readFileSync(fileName).toString());
-  const newEvents = await getInitEvents(900, network);
-  Object.entries(newEvents).forEach(([key, value]) => {
-    eventsJson.events[key] = value;
-  });
-  fs.writeFileSync(fileName, JSON.stringify(eventsJson));
-}
-
-async function generateAttestation(eventData: WormholeGUID): Promise<{ signatures: string, input: object }> {
-  const sourceDomain = `0x${eventData.source_domain.slice(2).padStart(64, '0')}`;
-  const targetDomain = `0x${eventData.target_domain.padStart(64, '0')}`;
-  const receiver = `0x${eventData.receiver.slice(2).padStart(64, '0')}`;
-  const operator = `0x${eventData.operator.padStart(64, '0')}`;
-  const amount = `0x${parseInt(eventData.amount).toString(16)}`;
-  const nonce = parseInt(eventData.nonce);
-  const date = new Date(eventData.timestamp);
-  const timestamp = date.getTime(); // format
-  let message = '0x';
+async function generateAttestation(
+  eventData: any[]
+): Promise<{ signatures: string; wormholeGUID: WormholeGUID }> {
+  const sourceDomain = `0x${BigInt(eventData[0])
+    .toString(16)
+    .padStart(64, "0")}`;
+  const targetDomain = `0x${BigInt(eventData[1])
+    .toString(16)
+    .padStart(64, "0")}`;
+  const receiver = `0x${BigInt(eventData[2]).toString(16).padStart(64, "0")}`;
+  const operator = `0x${BigInt(eventData[3]).toString(16).padStart(64, "0")}`;
+  const amount = `0x${BigInt(eventData[4]).toString(16)}`;
+  const nonce = parseInt(eventData[5]);
+  const date = new Date(parseInt(eventData[6]));
+  const timestamp = date.getTime();
+  let message = "0x";
   message += sourceDomain.slice(2);
   message += targetDomain.slice(2);
   message += receiver.slice(2);
   message += operator.slice(2);
-  message += amount.slice(2).padStart(64, '0');
-  message += nonce.toString(16).padStart(64, '0');
-  message += timestamp.toString(16).padStart(64, '0');
+  message += amount.slice(2).padStart(64, "0");
+  message += nonce.toString(16).padStart(64, "0");
+  message += timestamp.toString(16).padStart(64, "0");
 
-  const oracleMnemonic = getRequiredEnv('ORACLE_MNEMONIC');
+  const oracleMnemonic = getRequiredEnv("ORACLE_MNEMONIC");
   const oracleWallet = Wallet.fromMnemonic(oracleMnemonic);
   const { signatures } = await signWormholeData(message, [oracleWallet]);
-  return { signatures, input: { sourceDomain, targetDomain, receiver, operator, amount, nonce, timestamp } };
+  return {
+    signatures,
+    wormholeGUID: {
+      sourceDomain,
+      targetDomain,
+      receiver,
+      operator,
+      amount,
+      nonce,
+      timestamp,
+    },
+  };
 }
 
-async function getAttestation(data: any): Promise<{ signatures: string, input: object }> {
-  const eventsJson = JSON.parse(fs.readFileSync(fileName).toString());
-  const event = eventsJson.events[data];
-  const attestation = await generateAttestation(event);
+async function getAttestation(
+  transaction: string,
+  hre: any
+): Promise<{ signatures: string; wormholeGUID: WormholeGUID }> {
+  /*
+  const contractAddress = getAddress('l2_dai_wormhole_bridge', 'goerli');
+  const contractAddressFilter = `0x${BigInt(contractAddress).toString(16)}`;
+  */
+  const contractAddressFilter =
+    "0x30c9c37aeda61d4d2e9f094cd1227e9f8d7f1354bf3f398fe1af918296da37d";
+
+  let domain;
+  if (hre.network.name === "mainnet") {
+    domain = "https://alpha-mainnet.starknet.io";
+  } else if (hre.network.name === "goerli") {
+    domain = "https://alpha4.starknet.io";
+  } else {
+    domain = "http://localhost:9545";
+  }
+  const res = await fetch(
+    `${domain}/feeder_gateway/get_transaction_receipt?transactionHash=${transaction}`
+  );
+  const json = await res.json();
+
+  const event = json.events.filter(
+    (_: any) =>
+      _.from_address === contractAddressFilter && _.keys[0] === eventKey
+  )[0];
+  const attestation = await generateAttestation(event.data);
   return attestation;
 }
 
-async function sendAttestation(wormholeGUID: any, signatures: string, hre: any) {
-  const wormholeOracleAuthAddress = getAddress("WormholeOracleAuth", "goerli");
-  const wormholeOracleAuth = await getL1ContractAt("WormholeOracleAuth", wormholeOracleAuthAddress, hre);
-  return wormholeOracleAuth.requestMint(wormholeGUID, signatures, 0, 0, { gasLimit: 10000000 });
-}
-
-task("oracle:recordEvents", "")
-  .setAction(async () => {
-    await recordEvents();
+async function sendAttestation(
+  wormholeGUID: WormholeGUID,
+  signatures: string,
+  hre: any
+) {
+  const wormholeOracleAuthAddress = getAddress(
+    "WormholeOracleAuth",
+    hre.network.name
+  );
+  const wormholeOracleAuth = await getL1ContractAt(
+    "WormholeOracleAuth",
+    wormholeOracleAuthAddress,
+    hre
+  );
+  return wormholeOracleAuth.requestMint(wormholeGUID, signatures, 0, 0, {
+    gasLimit: 10000000,
   });
+}
 
 task("oracle:getAttestation", "")
   .addParam("transaction", "")
-  .setAction(async ({ transaction }) => {
-    const attestation = await getAttestation(transaction);
+  .setAction(async ({ transaction }, hre) => {
+    const attestation = await getAttestation(transaction, hre);
     console.log(attestation);
   });
 
-task("oracle:sendAttestation", "")
-  .addParam("transaction", "")
+task("oracle:sendAttestation", "Generate and send attestation to L1 ")
+  .addParam("transaction", "Transaction hash")
   .setAction(async ({ transaction }, hre) => {
-    const { signatures, input } = await getAttestation(transaction);
-    const tx = await sendAttestation(input, signatures, hre);
+    const { signatures, wormholeGUID } = await getAttestation(transaction, hre);
+    const tx = await sendAttestation(wormholeGUID, signatures, hre);
     const response = await tx.wait();
     console.log(response);
   });

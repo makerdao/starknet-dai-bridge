@@ -28,13 +28,18 @@ interface WormholeJoinLike {
     ) external returns (uint256 postFeeAmount, uint256 totalFee);
 }
 
+interface TokenLike {
+    function approve(address, uint256) external returns (bool);
+    function mint(address, uint256) external returns (bool);
+}
+
 // WormholeOracleAuth provides user authentication for WormholeJoin, by means of Maker Oracle Attestations
 contract WormholeOracleAuth is ERC20 {
 
     mapping (address => uint256) public wards;   // Auth
     mapping (address => uint256) public signers; // Oracle feeds
 
-    WormholeJoinLike immutable public wormholeJoin;
+    TokenLike immutable public dai;
 
     uint256 public threshold;
 
@@ -49,10 +54,10 @@ contract WormholeOracleAuth is ERC20 {
         _;
     }
 
-    constructor(address wormholeJoin_) ERC20('OracleTest', 'OracleTest') {
+    constructor(address dai_) ERC20('OracleTest', 'OracleTest') {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
-        wormholeJoin = WormholeJoinLike(wormholeJoin_);
+        dai = TokenLike(dai_);
     }
 
     function rely(address usr) external auth {
@@ -106,8 +111,7 @@ contract WormholeOracleAuth is ERC20 {
         require(bytes32ToAddress(wormholeGUID.receiver) == msg.sender || 
             bytes32ToAddress(wormholeGUID.operator) == msg.sender, "WormholeOracleAuth/not-receiver-nor-operator");
         require(isValid(getSignHash(wormholeGUID), signatures, threshold), "WormholeOracleAuth/not-enough-valid-sig");
-        // return wormholeJoin.requestMint(wormholeGUID, maxFeePercentage, operatorFee);
-        _mint(bytes32ToAddress(wormholeGUID.receiver), wormholeGUID.amount);
+        dai.mint(bytes32ToAddress(wormholeGUID.receiver), wormholeGUID.amount);
         return (maxFeePercentage, operatorFee);
     }
 

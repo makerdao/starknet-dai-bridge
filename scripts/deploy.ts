@@ -104,6 +104,8 @@ export async function deployBridge(): Promise<void> {
     `${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS`
   );
 
+  const ORACLE_MNEMONIC = getRequiredEnv("ORACLE_MNEMONIC");
+
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
@@ -213,42 +215,24 @@ export async function deployBridge(): Promise<void> {
     "futureL1DAIBridgeAddress != l1DAIBridge.address"
   );
 
-  const l1DAI = await deployL1(
-    NETWORK,
-    "DAIMock",
-    BLOCK_NUMBER,
-    [],
-  );
-
-  const l1WormholeJoin = await deployL1(
-    NETWORK,
-    "WormholeJoin",
-    BLOCK_NUMBER,
-    [
-      l1DAI.address,
-      hre.ethers.utils.formatBytes32String('1'), // domain
-    ],
-  );
+  const l1DAI = await deployL1(NETWORK, "DAIMock", BLOCK_NUMBER, []);
 
   const l1WormholeRouter = await deployL1(
     NETWORK,
     "WormholeRouter",
     BLOCK_NUMBER,
-    [l1DAI.address],
+    [l1DAI.address]
   );
 
   const l1WormholeOracleAuth = await deployL1(
     NETWORK,
     "WormholeOracleAuth",
     BLOCK_NUMBER,
-    [l1WormholeJoin.address],
+    [l1DAI.address]
   );
-  const oracleWallets = [...Array(1)].map(() => hre.ethers.Wallet.fromMnemonic('agent ancient glass legal group enact leaf impose canyon valid nest glimpse'))
-  await l1WormholeOracleAuth.addSigners([oracleWallets[0].address]);
+  const oracleWallet = hre.ethers.Wallet.fromMnemonic(ORACLE_MNEMONIC);
+  await l1WormholeOracleAuth.addSigners([oracleWallet.address]);
   // await l1WormholeOracleAuth.file("threshold", 1);
-
-  await l1WormholeJoin.rely(l1WormholeOracleAuth.address);
-  await l1WormholeJoin.rely(l1WormholeRouter.address);
 
   const l1DAIWormholeBridge = await deployL1(
     NETWORK,
