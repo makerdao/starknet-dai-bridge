@@ -23,7 +23,6 @@ from starkware.cairo.common.math import (assert_le, assert_not_zero)
 from starkware.cairo.common.math_cmp import (is_not_zero)
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address, get_block_timestamp)
 from starkware.cairo.common.uint256 import (Uint256, uint256_lt, uint256_add, uint256_check)
-from contracts.l2.utils import uint256_add_safe
 
 const FINALIZE_REGISTER_WORMHOLE = 0
 const FINALIZE_FLUSH = 1
@@ -188,7 +187,9 @@ func auth{
   }():
     let (caller) = get_caller_address()
     let (ward) = _wards.read(caller)
-    assert ward = 1
+    with_attr error_message("l2_dai_wormhole_bridge/not-authorized"):
+      assert ward = 1
+    end
     return ()
 end
 
@@ -277,9 +278,13 @@ func file{
     domain : felt,
     data : felt,
   ):
-    assert what = validDomains
+    with_attr error_message("l2_dai_wormhole_bridge/invalid-file"):
+      assert what = validDomains
+    end
 
-    assert_le(data, 1)
+    with_attr error_message("l2_dai_wormhole_bridge/invalid-data"):
+      assert (1 - data)*data = 0
+    end
 
     _valid_domains.write(domain, data)
 
@@ -300,15 +305,21 @@ func initiate_wormhole{
     operator : felt
   ):
     let (is_open) = _is_open.read()
-    assert is_open = 1
+    with_attr error_message("l2_dai_wormhole_bridge/bridge-closed"):
+      assert is_open = 1
+    end
 
     # valid domain check
     let (valid_domain) = _valid_domains.read(target_domain)
-    assert valid_domain = 1
+    with_attr error_message("l2_dai_wormhole_bridge/invalid-domain"):
+      assert valid_domain = 1
+    end
     
     # amount should be uint128
     let amount_uint256 = Uint256(low=amount, high=0)
-    uint256_check(amount_uint256)
+    with_attr error_message("l2_dai_wormhole_bridge/invalid-amount"):
+      uint256_check(amount_uint256)
+    end
 
     let (dai_to_flush) = _batched_dai_to_flush.read(target_domain)
     let (new_dai_to_flush) = uint256_add_safe(dai_to_flush, amount_uint256)
@@ -377,7 +388,9 @@ func finalize_register_wormhole{
     timestamp : felt
   ):
     let (is_open) = _is_open.read()
-    assert is_open = 1
+    with_attr error_message("l2_dai_wormhole_bridge/bridge-closed"):
+      assert is_open = 1
+    end
     let (domain) = _domain.read()
 
     let (payload) = alloc()
@@ -392,7 +405,9 @@ func finalize_register_wormhole{
 
     let (hash) = hash_message(payload)
     let (hash_exists) = _wormhole_hashes.read(hash)
-    assert hash_exists = 1
+    with_attr error_message("l2_dai_wormhole_bridge/wormhole-does-not-exist"):
+      assert hash_exists = 1
+    end
     _wormhole_hashes.write(hash, 0)
 
     let (wormhole_bridge) = _wormhole_bridge.read()
@@ -408,7 +423,9 @@ func uint256_assert_not_zero{
   }(a : Uint256):
     let (low_check) = is_not_zero(a.low)
     let (high_check) = is_not_zero(a.high)
-    assert_not_zero(low_check + high_check)
+    with_attr error_message("l2_dai_wormhole_bridge/value-is-zero"):
+      assert_not_zero(low_check + high_check)
+    end
 
     return ()
 end
@@ -439,4 +456,16 @@ func flush{
     Flushed.emit(target_domain=target_domain, dai=dai_to_flush)
 
     return (res=dai_to_flush)
+end
+
+func uint256_add_safe{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(a : Uint256, b : Uint256) -> (sum : Uint256):
+    let (sum, carry) = uint256_add(a, b)
+    with_attr error_message("l2_dai_wormhole_bridge/uint256-overflow"):
+      assert carry = 0
+    end
+    return (sum)
 end

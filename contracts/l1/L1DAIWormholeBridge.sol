@@ -17,7 +17,43 @@ pragma solidity ^0.7.6;
 pragma abicoder v2;
 
 import "./WormholeGUID.sol";
-import "./interfaces.sol";
+
+interface ApproveLike {
+  function approve(address, uint256) external returns (bool success);
+}
+
+interface TokenLike {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool success);
+
+    function balanceOf(address account) external view returns (uint256);
+}
+
+interface StarkNetLike {
+    function sendMessageToL2(
+        uint256 to,
+        uint256 selector,
+        uint256[] calldata payload
+    ) external;
+
+    function consumeMessageFromL2(
+        uint256 from,
+        uint256[] calldata payload
+    ) external;
+}
+
+interface WormholeRouter {
+  function requestMint(
+      WormholeGUID calldata wormholeGUID,
+      uint256 maxFeePercentage,
+      uint256 operatorFee
+  ) external;
+
+  function settle(bytes32 targetDomain, uint256 batchedDaiToFlush) external;
+}
 
 contract L1DAIWormholeBridge {
   address public immutable starkNet;
