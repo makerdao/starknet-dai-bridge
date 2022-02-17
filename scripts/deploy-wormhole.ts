@@ -1,6 +1,7 @@
 import {
   getActiveWards,
   getAddressOfNextDeployedContract,
+  getOptionalEnv,
   getRequiredEnv,
   waitForTx,
 } from "@makerdao/hardhat-utils";
@@ -15,6 +16,7 @@ import {
   getAddress,
   getL2ContractAt,
   printAddresses,
+  save,
   Signer,
   wards,
 } from "./utils";
@@ -55,6 +57,19 @@ async function deployWormhole(): Promise<void> {
     `${NETWORK.toUpperCase()}_L2_GOVERNANCE_RELAY_ADDRESS`
   );
 
+  const L2_DAI_BRIDGE_ADDRESS = getOptionalEnv(
+    `${NETWORK.toUpperCase()}_L2_DAI_BRIDGE_ADDRESS`
+  );
+  if (L2_DAI_BRIDGE_ADDRESS) {
+    save("l2_dai_bridge", { address: L2_DAI_BRIDGE_ADDRESS }, NETWORK);
+  }
+  const L2_REGISTRY_ADDRESS = getOptionalEnv(
+    `${NETWORK.toUpperCase()}_L2_REGISTRY_ADDRESS`
+  );
+  if (L2_REGISTRY_ADDRESS) {
+    save("registry", { address: L2_REGISTRY_ADDRESS }, NETWORK);
+  }
+
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
@@ -68,12 +83,13 @@ async function deployWormhole(): Promise<void> {
     "account",
     getAddress("account-deployer", NETWORK)
   );
+  console.log(`Deploying from account: ${deployer.address.toString()}`);
+
   const l2GovernanceRelay = await getL2ContractAt(
     hre,
     "l2_governance_relay",
     L2_GOVERNANCE_RELAY_ADDRESS
   );
-  console.log(`Deploying from account: ${deployer.address.toString()}`);
 
   const futureL1DAIWormholeBridgeAddress =
     await getAddressOfNextDeployedContract(l1Signer);
@@ -126,9 +142,9 @@ async function deployWormhole(): Promise<void> {
   ]);
 
   console.log("L2 wormhole bridge permission sanity checks...");
-  expect(
-    await wards(l2DAIWormholeBridge, l2GovernanceRelay)
-  ).to.deep.eq(BigInt(1));
+  expect(await wards(l2DAIWormholeBridge, l2GovernanceRelay)).to.deep.eq(
+    BigInt(1)
+  );
   expect(await wards(l2DAIWormholeBridge, deployer)).to.deep.eq(BigInt(0));
 }
 

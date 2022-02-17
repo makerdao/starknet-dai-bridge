@@ -36,6 +36,8 @@ async function deployBridge(): Promise<void> {
   const L1_DAI_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_DAI_ADDRESS`
   );
+  save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
+
   const L1_STARKNET_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_STARKNET_ADDRESS`
   );
@@ -44,10 +46,6 @@ async function deployBridge(): Promise<void> {
   );
   const L1_ESM_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_ESM_ADDRESS`
-  );
-
-  const L2_DAI_ADDRESS = getOptionalEnv(
-    `${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS`
   );
 
   // @ts-ignore
@@ -62,13 +60,21 @@ async function deployBridge(): Promise<void> {
   );
   console.log(`Deploying from account: ${deployer.address.toString()}`);
 
-  save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
-  const DAIAddress = getAddress("DAI", NETWORK);
+  const L2_DAI_ADDRESS = getOptionalEnv(
+    `${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS`
+  );
+  if (L2_DAI_ADDRESS) {
+    save("dai", { address: L2_DAI_ADDRESS }, NETWORK);
+  }
+  const l2DAI = L2_DAI_ADDRESS
+    ? await getL2ContractAt(hre, "dai", L2_DAI_ADDRESS)
+    : await deployL2(hre, "dai", BLOCK_NUMBER, {
+        ward: asDec(deployer.address),
+      });
 
   const futureL1GovRelayAddress = await getAddressOfNextDeployedContract(
     l1Signer
   );
-
   const l2GovernanceRelay = await deployL2(
     hre,
     "l2_governance_relay",
@@ -84,30 +90,17 @@ async function deployBridge(): Promise<void> {
     BLOCK_NUMBER,
     [L1_STARKNET_ADDRESS, l2GovernanceRelay.address]
   );
-
   expect(
     futureL1GovRelayAddress === l1GovernanceRelay.address,
     "futureL1GovRelayAddress != l1GovernanceRelay.address"
   );
 
-  if (L2_DAI_ADDRESS) {
-    save("dai", { address: L2_DAI_ADDRESS }, NETWORK);
-  }
-
-  const l2DAI = L2_DAI_ADDRESS
-    ? await getL2ContractAt(hre, "dai", L2_DAI_ADDRESS)
-    : await deployL2(hre, "dai", BLOCK_NUMBER, {
-        ward: asDec(deployer.address),
-      });
-
   const REGISTRY_ADDRESS = getOptionalEnv(
     `${NETWORK.toUpperCase()}_REGISTRY_ADDRESS`
   );
-
   if (REGISTRY_ADDRESS) {
     save("registry", { address: REGISTRY_ADDRESS }, NETWORK);
   }
-
   const registry = REGISTRY_ADDRESS
     ? await getL2ContractAt(hre, "registry", REGISTRY_ADDRESS)
     : await deployL2(hre, "registry", BLOCK_NUMBER);
@@ -117,7 +110,6 @@ async function deployBridge(): Promise<void> {
   const futureL1DAIBridgeAddress = await getAddressOfNextDeployedContract(
     l1Signer
   );
-
   const l2DAIBridge = await deployL2(hre, "l2_dai_bridge", BLOCK_NUMBER, {
     ward: asDec(deployer.address),
     dai: asDec(l2DAI.address),
@@ -138,7 +130,7 @@ async function deployBridge(): Promise<void> {
   );
 
   const MAX = BigInt(2 ** 256) - BigInt(1);
-  await l1Escrow.approve(DAIAddress, l1DAIBridge.address, MAX);
+  await l1Escrow.approve(L1_DAI_ADDRESS, l1DAIBridge.address, MAX);
 
   console.log("Finalizing permissions for L1Escrow...");
   await waitForTx(l1Escrow.rely(L1_PAUSE_PROXY_ADDRESS));
