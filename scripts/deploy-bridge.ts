@@ -31,12 +31,19 @@ async function deployBridge(): Promise<void> {
     NETWORK = hre.network.name;
   }
   const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
+  console.log(`Deploying bridge on ${NETWORK}/${STARKNET_NETWORK}`);
 
   const L1_DAI_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_DAI_ADDRESS`
   );
   const L1_STARKNET_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_STARKNET_ADDRESS`
+  );
+  const L1_PAUSE_PROXY_ADDRESS = getRequiredEnv(
+    `${NETWORK.toUpperCase()}_L1_PAUSE_PROXY_ADDRESS`
+  );
+  const L1_ESM_ADDRESS = getRequiredEnv(
+    `${NETWORK.toUpperCase()}_L1_ESM_ADDRESS`
   );
 
   const L2_DAI_ADDRESS = getOptionalEnv(
@@ -46,16 +53,13 @@ async function deployBridge(): Promise<void> {
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
-  console.log(`Deploying bridge on ${NETWORK}/${STARKNET_NETWORK}`);
-
   const DEPLOYER_KEY = getRequiredEnv(`DEPLOYER_ECDSA_PRIVATE_KEY`);
   const l2Signer = new Signer(DEPLOYER_KEY);
-
   const deployer = await getL2ContractAt(
+    hre,
     "account",
     getAddress("account-deployer", NETWORK)
   );
-
   console.log(`Deploying from account: ${deployer.address.toString()}`);
 
   save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
@@ -136,14 +140,6 @@ async function deployBridge(): Promise<void> {
   const MAX = BigInt(2 ** 256) - BigInt(1);
   await l1Escrow.approve(DAIAddress, l1DAIBridge.address, MAX);
 
-  const L1_PAUSE_PROXY_ADDRESS = getRequiredEnv(
-    `${NETWORK.toUpperCase()}_L1_PAUSE_PROXY_ADDRESS`
-  );
-
-  const L1_ESM_ADDRESS = getRequiredEnv(
-    `${NETWORK.toUpperCase()}_L1_ESM_ADDRESS`
-  );
-
   console.log("Finalizing permissions for L1Escrow...");
   await waitForTx(l1Escrow.rely(L1_PAUSE_PROXY_ADDRESS));
   await waitForTx(l1Escrow.rely(L1_ESM_ADDRESS));
@@ -204,5 +200,5 @@ async function deployBridge(): Promise<void> {
 
 deployBridge()
   .then(() => console.log("Successfully deployed"))
-  .then(() => printAddresses())
+  .then(() => printAddresses(hre))
   .catch((err) => console.log(err));

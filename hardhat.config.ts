@@ -59,7 +59,7 @@ const config: HardhatUserConfig = {
     fork: {
       url: "http://127.0.0.1:8545",
     },
-    l2: {
+    starknet_local: {
       url: "http://127.0.0.1:5000",
     },
     hardhat: {

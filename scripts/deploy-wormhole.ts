@@ -30,6 +30,12 @@ async function deployWormhole(): Promise<void> {
   }
   const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
 
+  const L1_PAUSE_PROXY_ADDRESS = getRequiredEnv(
+    `${NETWORK.toUpperCase()}_L1_PAUSE_PROXY_ADDRESS`
+  );
+  const L1_ESM_ADDRESS = getRequiredEnv(
+    `${NETWORK.toUpperCase()}_L1_ESM_ADDRESS`
+  );
   const L1_DAI_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_DAI_ADDRESS`
   );
@@ -38,6 +44,15 @@ async function deployWormhole(): Promise<void> {
   );
   const L1_WORMHOLE_ROUTER_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_WORMHOLE_ROUTER_ADDRESS`
+  );
+  const L1_ESCROW_ADDRESS = getRequiredEnv(
+    `${NETWORK.toUpperCase()}_L1_ESCROW_ADDRESS`
+  );
+  const L2_DAI_ADDRESS = getRequiredEnv(
+    `${NETWORK.toUpperCase()}_L2_DAI_ADDRESS`
+  );
+  const L2_GOVERNANCE_RELAY_ADDRESS = getRequiredEnv(
+    `${NETWORK.toUpperCase()}_L2_GOVERNANCE_RELAY_ADDRESS`
   );
 
   // @ts-ignore
@@ -53,13 +68,11 @@ async function deployWormhole(): Promise<void> {
     "account",
     getAddress("account-deployer", NETWORK)
   );
-  const L2_DAI_ADDRESS = getAddress("dai", NETWORK);
-  const L1_ESCROW_ADDRESS = getAddress("L1Escrow", NETWORK);
-  const L2_GOVERNANCE_RELAY_ADDRESS = getAddress(
+  const l2GovernanceRelay = await getL2ContractAt(
+    hre,
     "l2_governance_relay",
-    NETWORK
+    L2_GOVERNANCE_RELAY_ADDRESS
   );
-
   console.log(`Deploying from account: ${deployer.address.toString()}`);
 
   const futureL1DAIWormholeBridgeAddress =
@@ -93,13 +106,6 @@ async function deployWormhole(): Promise<void> {
     "futureL1DAIWormholeBridgeAddress != l1DAIWormholeBridge.address"
   );
 
-  const L1_PAUSE_PROXY_ADDRESS = getRequiredEnv(
-    `${NETWORK.toUpperCase()}_L1_PAUSE_PROXY_ADDRESS`
-  );
-  const L1_ESM_ADDRESS = getRequiredEnv(
-    `${NETWORK.toUpperCase()}_L1_ESM_ADDRESS`
-  );
-
   console.log("Finalizing permissions for L1DAIWormholeBridge...");
   await waitForTx(l1DAIWormholeBridge.rely(L1_PAUSE_PROXY_ADDRESS));
   await waitForTx(l1DAIWormholeBridge.rely(L1_ESM_ADDRESS));
@@ -121,7 +127,7 @@ async function deployWormhole(): Promise<void> {
 
   console.log("L2 wormhole bridge permission sanity checks...");
   expect(
-    await wards(l2DAIWormholeBridge, L2_GOVERNANCE_RELAY_ADDRESS)
+    await wards(l2DAIWormholeBridge, l2GovernanceRelay)
   ).to.deep.eq(BigInt(1));
   expect(await wards(l2DAIWormholeBridge, deployer)).to.deep.eq(BigInt(0));
 }
