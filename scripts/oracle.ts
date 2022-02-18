@@ -111,13 +111,8 @@ async function getAttestation(
   transaction: string,
   hre: any
 ): Promise<{ signatures: string; wormholeGUID: WormholeGUID }> {
-  /*
   const contractAddress = getAddress('l2_dai_wormhole_bridge', 'goerli');
   const contractAddressFilter = `0x${BigInt(contractAddress).toString(16)}`;
-  */
-  const contractAddressFilter =
-    "0x30c9c37aeda61d4d2e9f094cd1227e9f8d7f1354bf3f398fe1af918296da37d";
-
   let domain;
   if (hre.network.name === "mainnet") {
     domain = "https://alpha-mainnet.starknet.io";
@@ -131,12 +126,17 @@ async function getAttestation(
   );
   const json = await res.json();
 
+  console.log(json.events);
   const event = json.events.filter(
     (_: any) =>
       _.from_address === contractAddressFilter && _.keys[0] === eventKey
   )[0];
-  const attestation = await generateAttestation(event.data);
-  return attestation;
+  if (event) {
+    const attestation = await generateAttestation(event.data);
+    return attestation;
+  } else {
+    throw Error('No WormholeInitiated event found in this transaction');
+  }
 }
 
 async function sendAttestation(

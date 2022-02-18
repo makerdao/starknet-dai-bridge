@@ -83,6 +83,8 @@ export function parseCalldataL2(
       ).toString();
     } else if (input === "l2_dai_bridge") {
       res[inputName] = BigInt(getAddress("l2_dai_bridge", network)).toString();
+    } else if (input === "l2_dai_wormhole_bridge") {
+      res[inputName] = BigInt(getAddress("l2_dai_wormhole_bridge", network)).toString();
     } else if (input === "L1DAIBridge") {
       res[inputName] = BigInt(getAddress("L1DAIBridge", network)).toString();
     } else if (inputType === "Uint256") {
