@@ -66,8 +66,16 @@ const config: HardhatUserConfig = {
       },
     },
   },
-  mocha: {
-    starknetNetwork: `${process.env.STARKNET_NETWORK}`,
+  starknet: {
+    dockerizedVersion: "0.7.1",
+    network: "devnet",
+    wallets: {
+      user: {
+        accountName: "OpenZeppelin",
+        modulePath: "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
+        accountPath: "~/.starknet_accounts"
+      }
+    },
   },
   paths: {
     artifacts: "./artifacts",

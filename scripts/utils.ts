@@ -200,7 +200,7 @@ export class Signer {
       },
       {
         signature: [sig.r, sig.s],
-      },
+      }
     );
   }
 }

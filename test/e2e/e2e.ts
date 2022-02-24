@@ -1,17 +1,16 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { smock } from "@defi-wonderland/smock";
+import {
+  getAddressOfNextDeployedContract,
+  simpleDeploy,
+} from "@makerdao/hardhat-utils";
 import { expect } from "chai";
-import { Signer } from "../../scripts/utils";
-import { BigNumber, Contract, ContractFactory } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 import { ethers, network, starknet } from "hardhat";
 import {
   HttpNetworkConfig,
   StarknetContract,
-  StarknetContractFactory,
 } from "hardhat/types";
-import { simpleDeploy, getAddressOfNextDeployedContract } from "@makerdao/hardhat-utils";
 
+import { Signer } from "../../scripts/utils";
 
 function toSplitUint(value: any) {
   const bits = value.toBigInt().toString(16).padStart(64, "0");
@@ -26,7 +25,10 @@ export function l2Eth(amount: string) {
   return toSplitUint(parseEther(amount));
 }
 
-async function simpleDeployL2(name: string, args: object): Promise<StarknetContract> {
+async function simpleDeployL2(
+  name: string,
+  args: object
+): Promise<StarknetContract> {
   const factory = await starknet.getContractFactory(name);
   return factory.deploy(args);
 }
@@ -54,22 +56,25 @@ describe.only("End to end tests", async function () {
   let l2Dai: any;
 
   before(async function () {
-    const networkUrl: string = (network.config as HttpNetworkConfig).url; 
+    const networkUrl: string = (network.config as HttpNetworkConfig).url;
     [admin, l1Alice, l1Bob] = await ethers.getSigners();
     const KEY = "1";
     l2Signer = new Signer(KEY);
     l2Auth = await simpleDeployL2("account", {
-      "_public_key": BigInt(l2Signer.publicKey),
+      _public_key: BigInt(l2Signer.publicKey),
     });
 
     const MockStarknetMessaging = await ethers.getContractFactory(
-      'MockStarknetMessaging',
-      admin,
+      "MockStarknetMessaging",
+      admin
     );
     const mockStarknetMessaging = await MockStarknetMessaging.deploy();
     await mockStarknetMessaging.deployed();
 
-    await starknet.devnet.loadL1MessagingContract(networkUrl, mockStarknetMessaging.address);
+    await starknet.devnet.loadL1MessagingContract(
+      networkUrl,
+      mockStarknetMessaging.address
+    );
 
     dai = (await simpleDeploy("DAIMock", [])) as any;
 
@@ -78,7 +83,9 @@ describe.only("End to end tests", async function () {
     const registry = await simpleDeployL2("registry", []);
     l2Dai = await simpleDeployL2("dai", { ward: asDec(l2Auth.address) });
 
-    const futureL1DAIBridgeAddress = await getAddressOfNextDeployedContract(admin);
+    const futureL1DAIBridgeAddress = await getAddressOfNextDeployedContract(
+      admin
+    );
     l2Bridge = await simpleDeployL2("l2_dai_bridge", {
       ward: asDec(l2Auth.address),
       dai: asDec(l2Dai.address),
@@ -92,7 +99,7 @@ describe.only("End to end tests", async function () {
       escrow.address,
       l2Bridge.address,
     ])) as any;
-    
+
     /*
     const futureL1DAIWormholeBridgeAddress = await getAddressOfNextDeployedContract(admin);
     const l2WormholeBridge = await simpleDeployL2("l2_dai_wormhole_bridge", {
@@ -116,8 +123,14 @@ describe.only("End to end tests", async function () {
 
     await l1Bridge.connect(admin).setCeiling(MAX);
     await dai.connect(admin).approve(l1Bridge.address, MAX);
-    await l2Signer.sendTransaction(l2Auth, l2Dai, "rely", [asDec(l2Bridge.address)]);
-    await l2Signer.sendTransaction(l2Auth, l2Dai, "approve", [asDec(l2Bridge.address), MAX_HALF, MAX_HALF]);
+    await l2Signer.sendTransaction(l2Auth, l2Dai, "rely", [
+      asDec(l2Bridge.address),
+    ]);
+    await l2Signer.sendTransaction(l2Auth, l2Dai, "approve", [
+      asDec(l2Bridge.address),
+      MAX_HALF,
+      MAX_HALF,
+    ]);
     await dai.connect(l1Alice).approve(l1Bridge.address, MAX);
     await dai.connect(l1Bob).approve(l1Bridge.address, MAX);
   });
@@ -135,26 +148,24 @@ describe.only("End to end tests", async function () {
       await l2Dai.call("balanceOf", {
         user: asDec(l2Auth.address),
       }),
-      depositAmountL2,
+      depositAmountL2
     );
   });
 
   it("withdraw", async () => {
-    const withdrawAmountL1 = eth('100');
-    const withdrawAmountL2 = l2Eth('100');
-    await l2Signer.sendTransaction(
-      l2Auth,
-      l2Bridge,
-      "initiate_withdraw",
-      [asDec(l1Alice.address), ...withdrawAmountL2.map(asDec)],
-    );
+    const withdrawAmountL1 = eth("100");
+    const withdrawAmountL2 = l2Eth("100");
+    await l2Signer.sendTransaction(l2Auth, l2Bridge, "initiate_withdraw", [
+      asDec(l1Alice.address),
+      ...withdrawAmountL2.map(asDec),
+    ]);
     await starknet.devnet.flush();
     await l1Bridge.connect(l1Alice).withdraw(withdrawAmountL1, l1Alice.address);
     checkL2Balance(
       await l2Dai.call("balanceOf", {
         user: asDec(l2Auth.address),
       }),
-      l2Eth("0"),
+      l2Eth("0")
     );
     expect(await dai.balanceOf(l1Alice.address)).to.be.eq(withdrawAmountL1);
   });
