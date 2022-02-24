@@ -63,7 +63,9 @@ describe("L1GovernanceRelay", function () {
 async function setupTest() {
   const [admin, l1Alice, l1Bob] = await hre.ethers.getSigners();
 
-  const starkNetFake = await smock.fake("StarkNetLike");
+  const starkNetFake = await smock.fake(
+    "./contracts/l1/L1DAIBridge.sol:StarkNetLike"
+  );
 
   const L2_GOVERNANCE_RELAY_ADDRESS = 31415;
   const SPELL_ADDRESS = 31416;
