@@ -1,8 +1,6 @@
 import assert from "assert";
 import { BigNumber, Wallet } from "ethers";
 import { arrayify, hashMessage, keccak256 } from "ethers/lib/utils";
-import fs from "fs";
-import fetch from "node-fetch";
 
 // get_selector_from_name('WormholeInitialized')
 const eventKey =
