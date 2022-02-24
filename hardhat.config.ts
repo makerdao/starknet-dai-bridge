@@ -21,8 +21,7 @@ import "./scripts/fork";
 import "./scripts/wards";
 
 import { config as dotenvConfig } from "dotenv";
-// import { HardhatUserConfig } from "hardhat/config";
-import { NetworkUserConfig } from "hardhat/types";
+import { NetworkUserConfig, HardhatUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });

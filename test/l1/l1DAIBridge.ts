@@ -597,13 +597,9 @@ describe("l1:L1DAIBridge", function () {
 async function setupTest() {
   const [admin, l1Alice, l1Bob] = await hre.ethers.getSigners();
 
-<<<<<<< HEAD
   const starkNetFake = await smock.fake(
     "./contracts/l1/L1DAIBridge.sol:StarkNetLike"
   );
-=======
-  const starkNetFake = await smock.fake("./contracts/l1/L1DAIBridge.sol:StarkNetLike");
->>>>>>> Fix interfaces issue
 
   const dai = await simpleDeploy("DAIMock", []);
 
