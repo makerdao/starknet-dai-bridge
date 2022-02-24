@@ -16,6 +16,7 @@ import {
   getAddress,
   getL2ContractAt,
   printAddresses,
+  writeAddresses,
   save,
   Signer,
   wards,
@@ -32,12 +33,6 @@ async function deployWormhole(): Promise<void> {
   }
   const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
 
-  const L1_PAUSE_PROXY_ADDRESS = getRequiredEnv(
-    `${NETWORK.toUpperCase()}_L1_PAUSE_PROXY_ADDRESS`
-  );
-  const L1_ESM_ADDRESS = getRequiredEnv(
-    `${NETWORK.toUpperCase()}_L1_ESM_ADDRESS`
-  );
   const L1_DAI_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_DAI_ADDRESS`
   );
@@ -56,19 +51,6 @@ async function deployWormhole(): Promise<void> {
   const L2_GOVERNANCE_RELAY_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L2_GOVERNANCE_RELAY_ADDRESS`
   );
-
-  const L2_DAI_BRIDGE_ADDRESS = getOptionalEnv(
-    `${NETWORK.toUpperCase()}_L2_DAI_BRIDGE_ADDRESS`
-  );
-  if (L2_DAI_BRIDGE_ADDRESS) {
-    save("l2_dai_bridge", { address: L2_DAI_BRIDGE_ADDRESS }, NETWORK);
-  }
-  const L2_REGISTRY_ADDRESS = getOptionalEnv(
-    `${NETWORK.toUpperCase()}_L2_REGISTRY_ADDRESS`
-  );
-  if (L2_REGISTRY_ADDRESS) {
-    save("registry", { address: L2_REGISTRY_ADDRESS }, NETWORK);
-  }
 
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
@@ -99,7 +81,7 @@ async function deployWormhole(): Promise<void> {
     BLOCK_NUMBER,
     {
       ward: asDec(deployer.address),
-      l2_token: asDec(L2_DAI_ADDRESS),
+      dai: asDec(L2_DAI_ADDRESS),
       wormhole_bridge: asDec(futureL1DAIWormholeBridgeAddress),
       domain: asDec(L1_DAI_ADDRESS),
     }
@@ -122,23 +104,12 @@ async function deployWormhole(): Promise<void> {
     "futureL1DAIWormholeBridgeAddress != l1DAIWormholeBridge.address"
   );
 
-  console.log("Finalizing permissions for L1DAIWormholeBridge...");
-  await waitForTx(l1DAIWormholeBridge.rely(L1_PAUSE_PROXY_ADDRESS));
-  await waitForTx(l1DAIWormholeBridge.rely(L1_ESM_ADDRESS));
-  await waitForTx(l1DAIWormholeBridge.deny(await l1Signer.getAddress()));
-
-  console.log("Finalizing permissions for L2DAIWormholeBridge...");
+  console.log("Finalizing permissions for l2_dai_wormhole_bridge...");
   await l2Signer.sendTransaction(deployer, l2DAIWormholeBridge, "rely", [
     asDec(L2_GOVERNANCE_RELAY_ADDRESS),
   ]);
   await l2Signer.sendTransaction(deployer, l2DAIWormholeBridge, "deny", [
     asDec(deployer.address),
-  ]);
-
-  console.log("L1 permission sanity checks...");
-  expect(await getActiveWards(l1DAIWormholeBridge as any)).to.deep.eq([
-    L1_PAUSE_PROXY_ADDRESS,
-    L1_ESM_ADDRESS,
   ]);
 
   console.log("L2 wormhole bridge permission sanity checks...");
@@ -151,4 +122,5 @@ async function deployWormhole(): Promise<void> {
 deployWormhole()
   .then(() => console.log("Successfully deployed"))
   .then(() => printAddresses(hre))
+  .then(() => writeAddresses(hre))
   .catch((err) => console.log(err));

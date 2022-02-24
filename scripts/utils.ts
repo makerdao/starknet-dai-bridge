@@ -225,6 +225,36 @@ export function printAddresses(hre: any) {
   console.log(addresses);
 }
 
+export function writeAddresses(hre: any) {
+
+  const NETWORK = hre.network.name;
+
+  const variables = [
+    ["L1_ESCROW_ADDRESS", "L1Escrow"],
+    ["L2_DAI_ADDRESS", "l2_dai_bridge"],
+    ["L1_GOVERNANCE_RELAY_ADDRESS", "L1GovernanceRelay"],
+    ["L2_GOVERNANCE_RELAY_ADDRESS", "l2_governance_relay"],
+    ["L1_DAI_BRIDGE_ADDRESS", "L1DAIBridge"],
+    ["L2_DAI_BRIDGE_ADDRESS", "l2_dai_bridge"],
+    ["L1_DAI_WORMHOLE_BRIDGE_ADDRESS", "L1DAIWormholeBridge"],
+    ["L2_DAI_WORMHOLE_BRIDGE_ADDRESS", "l2_dai_wormhole_bridge"],
+  ];
+
+  const addresses = variables.reduce(
+    (a, c) => {
+      const address = getAddress(c[1], NETWORK);
+      if (address) {
+        return `${a}${NETWORK.toUpperCase()}_${c[0]}=${address}\n`;
+      } else {
+        return a;
+      }
+    },
+    "",
+  );
+
+  fs.writeFileSync(".env.deployments", addresses);
+}
+
 export async function wards(
   authable: StarknetContract,
   ward: StarknetContract

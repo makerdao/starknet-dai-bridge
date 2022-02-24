@@ -16,6 +16,7 @@ import {
   getAddress,
   getL2ContractAt,
   printAddresses,
+  writeAddresses,
   save,
   Signer,
   wards,
@@ -147,7 +148,7 @@ async function deployBridge(): Promise<void> {
   await waitForTx(l1GovernanceRelay.rely(L1_ESM_ADDRESS));
   await waitForTx(l1GovernanceRelay.deny(await l1Signer.getAddress()));
 
-  console.log("Finalizing permissions for L2DAI...");
+  console.log("Finalizing permissions for l2_dai...");
   await l2Signer.sendTransaction(deployer, l2DAI, "rely", [
     asDec(l2DAIBridge.address),
   ]);
@@ -158,7 +159,7 @@ async function deployBridge(): Promise<void> {
     asDec(deployer.address),
   ]);
 
-  console.log("Finalizing permissions for L2DAITokenBridge...");
+  console.log("Finalizing permissions for l2_dai_bridge...");
   await l2Signer.sendTransaction(deployer, l2DAIBridge, "rely", [
     asDec(l2GovernanceRelay.address),
   ]);
@@ -193,4 +194,5 @@ async function deployBridge(): Promise<void> {
 deployBridge()
   .then(() => console.log("Successfully deployed"))
   .then(() => printAddresses(hre))
+  .then(() => writeAddresses(hre))
   .catch((err) => console.log(err));
