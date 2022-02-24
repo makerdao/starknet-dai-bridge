@@ -9,8 +9,7 @@ import "./scripts/account";
 import "./scripts/fork";
 
 import { config as dotenvConfig } from "dotenv";
-import { HardhatUserConfig } from "hardhat/config";
-import { NetworkUserConfig } from "hardhat/types";
+import { NetworkUserConfig, HardhatUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
@@ -59,14 +58,10 @@ const config: HardhatUserConfig = {
     fork: {
       url: "http://127.0.0.1:8545",
     },
-    l2: {
+    devnet: {
       url: "http://127.0.0.1:5000",
     },
     hardhat: {
-      forking: {
-        url: `https://mainnet.infura.io/v3/${infuraApiKey}`,
-        enabled: process.env.NODE_ENV !== "test",
-      },
       accounts: {
         count: 10,
         mnemonic,
@@ -120,9 +115,6 @@ const config: HardhatUserConfig = {
         },
       },
     ],
-  },
-  cairo: {
-    version: "0.7.0",
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
