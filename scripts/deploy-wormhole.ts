@@ -1,9 +1,6 @@
 import {
-  getActiveWards,
   getAddressOfNextDeployedContract,
-  getOptionalEnv,
   getRequiredEnv,
-  waitForTx,
 } from "@makerdao/hardhat-utils";
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
 import { expect } from "chai";
@@ -16,10 +13,9 @@ import {
   getAddress,
   getL2ContractAt,
   printAddresses,
-  writeAddresses,
-  save,
   Signer,
   wards,
+  writeAddresses,
 } from "./utils";
 
 async function deployWormhole(): Promise<void> {

@@ -16,10 +16,10 @@ import {
   getAddress,
   getL2ContractAt,
   printAddresses,
-  writeAddresses,
   save,
   Signer,
   wards,
+  writeAddresses,
 } from "./utils";
 
 async function deployBridge(): Promise<void> {
