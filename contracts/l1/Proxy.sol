@@ -15,21 +15,12 @@
 
 pragma solidity ^0.7.6;
 
-interface ApproveLike {
-  function approve(address, uint256) external returns (bool success);
-}
+contract Proxy {
+  address public owner;
+  modifier auth { require(msg.sender == owner, "unauthorized"); _; }
+  constructor() public { owner = msg.sender; }
 
-contract EscrowApprove {
-
-  ApproveLike immutable escrow;
-  address immutable approvedAddress;
-
-  constructor(address escrow_, address approvedAddress_) {
-    escrow = ApproveLike(escrow_);
-    approvedAddress = approvedAddress_;
-  }
-
-  function approve() external {
-    escrow.approve(approvedAddress, type(uint256).max);
+  function exec(address _target, string memory func) external auth {
+    (bool success, bytes memory returndata) = _target.delegatecall(abi.encodeWithSignature(func));
   }
 }

@@ -67,6 +67,7 @@ async function deployBridge(): Promise<void> {
   if (L2_DAI_ADDRESS) {
     save("dai", { address: L2_DAI_ADDRESS }, NETWORK);
   }
+
   const l2DAI = L2_DAI_ADDRESS
     ? await getL2ContractAt(hre, "dai", L2_DAI_ADDRESS)
     : await deployL2(hre, "dai", BLOCK_NUMBER, {

@@ -21,9 +21,13 @@ export function getAddress(contract: string, network: string) {
       fs.readFileSync(`./deployments/${network}/${contract}.json`).toString()
     ).address;
   } catch (err) {
-    throw Error(
-      `${contract} deployment on ${network} not found, run 'yarn deploy:${network}'`
-    );
+    if (process.env[`${network.toUpperCase()}_${contract}`]) {
+      return process.env[`${network.toUpperCase()}_${contract}`];
+    } else {
+      throw Error(
+        `${contract} deployment on ${network} not found, run 'yarn deploy:${network}'`
+      );
+    }
   }
 }
 
@@ -46,6 +50,14 @@ export function parseCalldataL1(calldata: string, network: string) {
       return getAddress("l2_dai_bridge", network);
     } else if (input === "L1DAIBridge") {
       return getAddress("L1DAIBridge", network);
+    } else if (input === "L1DAIWormholeBridge") {
+      return getAddress("L1DAIWormholeBridge", network);
+    } else if (input === "L1Escrow") {
+      return getAddress("L1Escrow", network);
+    } else if (input === "DAI") {
+      return getAddress("DAI", network);
+    } else if (input === "EscrowApproveAction") {
+      return getAddress("EscrowApproveAction", network);
     } else {
       return input;
     }
