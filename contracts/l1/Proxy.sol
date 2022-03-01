@@ -18,9 +18,9 @@ pragma solidity ^0.7.6;
 contract Proxy {
   address public owner;
   modifier auth { require(msg.sender == owner, "unauthorized"); _; }
-  constructor() public { owner = msg.sender; }
+  constructor() { owner = msg.sender; }
 
-  function exec(address _target, string memory func) external auth {
-    _target.delegatecall(abi.encodeWithSignature(func));
+  function exec(address _target, string memory func) external auth returns (bool, bytes memory) {
+    return _target.delegatecall(abi.encodeWithSignature(func));
   }
 }
