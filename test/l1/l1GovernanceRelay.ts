@@ -14,7 +14,7 @@ const RELAY_SELECTOR = parseFixed(
   "300224956480472355485152391090755024345070441743081995053718200325371913697"
 );
 
-describe("L1GovernanceRelay", function () {
+describe("l1:L1GovernanceRelay", function () {
   it("initializes properly", async () => {
     const { starkNetFake, l1GovernanceRelay, l2GovernanceRelayAddress } =
       await setupTest();

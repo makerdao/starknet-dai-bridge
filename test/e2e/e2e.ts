@@ -5,10 +5,7 @@ import {
 import { expect } from "chai";
 import { parseEther } from "ethers/lib/utils";
 import { ethers, network, starknet } from "hardhat";
-import {
-  HttpNetworkConfig,
-  StarknetContract,
-} from "hardhat/types";
+import { HttpNetworkConfig, StarknetContract } from "hardhat/types";
 
 import { Signer } from "../../scripts/utils";
 
@@ -42,7 +39,7 @@ function asDec(input: string | number | bigint): string {
   return BigInt(input).toString();
 }
 
-describe.only("End to end tests", async function () {
+describe("e2e", async function () {
   this.timeout(900_000);
   let admin: any;
   let l1Alice: any;
