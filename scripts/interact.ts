@@ -78,11 +78,11 @@ task("call:proxy", "Call L1 proxy contract")
     console.log(`Calling on ${NETWORK}`);
     const contractAddress = getAddress(contract, NETWORK);
     const proxyFactory = await hre.ethers.getContractFactory("Proxy");
-    const proxyContract = proxyFactory.attach(getAddress("L1_PAUSE_PROXY_ADDRESS", NETWORK));
-    const res = await proxyContract.exec(
-      contractAddress,
-      func,
-      { gasLimit: 100000 },
+    const proxyContract = proxyFactory.attach(
+      getAddress("L1_PAUSE_PROXY_ADDRESS", NETWORK)
     );
+    const res = await proxyContract.exec(contractAddress, func, {
+      gasLimit: 100000,
+    });
     console.log("Response:", res);
   });

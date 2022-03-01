@@ -1,6 +1,6 @@
 import { getRequiredEnv } from "@makerdao/hardhat-utils";
-import hre from "hardhat";
 import fs from "fs";
+import hre from "hardhat";
 
 async function createSpell(): Promise<void> {
   const NETWORK = hre.network.name;
@@ -14,7 +14,7 @@ async function createSpell(): Promise<void> {
   const L1_DAI_WORMHOLE_BRIDGE_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_DAI_WORMHOLE_BRIDGE_ADDRESS`
   );
-  
+
   const spellContract = `
     pragma solidity ^0.7.6;
 
@@ -35,5 +35,4 @@ async function createSpell(): Promise<void> {
   fs.writeFileSync("./contracts/l1/Spells.sol", spellContract);
 }
 
-createSpell()
-  .then(() => console.log("Successfully created"));
+createSpell().then(() => console.log("Successfully created"));

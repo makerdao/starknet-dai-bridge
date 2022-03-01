@@ -1,6 +1,4 @@
-import { getRequiredEnv } from "@makerdao/hardhat-utils";
 import hre from "hardhat";
-import fs from "fs";
 
 import { deployL1, printAddresses, save } from "./utils";
 
