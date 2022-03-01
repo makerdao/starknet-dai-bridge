@@ -61,16 +61,8 @@ describe("e2e", async function () {
       _public_key: BigInt(l2Signer.publicKey),
     });
 
-    const MockStarknetMessaging = await ethers.getContractFactory(
-      "MockStarknetMessaging",
-      admin
-    );
-    const mockStarknetMessaging = await MockStarknetMessaging.deploy();
-    await mockStarknetMessaging.deployed();
-
-    await starknet.devnet.loadL1MessagingContract(
+    const mockStarknetMessaging = await starknet.devnet.loadL1MessagingContract(
       networkUrl,
-      mockStarknetMessaging.address
     );
 
     dai = (await simpleDeploy("DAIMock", [])) as any;
