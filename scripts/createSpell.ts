@@ -35,4 +35,6 @@ async function createSpell(): Promise<void> {
   fs.writeFileSync("./contracts/l1/Spells.sol", spellContract);
 }
 
-createSpell().then(() => console.log("Successfully created"));
+createSpell()
+  .then(() => console.log("Successfully created"))
+  .catch((err) => console.log(err));
