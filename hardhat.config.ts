@@ -9,7 +9,7 @@ import "./scripts/account";
 import "./scripts/fork";
 
 import { config as dotenvConfig } from "dotenv";
-import { NetworkUserConfig, HardhatUserConfig } from "hardhat/types";
+import { HardhatUserConfig, NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
@@ -72,9 +72,10 @@ const config: HardhatUserConfig = {
     wallets: {
       user: {
         accountName: "OpenZeppelin",
-        modulePath: "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
-        accountPath: "~/.starknet_accounts"
-      }
+        modulePath:
+          "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
+        accountPath: "~/.starknet_accounts",
+      },
     },
   },
   paths: {
@@ -84,6 +85,9 @@ const config: HardhatUserConfig = {
     tests: "./test",
     starknetSources: "./contracts",
     starknetArtifacts: "./starknet-artifacts",
+  },
+  mocha: {
+    grep: process.env.TEST_ENV === "e2e" ? "e2e" : "l1:*",
   },
   solidity: {
     compilers: [

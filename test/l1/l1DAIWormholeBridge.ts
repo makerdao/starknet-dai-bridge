@@ -15,7 +15,7 @@ const AMOUNT = BigInt(10);
 const SOURCE_DOMAIN = hre.ethers.utils.formatBytes32String("starknet");
 const TARGET_DOMAIN = hre.ethers.utils.formatBytes32String("optimism");
 
-describe("L1DAIWormholeBridge", () => {
+describe("l1:L1DAIWormholeBridge", () => {
   it("initializes properly", async () => {
     const {
       admin,

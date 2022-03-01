@@ -27,7 +27,7 @@ function toSplitUint(value: any) {
   return [BigInt(`0x${bits.slice(32)}`), BigInt(`0x${bits.slice(0, 32)}`)];
 }
 
-describe("L1DAIBridge", function () {
+describe("l1:L1DAIBridge", function () {
   it("initializes properly", async () => {
     const { admin, dai, starkNetFake, escrow, l1Bridge, l2BridgeAddress } =
       await setupTest();
