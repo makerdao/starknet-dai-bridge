@@ -21,6 +21,6 @@ contract Proxy {
   constructor() public { owner = msg.sender; }
 
   function exec(address _target, string memory func) external auth {
-    (bool success, bytes memory returndata) = _target.delegatecall(abi.encodeWithSignature(func));
+    _target.delegatecall(abi.encodeWithSignature(func));
   }
 }
