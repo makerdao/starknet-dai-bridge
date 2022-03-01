@@ -62,7 +62,7 @@ describe("e2e", async function () {
     });
 
     const mockStarknetMessaging = await starknet.devnet.loadL1MessagingContract(
-      networkUrl,
+      networkUrl
     );
 
     dai = (await simpleDeploy("DAIMock", [])) as any;
