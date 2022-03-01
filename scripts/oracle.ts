@@ -2,10 +2,6 @@ import assert from "assert";
 import { BigNumber, Wallet } from "ethers";
 import { arrayify, hashMessage, keccak256 } from "ethers/lib/utils";
 
-// get_selector_from_name('WormholeInitialized')
-const eventKey =
-  "1345515244988659859228254809159403205747553036527527466027467944744859901062";
-
 interface WormholeGUID {
   sourceDomain: string;
   targetDomain: string;

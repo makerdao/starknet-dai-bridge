@@ -40,7 +40,7 @@ function asDec(input: string | number | bigint): string {
 }
 
 describe("e2e", async function () {
-  this.timeout(900_000);
+  this.timeout(900_000); // eslint-disable-line
   let admin: any;
   let l1Alice: any;
   let l1Bob: any;
