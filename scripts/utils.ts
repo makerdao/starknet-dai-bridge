@@ -8,12 +8,110 @@ import { writeFileSync } from "fs";
 import fs from "fs";
 import { isEmpty } from "lodash";
 import { ec, hash } from "starknet";
+import { assert } from "ts-essentials";
 const { genKeyPair, getKeyPair, getStarkKey, sign, verify } = ec;
 const { hashMessage } = hash;
+import {
+  BaseContract,
+  BigNumber,
+  CallOverrides,
+  ContractTransaction,
+  Event,
+  EventFilter,
+  Overrides,
+  providers,
+  Signer,
+} from "ethers";
+import { getContractAddress, Result } from "ethers/lib/utils";
 import type { KeyPair, Signature } from "starknet";
 
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
+
+export function getRequiredEnv(key: string): string {
+  const value = process.env[key];
+  assert(value, `Please provide ${key} in .env file`);
+
+  return value;
+}
+
+export function getOptionalEnv(key: string): string | undefined {
+  return process.env[key];
+}
+
+interface TypedEventFilter<_EventArgsArray, _EventArgsObject>
+  extends EventFilter {}
+
+interface TypedEvent<EventArgs extends Result> extends Event {
+  args: EventArgs;
+}
+
+interface AuthableLike {
+  deny: any;
+  rely: any;
+}
+
+interface AuthableContract extends BaseContract {
+  queryFilter<EventArgsArray extends Array<any>, EventArgsObject>(
+    event: TypedEventFilter<EventArgsArray, EventArgsObject>,
+    fromBlockOrBlockhash?: string | number | undefined,
+    toBlock?: string | number | undefined
+  ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
+  deny(
+    usr: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+  rely(
+    usr: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+  wards(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+  filters: {
+    Deny(usr?: string | null): TypedEventFilter<[string], { usr: string }>;
+    Rely(usr?: string | null): TypedEventFilter<[string], { usr: string }>;
+  };
+}
+
+export async function getActiveWards(
+  _authContract: AuthableLike,
+  fromBlockOrBlockhash?: string | number
+): Promise<string[]> {
+  const authContract = _authContract as AuthableContract;
+  const relyEvents = await authContract.queryFilter(
+    authContract.filters.Rely(),
+    fromBlockOrBlockhash
+  );
+
+  const relies = relyEvents.map((r) => r.args.usr);
+
+  const statusOfRelies = await Promise.all(
+    relies.map(async (usr) => ({ usr, active: await authContract.wards(usr) }))
+  );
+
+  const activeRelies = statusOfRelies
+    .filter((s) => s.active.toNumber() === 1)
+    .map((s) => s.usr);
+
+  return activeRelies;
+}
+
+export async function getAddressOfNextDeployedContract(
+  signer: Signer,
+  offset: number = 0
+): Promise<string> {
+  return getContractAddress({
+    from: await signer.getAddress(),
+    nonce: (await signer.getTransactionCount()) + offset,
+  });
+}
+
+export async function waitForTx(
+  tx: Promise<any>
+): Promise<providers.TransactionReceipt> {
+  const resolvedTx = await tx;
+  return await resolvedTx.wait();
+}
 
 export function getAddress(contract: string, network: string) {
   try {
@@ -149,7 +247,7 @@ function flatten(calldata: any): any[] {
   return res;
 }
 
-export class Signer {
+export class L2Signer {
   privateKey;
   keyPair: KeyPair;
   publicKey;

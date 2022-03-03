@@ -2,11 +2,11 @@ import fs from "fs";
 import { ec } from "starknet";
 const { getStarkKey } = ec;
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
-import hre from "hardhat";
+import { task } from "hardhat/config";
 
 import { deployL2, genAndSaveKeyPair } from "./utils";
 
-async function deployDeployer() {
+task("deploy-deployer", "Deploy deployer").setAction(async (_, hre) => {
   const NETWORK = hre.network.name;
 
   const STARKNET_NETWORK =
@@ -58,6 +58,4 @@ async function deployDeployer() {
     "  To find salt that will result in dai address staring with 'da1' prefix:"
   );
   console.log(`    ./scripts/vanity.py --ward ${deployer.address}\n`);
-}
-
-deployDeployer().catch((err) => console.log(err));
+});

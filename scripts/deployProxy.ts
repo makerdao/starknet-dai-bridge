@@ -1,9 +1,9 @@
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
-import hre from "hardhat";
+import { task } from "hardhat/config";
 
 import { deployL1 } from "./utils";
 
-async function deployDeployer() {
+task("deploy-proxy", "Deploy proxy").setAction(async (_, hre) => {
   const NETWORK = hre.network.name;
 
   const STARKNET_NETWORK =
@@ -18,6 +18,4 @@ async function deployDeployer() {
 
   const proxy = await deployL1(hre, "Proxy", BLOCK_NUMBER, []);
   console.log(proxy.address);
-}
-
-deployDeployer().catch((err) => console.log(err));
+});

@@ -1,6 +1,11 @@
 import { task } from "hardhat/config";
 
-import { getAddress, parseCalldataL1, parseCalldataL2, Signer } from "./utils";
+import {
+  getAddress,
+  L2Signer,
+  parseCalldataL1,
+  parseCalldataL2,
+} from "./utils";
 
 task("invoke:l2", "Invoke an L2 contract")
   .addParam("contract", "Contract to call")
@@ -24,7 +29,7 @@ task("invoke:l2", "Invoke an L2 contract")
     if (!ECDSA_PRIVATE_KEY) {
       throw new Error(`Set ${_name.toUpperCase()}_ECDSA_PRIVATE_KEY in .env`);
     }
-    const l2Signer = new Signer(ECDSA_PRIVATE_KEY);
+    const l2Signer = new L2Signer(ECDSA_PRIVATE_KEY);
     const res = await l2Signer.sendTransaction(
       accountInstance,
       contractInstance,

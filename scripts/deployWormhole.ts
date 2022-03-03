@@ -1,24 +1,22 @@
-import {
-  getAddressOfNextDeployedContract,
-  getRequiredEnv,
-} from "@makerdao/hardhat-utils";
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
 import { expect } from "chai";
-import hre from "hardhat";
+import { task } from "hardhat/config";
 
 import {
   asDec,
   deployL1,
   deployL2,
   getAddress,
+  getAddressOfNextDeployedContract,
   getL2ContractAt,
+  getRequiredEnv,
+  L2Signer,
   printAddresses,
-  Signer,
   wards,
   writeAddresses,
 } from "./utils";
 
-async function deployWormhole(): Promise<void> {
+task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
   const [l1Signer] = await hre.ethers.getSigners();
 
   let NETWORK;
@@ -54,7 +52,7 @@ async function deployWormhole(): Promise<void> {
   console.log(`Deploying bridge on ${NETWORK}/${STARKNET_NETWORK}`);
 
   const DEPLOYER_KEY = getRequiredEnv(`DEPLOYER_ECDSA_PRIVATE_KEY`);
-  const l2Signer = new Signer(DEPLOYER_KEY);
+  const l2Signer = new L2Signer(DEPLOYER_KEY);
 
   const deployer = await getL2ContractAt(
     hre,
@@ -113,10 +111,7 @@ async function deployWormhole(): Promise<void> {
     BigInt(1)
   );
   expect(await wards(l2DAIWormholeBridge, deployer)).to.deep.eq(BigInt(0));
-}
 
-deployWormhole()
-  .then(() => console.log("Successfully deployed"))
-  .then(() => printAddresses(hre))
-  .then(() => writeAddresses(hre))
-  .catch((err) => console.log(err));
+  printAddresses(hre);
+  writeAddresses(hre);
+});

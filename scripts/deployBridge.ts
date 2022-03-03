@@ -1,28 +1,26 @@
-import {
-  getActiveWards,
-  getAddressOfNextDeployedContract,
-  getRequiredEnv,
-  waitForTx,
-} from "@makerdao/hardhat-utils";
-import { getOptionalEnv } from "@makerdao/hardhat-utils/dist/env";
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
 import { expect } from "chai";
-import hre from "hardhat";
+import { task } from "hardhat/config";
 
 import {
   asDec,
   deployL1,
   deployL2,
+  getActiveWards,
   getAddress,
+  getAddressOfNextDeployedContract,
   getL2ContractAt,
+  getOptionalEnv,
+  getRequiredEnv,
+  L2Signer,
   printAddresses,
   save,
-  Signer,
+  waitForTx,
   wards,
   writeAddresses,
 } from "./utils";
 
-async function deployBridge(): Promise<void> {
+task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   const [l1Signer] = await hre.ethers.getSigners();
 
   let NETWORK;
@@ -53,7 +51,7 @@ async function deployBridge(): Promise<void> {
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
   const DEPLOYER_KEY = getRequiredEnv(`DEPLOYER_ECDSA_PRIVATE_KEY`);
-  const l2Signer = new Signer(DEPLOYER_KEY);
+  const l2Signer = new L2Signer(DEPLOYER_KEY);
   const deployer = await getL2ContractAt(
     hre,
     "account",
@@ -190,10 +188,7 @@ async function deployBridge(): Promise<void> {
   expect(await wards(l2DAI, l2GovernanceRelay)).to.deep.eq(BigInt(1));
   expect(await wards(l2DAI, l2DAIBridge)).to.deep.eq(BigInt(1));
   expect(await wards(l2DAI, deployer)).to.deep.eq(BigInt(0));
-}
 
-deployBridge()
-  .then(() => console.log("Successfully deployed"))
-  .then(() => printAddresses(hre))
-  .then(() => writeAddresses(hre))
-  .catch((err) => console.log(err));
+  printAddresses(hre);
+  writeAddresses(hre);
+});
