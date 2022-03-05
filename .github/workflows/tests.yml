@@ -64,6 +64,8 @@ jobs:
       - name: Set up CI env
         run: cp .env.ci .env
 
+      - run: hardhat compile
+
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
       - name: Install deps
