@@ -70,6 +70,11 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v2
 
+      - name: Set up node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 12.x
+
       - name: Set up python
         uses: actions/setup-python@v2
         with:
@@ -80,6 +85,8 @@ jobs:
 
       - name: Set up CI env
         run: cp .env.ci .env
+
+      - run: yarn --no-progress --non-interactive --frozen-lockfile
 
       - name: Install deps
         run: pip install -r requirements.txt
