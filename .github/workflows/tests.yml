@@ -84,4 +84,4 @@ jobs:
       - name: Install deps
         run: pip install -r requirements.txt
 
-      - run: yarn test:e2e:chains
+      - run: yarn test:e2e:chain
