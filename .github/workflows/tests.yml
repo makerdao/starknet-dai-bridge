@@ -61,3 +61,27 @@ jobs:
         run: pip install -r requirements.txt
 
       - run: pytest ./test/l2/* --disable-pytest-warnings
+
+  teste2e:
+    name: E2E Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+
+      - name: Set up CI env
+        run: cp .env.ci .env
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - run: yarn test:e2e:chains

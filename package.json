@@ -15,6 +15,7 @@
     "compile": "yarn compile:l1 && yarn compile:l2",
     "chain:l1": "hardhat node",
     "chain:l2": "starknet-devnet",
+    "chain": "concurrently 'yarn chain:l1' 'yarn chain:l2'",
     "setBalance": "hardhat setBalance --network fork",
     "setDaiBalance": "hardhat setDaiBalance --network fork",
     "deploy-deployer:goerli": "STARKNET_NETWORK=alpha hardhat run --network goerli ./scripts/deploy-deployer.ts",
@@ -28,6 +29,7 @@
     "invoke:l2": "hardhat invoke:l2 --network goerli",
     "test:l1": "NODE_ENV=test TEST_ENV=l1 hardhat test",
     "test:e2e": "NODE_ENV=test TEST_ENV=e2e hardhat test --network localhost",
+    "test:e2e:chain": "concurrently 'yarn chain' 'yarn test:e2e'",
     "test:l2": "pytest ./test/l2/* --disable-pytest-warnings",
     "test:fix": "yarn lint:fix && yarn format:fix && yarn test:l1 && yarn typecheck"
   },
