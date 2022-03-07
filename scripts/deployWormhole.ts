@@ -113,7 +113,9 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
   expect(await wards(l2DAIWormholeBridge, l2GovernanceRelay)).to.deep.eq(
     BigInt(1)
   );
-  expect(await wards(l2DAIWormholeBridge, deployer)).to.deep.eq(BigInt(!DENY_DEPLOYER));
+  expect(await wards(l2DAIWormholeBridge, deployer)).to.deep.eq(
+    BigInt(!DENY_DEPLOYER)
+  );
 
   printAddresses(hre);
   writeAddresses(hre);
