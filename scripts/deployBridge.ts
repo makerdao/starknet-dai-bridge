@@ -46,6 +46,7 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   const L1_ESM_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L1_ESM_ADDRESS`
   );
+  const DENY_DEPLOYER = !!getRequiredEnv("DENY_DEPLOYER");
 
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
@@ -135,17 +136,23 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   console.log("Finalizing permissions for L1Escrow...");
   await waitForTx(l1Escrow.rely(L1_PAUSE_PROXY_ADDRESS));
   await waitForTx(l1Escrow.rely(L1_ESM_ADDRESS));
-  await waitForTx(l1Escrow.deny(await l1Signer.getAddress()));
+  if (DENY_DEPLOYER) {
+    await waitForTx(l1Escrow.deny(await l1Signer.getAddress()));
+  }
 
   console.log("Finalizing permissions for L1DAIBridge...");
   await waitForTx(l1DAIBridge.rely(L1_PAUSE_PROXY_ADDRESS));
   await waitForTx(l1DAIBridge.rely(L1_ESM_ADDRESS));
-  await waitForTx(l1DAIBridge.deny(await l1Signer.getAddress()));
+  if (DENY_DEPLOYER) {
+    await waitForTx(l1DAIBridge.deny(await l1Signer.getAddress()));
+  }
 
   console.log("Finalizing permissions for L1GovernanceRelay...");
   await waitForTx(l1GovernanceRelay.rely(L1_PAUSE_PROXY_ADDRESS));
   await waitForTx(l1GovernanceRelay.rely(L1_ESM_ADDRESS));
-  await waitForTx(l1GovernanceRelay.deny(await l1Signer.getAddress()));
+  if (DENY_DEPLOYER) {
+    await waitForTx(l1GovernanceRelay.deny(await l1Signer.getAddress()));
+  }
 
   console.log("Finalizing permissions for l2_dai...");
   await l2Signer.sendTransaction(deployer, l2DAI, "rely", [
@@ -154,40 +161,41 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   await l2Signer.sendTransaction(deployer, l2DAI, "rely", [
     asDec(l2GovernanceRelay.address),
   ]);
-  await l2Signer.sendTransaction(deployer, l2DAI, "deny", [
-    asDec(deployer.address),
-  ]);
+  if (DENY_DEPLOYER) {
+    await l2Signer.sendTransaction(deployer, l2DAI, "deny", [
+      asDec(deployer.address),
+    ]);
+  }
 
   console.log("Finalizing permissions for l2_dai_bridge...");
   await l2Signer.sendTransaction(deployer, l2DAIBridge, "rely", [
     asDec(l2GovernanceRelay.address),
   ]);
-  await l2Signer.sendTransaction(deployer, l2DAIBridge, "deny", [
-    asDec(deployer.address),
-  ]);
+  if (DENY_DEPLOYER) {
+    await l2Signer.sendTransaction(deployer, l2DAIBridge, "deny", [
+      asDec(deployer.address),
+    ]);
+  }
 
   console.log("L1 permission sanity checks...");
-  expect(await getActiveWards(l1Escrow as any)).to.deep.eq([
-    L1_PAUSE_PROXY_ADDRESS,
-    L1_ESM_ADDRESS,
-  ]);
-  expect(await getActiveWards(l1DAIBridge as any)).to.deep.eq([
-    L1_PAUSE_PROXY_ADDRESS,
-    L1_ESM_ADDRESS,
-  ]);
-  expect(await getActiveWards(l1GovernanceRelay as any)).to.deep.eq([
-    L1_PAUSE_PROXY_ADDRESS,
-    L1_ESM_ADDRESS,
-  ]);
+  let l1Wards;
+  if (DENY_DEPLOYER) {
+    l1Wards = [L1_PAUSE_PROXY_ADDRESS, L1_ESM_ADDRESS];
+  } else {
+    l1Wards = [L1_PAUSE_PROXY_ADDRESS, L1_ESM_ADDRESS, l1Signer.address];
+  }
+  expect(await getActiveWards(l1Escrow as any)).to.deep.eq(l1Wards);
+  expect(await getActiveWards(l1DAIBridge as any)).to.deep.eq(l1Wards);
+  expect(await getActiveWards(l1GovernanceRelay as any)).to.deep.eq(l1Wards);
 
   console.log("L2 bridge permission sanity checks...");
   expect(await wards(l2DAIBridge, l2GovernanceRelay)).to.deep.eq(BigInt(1));
-  expect(await wards(l2DAIBridge, deployer)).to.deep.eq(BigInt(0));
+  expect(await wards(l2DAIBridge, deployer)).to.deep.eq(BigInt(!DENY_DEPLOYER));
 
   console.log("L2 dai permission sanity checks...");
   expect(await wards(l2DAI, l2GovernanceRelay)).to.deep.eq(BigInt(1));
   expect(await wards(l2DAI, l2DAIBridge)).to.deep.eq(BigInt(1));
-  expect(await wards(l2DAI, deployer)).to.deep.eq(BigInt(0));
+  expect(await wards(l2DAI, deployer)).to.deep.eq(BigInt(!DENY_DEPLOYER));
 
   printAddresses(hre);
   writeAddresses(hre);

@@ -45,6 +45,7 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
   const L2_GOVERNANCE_RELAY_ADDRESS = getRequiredEnv(
     `${NETWORK.toUpperCase()}_L2_GOVERNANCE_RELAY_ADDRESS`
   );
+  const DENY_DEPLOYER = !!getRequiredEnv("DENY_DEPLOYER");
 
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
@@ -102,15 +103,17 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
   await l2Signer.sendTransaction(deployer, l2DAIWormholeBridge, "rely", [
     asDec(L2_GOVERNANCE_RELAY_ADDRESS),
   ]);
-  await l2Signer.sendTransaction(deployer, l2DAIWormholeBridge, "deny", [
-    asDec(deployer.address),
-  ]);
+  if (DENY_DEPLOYER) {
+    await l2Signer.sendTransaction(deployer, l2DAIWormholeBridge, "deny", [
+      asDec(deployer.address),
+    ]);
+  }
 
   console.log("L2 wormhole bridge permission sanity checks...");
   expect(await wards(l2DAIWormholeBridge, l2GovernanceRelay)).to.deep.eq(
     BigInt(1)
   );
-  expect(await wards(l2DAIWormholeBridge, deployer)).to.deep.eq(BigInt(0));
+  expect(await wards(l2DAIWormholeBridge, deployer)).to.deep.eq(BigInt(!DENY_DEPLOYER));
 
   printAddresses(hre);
   writeAddresses(hre);
