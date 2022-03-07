@@ -72,7 +72,7 @@ contract L1EscrowMom {
 
     // Governance action without delay
     function refuse(address escrow, address token, address spender) external auth {
-        EscrowLike(escrow).approve(token, spender, 0);
         emit Refuse(escrow, token, spender);
+        EscrowLike(escrow).approve(token, spender, 0);
     }
 }
