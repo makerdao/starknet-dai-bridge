@@ -10,7 +10,6 @@ import "./scripts/deployBridge";
 import "./scripts/deployWormhole";
 import "./scripts/account";
 import "./scripts/fork";
-import "./scripts/spell";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
