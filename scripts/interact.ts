@@ -74,20 +74,3 @@ task("call:l1", "Call an L1 contract")
     const res = await contractInstance[func](..._calldata);
     console.log("Response:", res);
   });
-
-task("call:proxy", "Call L1 proxy contract")
-  .addParam("contract", "Contract to call")
-  .addParam("func", "Abi Function to call")
-  .setAction(async ({ contract, func }, hre) => {
-    const NETWORK = hre.network.name;
-    console.log(`Calling on ${NETWORK}`);
-    const contractAddress = getAddress(contract, NETWORK);
-    const proxyFactory = await hre.ethers.getContractFactory("Proxy");
-    const proxyContract = proxyFactory.attach(
-      getAddress("L1_PAUSE_PROXY_ADDRESS", NETWORK)
-    );
-    const res = await proxyContract.exec(contractAddress, func, {
-      gasLimit: 100000,
-    });
-    console.log("Response:", res);
-  });
