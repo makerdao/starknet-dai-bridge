@@ -17,7 +17,6 @@ artifacts
 starknet-artifacts
 deployments/localhost
 contracts/l2/sample_spell.cairo
-contracts/l1/Spells.sol
 deployer-key.json
 deployments
 yarn-error.log
