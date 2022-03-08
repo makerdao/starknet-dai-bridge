@@ -1,5 +1,5 @@
 {
-    "detectors_to_exclude": "conformance-to-solidity-naming-conventions,unused-return,missing-zero-check,unchecked-transfer",
+    "detectors_to_exclude": "conformance-to-solidity-naming-conventions,unused-return,missing-zero-check,unchecked-transfer,low-level-calls",
     "solc_disable_warnings": false,
     "filter_paths": "node_modules",
     "exclude_informational": false,

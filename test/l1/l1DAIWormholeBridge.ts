@@ -138,7 +138,9 @@ describe("L1DAIWormholeBridge", () => {
 async function setupTest() {
   const [admin, l1Alice, l1Bob] = await hre.ethers.getSigners();
 
-  const starkNetFake = await smock.fake("./contracts/l1/L1DAIWormholeBridge.sol:StarkNetLike");
+  const starkNetFake = await smock.fake(
+    "./contracts/l1/L1DAIWormholeBridge.sol:StarkNetLike"
+  );
   const wormholeRouterFake = await smock.fake("WormholeRouter");
 
   const dai: any = await simpleDeploy("DAIMock", []);

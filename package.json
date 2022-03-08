@@ -17,10 +17,12 @@
     "chain:l2": "starknet-devnet",
     "setBalance": "hardhat setBalance --network fork",
     "setDaiBalance": "hardhat setDaiBalance --network fork",
-    "deploy-deployer:goerli": "STARKNET_NETWORK=alpha hardhat run --network goerli ./scripts/deploy-deployer.ts",
-    "deploy-bridge:goerli": "STARKNET_NETWORK=alpha hardhat run --network goerli ./scripts/deploy-bridge.ts",
-    "deploy-deployer:fork": "hardhat run --network fork ./scripts/deploy-deployer.ts",
-    "deploy-bridge:fork": "hardhat run --network fork ./scripts/deploy-bridge.ts",
+    "deploy-deployer:goerli": "STARKNET_NETWORK=alpha hardhat deploy-deployer --network goerli",
+    "deploy-bridge:goerli": "STARKNET_NETWORK=alpha hardhat deploy-bridge --network goerli",
+    "deploy-wormhole:goerli": "STARKNET_NETWORK=alpha hardhat deploy-wormhole --network goerli",
+    "deploy-deployer:fork": "hardhat deploy-deployer --network fork",
+    "deploy-bridge:fork": "hardhat deploy-bridge --network fork",
+    "deploy-wormhole:fork": "hardhat deploy-wormhole --network fork",
     "account:create": "hardhat account:create --network goerli",
     "account:get": "hardhat account:get --network goerli",
     "call:l1": "hardhat call:l1 --network goerli",
@@ -91,6 +93,7 @@
     "eslint-plugin-unused-imports": "^1.1.5",
     "lodash": "^4.17.21",
     "starknet": "^2.3.1",
+    "ts-essentials": "^9.1.2",
     "yargs": "^17.3.0"
   }
 }

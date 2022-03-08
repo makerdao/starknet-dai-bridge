@@ -5,6 +5,9 @@ import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
 import "./scripts/interact";
+import "./scripts/deployDeployer";
+import "./scripts/deployBridge";
+import "./scripts/deployWormhole";
 import "./scripts/account";
 import "./scripts/fork";
 
@@ -59,7 +62,7 @@ const config: HardhatUserConfig = {
     fork: {
       url: "http://127.0.0.1:8545",
     },
-    l2: {
+    starknet_local: {
       url: "http://127.0.0.1:5000",
     },
     hardhat: {

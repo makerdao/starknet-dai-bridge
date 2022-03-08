@@ -29,10 +29,7 @@ const FINALIZE_FLUSH = 1
 const validDomains = 'validDomains'
 
 @contract_interface
-namespace Mintable:
-    func mint(usr : felt, wad : Uint256):
-    end
-
+namespace Burnable:
     func burn(usr : felt, wad : Uint256):
     end
 end
@@ -330,7 +327,7 @@ func initiate_wormhole{
 
     let (dai) = _dai.read()
     let (caller) = get_caller_address()
-    Mintable.burn(dai, caller, amount_uint256)
+    Burnable.burn(dai, caller, amount_uint256)
 
     let (domain) = _domain.read()
     let (nonce) = read_and_update_nonce()
