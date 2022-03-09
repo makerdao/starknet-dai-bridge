@@ -16,7 +16,6 @@
     "chain:l1": "hardhat node",
     "chain:l2": "starknet-devnet",
     "chain": "concurrently 'yarn chain:l1' 'yarn chain:l2'",
-    "compile": "yarn compile",
     "setBalance": "hardhat setBalance --network fork",
     "setDaiBalance": "hardhat setDaiBalance --network fork",
     "deploy-deployer:goerli": "STARKNET_NETWORK=alpha hardhat run --network goerli ./scripts/deploy-deployer.ts",
