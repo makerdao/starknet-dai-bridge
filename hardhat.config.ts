@@ -74,7 +74,7 @@ const config: HardhatUserConfig = {
   },
   starknet: {
     dockerizedVersion: "0.7.1",
-    network: "devnet",
+    network: process.env.NODE_ENV !== "test" ? process.env.STARKNET_NETWORK : "devnet",
     wallets: {
       user: {
         accountName: "OpenZeppelin",

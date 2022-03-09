@@ -8,7 +8,7 @@ import { parseEther } from "ethers/lib/utils";
 import { ethers, network, starknet } from "hardhat";
 import { HttpNetworkConfig, StarknetContract } from "hardhat/types";
 
-import { Signer, getSelectorFromName } from "../../scripts/utils";
+import { L2Signer, getSelectorFromName } from "../../scripts/utils";
     
 
 const TARGET_DOMAIN = '1';
@@ -98,7 +98,7 @@ describe("e2e", async function () {
     const networkUrl: string = (network.config as HttpNetworkConfig).url;
     [admin, l1Alice, l1Bob] = await ethers.getSigners();
     const KEY = "1";
-    l2Signer = new Signer(KEY);
+    l2Signer = new L2Signer(KEY);
     l2Auth = await simpleDeployL2("account", {
       _public_key: BigInt(l2Signer.publicKey),
     });
