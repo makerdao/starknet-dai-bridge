@@ -1,13 +1,117 @@
+/**
+ * Full goerli deploy including any permissions that need to be set.
+ */
+import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
+import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
 import { ethers } from "ethers";
+import { writeFileSync } from "fs";
 import fs from "fs";
-import { StarknetContract } from "hardhat/types/runtime";
+import { isEmpty } from "lodash";
 import { ec, hash } from "starknet";
-const { getKeyPair, getStarkKey, sign, verify } = ec;
+import { assert } from "ts-essentials";
+const { genKeyPair, getKeyPair, getStarkKey, sign, verify } = ec;
 const { hashMessage } = hash;
+import {
+  BaseContract,
+  BigNumber,
+  CallOverrides,
+  ContractTransaction,
+  Event,
+  EventFilter,
+  Overrides,
+  providers,
+  Signer,
+} from "ethers";
+import { getContractAddress, Result } from "ethers/lib/utils";
 import type { KeyPair, Signature } from "starknet";
 
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
+
+export function getRequiredEnv(key: string): string {
+  const value = process.env[key];
+  assert(value, `Please provide ${key} in .env file`);
+
+  return value;
+}
+
+export function getOptionalEnv(key: string): string | undefined {
+  return process.env[key];
+}
+
+interface TypedEventFilter<_EventArgsArray, _EventArgsObject>
+  extends EventFilter {}
+
+interface TypedEvent<EventArgs extends Result> extends Event {
+  args: EventArgs;
+}
+
+interface AuthableLike {
+  deny: any;
+  rely: any;
+}
+
+interface AuthableContract extends BaseContract {
+  queryFilter<EventArgsArray extends Array<any>, EventArgsObject>(
+    event: TypedEventFilter<EventArgsArray, EventArgsObject>,
+    fromBlockOrBlockhash?: string | number | undefined,
+    toBlock?: string | number | undefined
+  ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
+  deny(
+    usr: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+  rely(
+    usr: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+  wards(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+  filters: {
+    Deny(usr?: string | null): TypedEventFilter<[string], { usr: string }>;
+    Rely(usr?: string | null): TypedEventFilter<[string], { usr: string }>;
+  };
+}
+
+export async function getActiveWards(
+  _authContract: AuthableLike,
+  fromBlockOrBlockhash?: string | number
+): Promise<string[]> {
+  const authContract = _authContract as AuthableContract;
+  const relyEvents = await authContract.queryFilter(
+    authContract.filters.Rely(),
+    fromBlockOrBlockhash
+  );
+
+  const relies = relyEvents.map((r) => r.args.usr);
+
+  const statusOfRelies = await Promise.all(
+    relies.map(async (usr) => ({ usr, active: await authContract.wards(usr) }))
+  );
+
+  const activeRelies = statusOfRelies
+    .filter((s) => s.active.toNumber() === 1)
+    .map((s) => s.usr);
+
+  return activeRelies;
+}
+
+export async function getAddressOfNextDeployedContract(
+  signer: Signer,
+  offset: number = 0
+): Promise<string> {
+  return getContractAddress({
+    from: await signer.getAddress(),
+    nonce: (await signer.getTransactionCount()) + offset,
+  });
+}
+
+export async function waitForTx(
+  tx: Promise<any>
+): Promise<providers.TransactionReceipt> {
+  const resolvedTx = await tx;
+  return await resolvedTx.wait();
+}
 
 export function getAddress(contract: string, network: string) {
   try {
@@ -15,13 +119,17 @@ export function getAddress(contract: string, network: string) {
       fs.readFileSync(`./deployments/${network}/${contract}.json`).toString()
     ).address;
   } catch (err) {
-    throw Error(
-      `${contract} deployment on ${network} not found, run 'yarn deploy:${network}'`
-    );
+    if (process.env[`${network.toUpperCase()}_${contract}`]) {
+      return process.env[`${network.toUpperCase()}_${contract}`];
+    } else {
+      throw Error(
+        `${contract} deployment on ${network} not found, run 'yarn deploy:${network}'`
+      );
+    }
   }
 }
 
-export function getAccounts(network: string) {
+function getAccounts(network: string) {
   const files = fs.readdirSync(`./deployments/${network}`);
   return files
     .filter((file) => file.slice(0, 7) === "account")
@@ -40,6 +148,14 @@ export function parseCalldataL1(calldata: string, network: string) {
       return getAddress("l2_dai_bridge", network);
     } else if (input === "L1DAIBridge") {
       return getAddress("L1DAIBridge", network);
+    } else if (input === "L1DAIWormholeBridge") {
+      return getAddress("L1DAIWormholeBridge", network);
+    } else if (input === "L1Escrow") {
+      return getAddress("L1Escrow", network);
+    } else if (input === "DAI") {
+      return getAddress("DAI", network);
+    } else if (input === "EscrowApproveAction") {
+      return getAddress("EscrowApproveAction", network);
     } else {
       return input;
     }
@@ -113,7 +229,7 @@ export function save(
   );
 }
 
-export function getSelectorFromName(name: string) {
+function getSelectorFromName(name: string) {
   return (
     BigInt(ethers.utils.keccak256(Buffer.from(name))) % MASK_250
   ).toString();
@@ -131,7 +247,7 @@ function flatten(calldata: any): any[] {
   return res;
 }
 
-export class Signer {
+export class L2Signer {
   privateKey;
   keyPair: KeyPair;
   publicKey;
@@ -188,4 +304,127 @@ export class Signer {
       }
     );
   }
+}
+
+export async function genAndSaveKeyPair(): Promise<KeyPair> {
+  const keyPair = genKeyPair();
+  writeFileSync(
+    ".env.deployer",
+    `DEPLOYER_ECDSA_PRIVATE_KEY=${keyPair.priv.toString()}`
+  );
+  return keyPair;
+}
+
+export function printAddresses(hre: any) {
+  const NETWORK = hre.network.name;
+
+  const contracts = [
+    "account-deployer",
+    "dai",
+    "registry",
+    "L1Escrow",
+    "l2_dai_bridge",
+    "L1DAIBridge",
+    "l2_governance_relay",
+    "L1GovernanceRelay",
+  ];
+
+  const addresses = contracts.reduce(
+    (a, c) => Object.assign(a, { [c]: getAddress(c, NETWORK) }),
+    {}
+  );
+
+  console.log(addresses);
+}
+
+export function writeAddresses(hre: any) {
+  const NETWORK = hre.network.name;
+
+  const variables = [
+    ["L1_ESCROW_ADDRESS", "L1Escrow"],
+    ["L2_DAI_ADDRESS", "l2_dai_bridge"],
+    ["L1_GOVERNANCE_RELAY_ADDRESS", "L1GovernanceRelay"],
+    ["L2_GOVERNANCE_RELAY_ADDRESS", "l2_governance_relay"],
+    ["L1_DAI_BRIDGE_ADDRESS", "L1DAIBridge"],
+    ["L2_DAI_BRIDGE_ADDRESS", "l2_dai_bridge"],
+    ["L1_DAI_WORMHOLE_BRIDGE_ADDRESS", "L1DAIWormholeBridge"],
+    ["L2_DAI_WORMHOLE_BRIDGE_ADDRESS", "l2_dai_wormhole_bridge"],
+  ];
+
+  const addresses = variables.reduce((a, c) => {
+    const address = getAddress(c[1], NETWORK);
+    if (address) {
+      return `${a}${NETWORK.toUpperCase()}_${c[0]}=${address}\n`;
+    } else {
+      return a;
+    }
+  }, "");
+
+  fs.writeFileSync(".env.deployments", addresses);
+}
+
+export async function wards(
+  authable: StarknetContract,
+  ward: StarknetContract
+) {
+  return (await authable.call("wards", { user: asDec(ward.address) })).res;
+}
+
+export function asDec(address: string): string {
+  return BigInt(address).toString();
+}
+
+export async function getL1ContractAt(hre: any, name: string, address: string) {
+  console.log(`Using existing contract: ${name} at: ${address}`);
+  const contractFactory = await hre.ethers.getContractFactory(name);
+  return contractFactory.attach(address);
+}
+
+export async function getL2ContractAt(hre: any, name: string, address: string) {
+  console.log(`Using existing contract: ${name} at: ${address}`);
+  const contractFactory = await hre.starknet.getContractFactory(name);
+  return contractFactory.getContractAt(address);
+}
+
+export async function deployL2(
+  hre: any,
+  name: string,
+  blockNumber: number,
+  calldata: any = {},
+  saveName?: string
+) {
+  const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
+  console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
+  const contractFactory = await hre.starknet.getContractFactory(name);
+
+  const contract = await contractFactory.deploy(calldata);
+  save(saveName || name, contract, hre.network.name, blockNumber);
+
+  console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
+  console.log(
+    `To verify: npx hardhat starknet-verify --starknet-network ${STARKNET_NETWORK} --path contracts/l2/${name}.cairo --address ${contract.address}`
+  );
+  return contract;
+}
+
+export async function deployL1(
+  hre: any,
+  name: string,
+  blockNumber: number,
+  calldata: any = [],
+  saveName?: string
+) {
+  console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
+  const contractFactory = await hre.ethers.getContractFactory(name);
+  const contract = await contractFactory.deploy(...calldata);
+  save(saveName || name, contract, hre.network.name, blockNumber);
+
+  console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
+  console.log(
+    `To verify: npx hardhat verify ${contract.address} ${calldata
+      .filter((a: any) => !isEmpty(a))
+      .join(" ")}`
+  );
+  await contract.deployed();
+  return contract;
 }

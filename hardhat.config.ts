@@ -5,6 +5,9 @@ import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
 import "./scripts/interact";
+import "./scripts/deployDeployer";
+import "./scripts/deployBridge";
+import "./scripts/deployWormhole";
 import "./scripts/account";
 import "./scripts/fork";
 
