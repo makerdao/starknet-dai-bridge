@@ -119,21 +119,6 @@ export function getSelectorFromName(name: string) {
   ).toString();
 }
 
-export async function callFrom(
-  caller: StarknetContract,
-  contract: StarknetContract,
-  call: string,
-  calldata: any[] | any
-) {
-  const selector = getSelectorFromName(call);
-  const _calldata = flatten(calldata);
-  return caller.invoke("execute", {
-    to: BigInt(contract.address).toString(),
-    selector,
-    calldata: _calldata,
-  });
-}
-
 function flatten(calldata: any): any[] {
   const res: any = [];
   Object.values(calldata).forEach((data: any) => {

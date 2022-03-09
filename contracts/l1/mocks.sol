@@ -14,11 +14,28 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pragma solidity ^0.7.6;
+pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./WormholeGUID.sol";
 
 contract DAIMock is ERC20 {
     constructor () ERC20('DAI', 'DAI') {
         _mint(msg.sender, 1_000_000 * 1 ether);
     }
+}
+
+contract WormholeRouterMock {
+  function requestMint(
+    WormholeGUID calldata wormholeGUID,
+    uint256 maxFeePercentage,
+    uint256 operatorFee
+  ) external returns (uint256 postFeeAmount, uint256 totalFee) {
+    postFeeAmount = maxFeePercentage;
+    totalFee = operatorFee;
+  }
+
+  function settle(bytes32 targetDomain, uint256 batchedDaiToFlush) external {
+    uint256 totalFee = batchedDaiToFlush;
+  }
 }

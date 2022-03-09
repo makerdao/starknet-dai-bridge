@@ -26,7 +26,7 @@ from starkware.cairo.common.uint256 import (Uint256, uint256_lt, uint256_add, ui
 
 const FINALIZE_REGISTER_WORMHOLE = 0
 const FINALIZE_FLUSH = 1
-const validDomains = 'validDomains'
+const valid_domains = 'valid_domains'
 
 @contract_interface
 namespace Mintable:
@@ -282,7 +282,7 @@ func file{
     data : felt,
   ):
     with_attr error_message("l2_dai_wormhole_bridge/invalid-file"):
-      assert what = validDomains
+      assert what = valid_domains
     end
 
     with_attr error_message("l2_dai_wormhole_bridge/invalid-data"):
