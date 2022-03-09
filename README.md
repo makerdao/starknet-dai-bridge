@@ -26,6 +26,12 @@ Bridge provides two main functions: `deposit` and `withdraw`. On L1 `deposit`, b
 * `l2_governance_delay` - executes governance action relayed from L1
 * `registry` - provides L2 to L1 address mapping
 
+### Bridge Ceiling
+The amount of bridged DAI can be restricted by setting a ceiling property(`setCeiling`) on the L1DAIBridge. Setting it to Uint256.max will make it effectively unlimited, setting it to anything lower than the amount currently bridged will temporarily disable deposits.
+
+### Deposit Limit
+To make DAI bridge compatible with generic StarkNet token bridges a single deposit limit(`setMaxDeposit`) was added. Setting it to a value above the ceiling will make deposits unlimited, setting it to 0 will temporarily disable the bridge.
+
 ### Starknet DAI
 Since StarkNet execution environment is significantly different than EVM, Starknet DAI is not a one to one copy of L1 DAI. Here are the diferences:
 * [`uint256`](https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/uint256.cairo) to represent balances, for compatibility with L1
@@ -33,7 +39,7 @@ Since StarkNet execution environment is significantly different than EVM, Starkn
 * `increase_allowance`, `decrease_allowance` - extra methods to prevent approval front running
 
 ## Authorization
-Sevaral contracts here use a very simple multi-owner authentication system, that restricts access to certain functions of the contract interface:
+Several contracts here use a very simple multi-owner authentication system, that restricts access to certain functions of the contract interface:
 * L1DAIBridge: `rely`, `deny`, `setCeiling`, `close`
 * L1Escrow: `relay`, `deny`, `approve`
 * L1GovernanceRelay: `rely`, `deny`, `approve`
