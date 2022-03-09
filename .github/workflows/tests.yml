@@ -63,34 +63,34 @@ jobs:
       - run: pytest ./test/l2/* --disable-pytest-warnings
 
   teste2e:
-  name: E2E Unit Tests
-  runs-on: ubuntu-latest
+    name: E2E Unit Tests
+    runs-on: ubuntu-latest
 
-  steps:
-    - name: Check out Git repository
-      uses: actions/checkout@v2
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
 
-    - name: Set up node
-      uses: actions/setup-node@v2
-      with:
-        node-version: 12.x
+      - name: Set up node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 12.x
 
-    - name: Set up python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
 
-    - name: Display Python version
-      run: python -c "import sys; print(sys.version)"
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
 
-    - name: Set up CI env
-      run: cp .env.ci .env
+      - name: Set up CI env
+        run: cp .env.ci .env
 
-    - run: yarn --no-progress --non-interactive --frozen-lockfile
+      - run: yarn --no-progress --non-interactive --frozen-lockfile
 
-    - run: yarn compile
+      - run: yarn compile
 
-    - name: Install deps
-      run: pip install -r requirements.txt
+      - name: Install deps
+        run: pip install -r requirements.txt
 
-    - run: yarn test:e2e:chain
+      - run: yarn test:e2e:chain
