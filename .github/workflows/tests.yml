@@ -88,7 +88,7 @@ jobs:
 
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
-      - run: yarn compile
+      - run: npx hardhat compile --force
 
       - name: Install deps
         run: pip install -r requirements.txt
