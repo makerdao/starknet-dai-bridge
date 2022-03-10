@@ -12,7 +12,7 @@ import { getSelectorFromName, L2Signer } from "../../scripts/utils";
 
 const TARGET_DOMAIN = "1";
 const SOURCE_DOMAIN = "2";
-const VALID_DOMAINS = "9379074284324409537785911406195";
+const VALID_DOMAINS = "36637008923134637018442198643";
 
 function toSplitUint(value: any) {
   const bits = value.padStart(64, "0");
