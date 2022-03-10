@@ -6,84 +6,24 @@ import { expect } from "chai";
 import { parseEther } from "ethers/lib/utils";
 import { ethers, network, starknet } from "hardhat";
 import { HttpNetworkConfig, StarknetContract } from "hardhat/types";
-import fetch from "node-fetch";
 
 import { getSelectorFromName, L2Signer } from "../../scripts/utils";
+import {
+  simpleDeployL2,
+  eth,
+  l2Eth,
+  toBytes32,
+  toUint,
+  splitAdd,
+  splitSub,
+  asDec,
+  getEvent,
+  checkL2Balance,
+} from "../utils";
 
 const TARGET_DOMAIN = "1";
 const SOURCE_DOMAIN = "2";
 const VALID_DOMAINS = "36637008923134637018442198643";
-
-function toSplitUint(value: any) {
-  const bits = value.padStart(64, "0");
-  return [BigInt(`0x${bits.slice(32)}`), BigInt(`0x${bits.slice(0, 32)}`)];
-}
-
-function toUint(value: BigInt[]) {
-  return BigInt(`0x${value[1].toString(16)}${value[0].toString(16)}`);
-}
-
-function splitAdd(a: any, b: any) {
-  return toSplitUint((toUint(a) + toUint(b)).toString(16));
-}
-
-function splitSub(a: any, b: any) {
-  return toSplitUint((toUint(a) - toUint(b)).toString(16));
-}
-
-function asDec(input: string | number | bigint): string {
-  return BigInt(input).toString();
-}
-
-function eth(amount: string) {
-  return parseEther(amount);
-}
-
-function l2Eth(amount: string) {
-  return toSplitUint(parseEther(amount).toBigInt().toString(16));
-}
-
-function toBytes32(value: string): string {
-  return `0x${BigInt(value).toString(16).padStart(64, "0")}`;
-}
-
-async function getEvent(eventName: string, contractAddress: string) {
-  const _contractAddress = `0x${BigInt(contractAddress).toString(16)}`;
-  const eventKey = getSelectorFromName(eventName);
-  const res = await fetch(`http://localhost:5000/feeder_gateway/get_block`);
-  const json = await res.json();
-  const [event] = json["transaction_receipts"][0]["events"].filter(
-    (event: any) => {
-      return (
-        event.keys[0] === eventKey && event.from_address === _contractAddress
-      );
-    }
-  );
-  if (!event) {
-    throw Error("Event not found");
-  }
-  return event.data;
-}
-
-async function checkL2Balance(
-  daiContract: any,
-  accountContract: any,
-  expectedBalance: any
-) {
-  const actualBalance = await daiContract.call("balanceOf", {
-    user: asDec(accountContract.address),
-  });
-  expect(actualBalance.res.low).to.be.eq(expectedBalance[0]);
-  expect(actualBalance.res.high).to.be.eq(expectedBalance[1]);
-}
-
-async function simpleDeployL2(
-  name: string,
-  args: object
-): Promise<StarknetContract> {
-  const factory = await starknet.getContractFactory(name);
-  return factory.deploy(args);
-}
 
 describe("e2e", async function () {
   this.timeout(900_000); // eslint-disable-line
@@ -229,7 +169,7 @@ describe("e2e", async function () {
     expect(await dai.balanceOf(l1Alice.address)).to.be.eq(withdrawAmountL1);
   });
 
-  it("wormhole", async () => {
+  it("slow path", async () => {
     const wormholeAmountL1 = eth("100");
     const wormholeAmountL2 = l2Eth("100");
     await l2Signer.sendTransaction(
