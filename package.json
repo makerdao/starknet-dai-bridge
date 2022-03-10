@@ -31,7 +31,7 @@
     "call:l2": "hardhat call:l2 --network goerli",
     "invoke:l2": "hardhat invoke:l2 --network goerli",
     "test:l1": "NODE_ENV=test TEST_ENV=l1 hardhat test",
-    "test:e2e": "wait-on tcp:5000 && wait-on tcp:8585 && NODE_ENV=test TEST_ENV=e2e hardhat test --network localhost",
+    "test:e2e": "wait-on tcp:5000 && wait-on tcp:8545 && NODE_ENV=test TEST_ENV=e2e hardhat test --network localhost",
     "test:e2e:kill": "yarn test:e2e && killall node && killall python",
     "test:e2e:chain:kill": "concurrently 'yarn chain' 'yarn test:e2e:kill'",
     "test:l2": "pytest ./test/l2/* --disable-pytest-warnings",

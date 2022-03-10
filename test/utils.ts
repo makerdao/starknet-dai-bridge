@@ -64,7 +64,7 @@ export async function getEvent(eventName: string, contractAddress: string) {
 export async function checkL2Balance(
   daiContract: any,
   accountContract: any,
-  expectedBalance: any
+  expectedBalance: any[]
 ) {
   const actualBalance = await daiContract.call("balanceOf", {
     user: asDec(accountContract.address),

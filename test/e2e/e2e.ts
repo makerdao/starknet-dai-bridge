@@ -171,6 +171,9 @@ describe("e2e", async function () {
   it("slow path", async () => {
     const wormholeAmountL1 = eth("100");
     const wormholeAmountL2 = l2Eth("100");
+    const { res: l2AuthBalance } = await l2Dai.call("balanceOf", {
+      user: asDec(l2Auth.address),
+    });
     await l2Signer.sendTransaction(
       l2Auth,
       l2WormholeBridge,
@@ -214,6 +217,12 @@ describe("e2e", async function () {
       .connect(l1Alice)
       .finalizeRegisterWormhole(wormholeGUID);
 
+    expect(await dai.balanceOf(l1Alice.address)).to.be.eq(wormholeAmountL1);
+    await checkL2Balance(
+      l2Dai,
+      l2Auth,
+      splitSub(Object.values(l2AuthBalance), wormholeAmountL2)
+    );
     /*
     expect(wormholeRouterFake.requestMint).to.have.been.calledOnce;
     expect(wormholeRouterFake.requestMint).to.have.been.calledWith(
@@ -227,6 +236,7 @@ describe("e2e", async function () {
   it("settle", async () => {
     const depositAmountL1 = eth("100");
     await l1Bridge.connect(l1Alice).deposit(depositAmountL1, l2Auth.address);
+    const escrowBalance = await dai.balanceOf(escrow.address);
     const { res: daiToFlush } = await l2WormholeBridge.call(
       "batched_dai_to_flush",
       {
@@ -244,6 +254,15 @@ describe("e2e", async function () {
       );
     await starknet.devnet.flush();
 
+    expect(await dai.balanceOf(escrow.address)).to.be.eq(BigInt(escrowBalance) - toUint(Object.values(daiToFlush)));
+    const { res: daiToFlushPost } = await l2WormholeBridge.call(
+      "batched_dai_to_flush",
+      {
+        domain: TARGET_DOMAIN,
+      }
+    );
+    expect(daiToFlushPost.low).to.be.eq(eth("0"));
+    expect(daiToFlushPost.high).to.be.eq(eth("0"));
     /*
     expect(wormholeRouterFake.settle).to.have.been.calledOnce;
     expect(wormholeRouterFake.settle).to.have.been.calledWith(
