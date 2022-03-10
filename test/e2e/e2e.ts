@@ -22,7 +22,7 @@ import {
 
 const TARGET_DOMAIN = "1";
 const SOURCE_DOMAIN = "2";
-const VALID_DOMAINS = "36637008923134637018442198643";
+const VALID_DOMAINS = "9379074284324409537785911406195";
 
 describe("e2e", async function () {
   this.timeout(900_000); // eslint-disable-line
@@ -254,7 +254,9 @@ describe("e2e", async function () {
       );
     await starknet.devnet.flush();
 
-    expect(await dai.balanceOf(escrow.address)).to.be.eq(BigInt(escrowBalance) - toUint(Object.values(daiToFlush)));
+    expect(await dai.balanceOf(escrow.address)).to.be.eq(
+      BigInt(escrowBalance) - toUint(Object.values(daiToFlush))
+    );
     const { res: daiToFlushPost } = await l2WormholeBridge.call(
       "batched_dai_to_flush",
       {
