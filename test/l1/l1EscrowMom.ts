@@ -1,17 +1,15 @@
 import { smock } from "@defi-wonderland/smock";
 import {
   assertPublicMutableMethods,
-  getRandomAddresses,
   simpleDeploy,
-  testAuth,
 } from "@makerdao/hardhat-utils";
 import { expect } from "chai";
 import hre from "hardhat";
 
-describe.only("escrow mom", () => {
+describe("escrow mom", () => {
   describe("refuse", () => {
     it("sets approval to zero", async () => {
-      const { admin, l1Alice, l1Bob, dai, escrow, mom, authorityFake } =
+      const { l1Alice, l1Bob, dai, escrow, mom, authorityFake } =
         await setupTest();
 
       authorityFake.canCall
@@ -39,7 +37,7 @@ describe.only("escrow mom", () => {
       expect(await dai.allowance(escrow.address, l1Alice.address)).to.be.eq(0);
     });
     it("emits Refuse event", async () => {
-      const { admin, l1Alice, l1Bob, dai, escrow, mom, authorityFake } =
+      const { l1Alice, l1Bob, dai, escrow, mom, authorityFake } =
         await setupTest();
 
       authorityFake.canCall
@@ -59,7 +57,7 @@ describe.only("escrow mom", () => {
         .withArgs(escrow.address, dai.address, l1Alice.address);
     });
     it("refuse reverts when called by unauthed user", async () => {
-      const { admin, l1Alice, l1Bob, dai, escrow, mom, authorityFake } =
+      const { l1Alice, l1Bob, dai, escrow, mom, authorityFake } =
         await setupTest();
 
       authorityFake.canCall
@@ -81,8 +79,7 @@ describe.only("escrow mom", () => {
       expect(await dai.allowance(escrow.address, l1Alice.address)).to.be.eq(0);
     });
     it("refuse reverts when called by unauthed user", async () => {
-      const { admin, l1Alice, l1Bob, dai, escrow, mom, authorityFake } =
-        await setupTest();
+      const { l1Bob, mom, authorityFake } = await setupTest();
 
       authorityFake.canCall
         .whenCalledWith(
@@ -101,16 +98,15 @@ describe.only("escrow mom", () => {
       await expect(
         mom.connect(l1Bob).setOwner(authorityFake.address)
       ).to.be.revertedWith("L1EscrowMom/only-owner");
-
     });
-  }),
-    it("has correct public interface", async () => {
-      await assertPublicMutableMethods("L1EscrowMom", [
-        "refuse(address,address,address)",
-        "setAuthority(address)",
-        "setOwner(address)",
-      ]);
-    });
+  });
+  it("has correct public interface", async () => {
+    await assertPublicMutableMethods("L1EscrowMom", [
+      "refuse(address,address,address)",
+      "setAuthority(address)",
+      "setOwner(address)",
+    ]);
+  });
 });
 
 async function setupTest() {
