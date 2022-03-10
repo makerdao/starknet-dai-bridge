@@ -8,8 +8,9 @@ import {
 import chai, { expect } from "chai";
 import { ethers } from "ethers";
 import { parseEther } from "ethers/lib/utils";
-import { asHex, toSplitUint } from "../utils";
 import hre from "hardhat";
+
+import { asHex, toSplitUint } from "../utils";
 
 chai.use(smock.matchers);
 

@@ -3,22 +3,21 @@ import {
   simpleDeploy,
 } from "@makerdao/hardhat-utils";
 import { expect } from "chai";
-import { parseEther } from "ethers/lib/utils";
 import { ethers, network, starknet } from "hardhat";
-import { HttpNetworkConfig, StarknetContract } from "hardhat/types";
+import { HttpNetworkConfig } from "hardhat/types";
 
-import { getSelectorFromName, L2Signer } from "../../scripts/utils";
+import { L2Signer } from "../../scripts/utils";
 import {
-  simpleDeployL2,
+  asDec,
+  checkL2Balance,
   eth,
+  getEvent,
   l2Eth,
-  toBytes32,
-  toUint,
+  simpleDeployL2,
   splitAdd,
   splitSub,
-  asDec,
-  getEvent,
-  checkL2Balance,
+  toBytes32,
+  toUint,
 } from "../utils";
 
 const TARGET_DOMAIN = "1";

@@ -1,9 +1,10 @@
-import { StarknetContract } from "hardhat/types";
-import { getSelectorFromName } from "../scripts/utils";
+import { expect } from "chai";
 import { parseEther } from "ethers/lib/utils";
 import { starknet } from "hardhat";
-import { expect } from "chai";
+import { StarknetContract } from "hardhat/types";
 import fetch from "node-fetch";
+
+import { getSelectorFromName } from "../scripts/utils";
 
 export function toSplitUint(value: any) {
   const bits = value.padStart(64, "0");
@@ -79,4 +80,3 @@ export async function simpleDeployL2(
   const factory = await starknet.getContractFactory(name);
   return factory.deploy(args);
 }
-
