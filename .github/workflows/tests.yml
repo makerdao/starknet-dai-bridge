@@ -89,7 +89,7 @@ jobs:
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
       - run: npx hardhat compile --force
-      - run: yarn compile:l2 --force
+      - run: yarn compile:l2
 
       - name: Install deps
         run: pip install -r requirements.txt
