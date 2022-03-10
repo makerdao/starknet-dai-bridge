@@ -25,6 +25,7 @@ contract DAIMock is ERC20 {
     }
 }
 
+// slither-disable-next-line missing-inheritance
 contract WormholeRouterMock {
   function requestMint(
     WormholeGUID calldata wormholeGUID,

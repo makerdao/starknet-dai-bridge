@@ -26,7 +26,7 @@ from starkware.cairo.common.uint256 import (Uint256, uint256_lt, uint256_add, ui
 
 const FINALIZE_REGISTER_WORMHOLE = 0
 const FINALIZE_FLUSH = 1
-const valid_domains = 'valid_domains'
+const valid_domains_file = 'valid_domains'
 
 @contract_interface
 namespace Burnable:
@@ -279,7 +279,7 @@ func file{
     data : felt,
   ):
     with_attr error_message("l2_dai_wormhole_bridge/invalid-file"):
-      assert what = valid_domains
+      assert what = valid_domains_file
     end
 
     with_attr error_message("l2_dai_wormhole_bridge/invalid-data"):
