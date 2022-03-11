@@ -213,9 +213,9 @@ describe("e2e", async function () {
       nonce: parseInt(event[5]), // uint80
       timestamp: parseInt(event[6]), // uint48
     };
-    await expect(l1WormholeBridge
-      .connect(l1Alice)
-      .finalizeRegisterWormhole(wormholeGUID))
+    await expect(
+      l1WormholeBridge.connect(l1Alice).finalizeRegisterWormhole(wormholeGUID)
+    )
       .to.emit(wormholeRouterFake, "RequestMint")
       .withArgs(Object.values(wormholeGUID), eth("0"), eth("0"));
 
@@ -240,12 +240,14 @@ describe("e2e", async function () {
     await l2Signer.sendTransaction(l2Auth, l2WormholeBridge, "flush", [
       TARGET_DOMAIN,
     ]);
-    await expect(l1WormholeBridge
-      .connect(l1Alice)
-      .finalizeFlush(
-        toBytes32(TARGET_DOMAIN),
-        toUint(Object.values(daiToFlush))
-      ))
+    await expect(
+      l1WormholeBridge
+        .connect(l1Alice)
+        .finalizeFlush(
+          toBytes32(TARGET_DOMAIN),
+          toUint(Object.values(daiToFlush))
+        )
+    )
       .to.emit(wormholeRouterFake, "Settle")
       .withArgs(toBytes32(TARGET_DOMAIN), toUint(Object.values(daiToFlush)));
 
