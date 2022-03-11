@@ -85,7 +85,7 @@
     "@nomiclabs/ethereumjs-vm": "^4.2.2",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "3.4.2-solc-0.7",
-    "@shardlabs/starknet-hardhat-plugin": "0.4.2",
+    "@shardlabs/starknet-hardhat-plugin": "0.5.1",
     "@types/yargs": "^17.0.7",
     "concurrently": "^7.0.0",
     "earljs": "^0.2.1",
