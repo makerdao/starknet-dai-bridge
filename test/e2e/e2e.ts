@@ -210,12 +210,14 @@ describe("e2e", async function () {
       receiver: toBytes32(l1Alice.address), // bytes32
       operator: toBytes32(l1Alice.address), // bytes32
       amount: wormholeAmountL1, // uint128
-      nonce: event[5], // uint80
-      timestamp: event[6], // uint48
+      nonce: parseInt(event[5]), // uint80
+      timestamp: parseInt(event[6]), // uint48
     };
-    await l1WormholeBridge
+    await expect(l1WormholeBridge
       .connect(l1Alice)
-      .finalizeRegisterWormhole(wormholeGUID);
+      .finalizeRegisterWormhole(wormholeGUID))
+      .to.emit(wormholeRouterFake, "RequestMint")
+      .withArgs(Object.values(wormholeGUID), eth("0"), eth("0"));
 
     expect(await dai.balanceOf(l1Alice.address)).to.be.eq(wormholeAmountL1);
     await checkL2Balance(
@@ -223,14 +225,6 @@ describe("e2e", async function () {
       l2Auth,
       splitSub(Object.values(l2AuthBalance), wormholeAmountL2)
     );
-    /*
-    expect(wormholeRouterFake.requestMint).to.have.been.calledOnce;
-    expect(wormholeRouterFake.requestMint).to.have.been.calledWith(
-      wormholeGUID,
-      0,
-      0,
-    );
-    */
   });
 
   it("settle", async () => {
@@ -246,12 +240,15 @@ describe("e2e", async function () {
     await l2Signer.sendTransaction(l2Auth, l2WormholeBridge, "flush", [
       TARGET_DOMAIN,
     ]);
-    await l1WormholeBridge
+    await expect(l1WormholeBridge
       .connect(l1Alice)
       .finalizeFlush(
         toBytes32(TARGET_DOMAIN),
         toUint(Object.values(daiToFlush))
-      );
+      ))
+      .to.emit(wormholeRouterFake, "Settle")
+      .withArgs(toBytes32(TARGET_DOMAIN), toUint(Object.values(daiToFlush)));
+
     await starknet.devnet.flush();
 
     expect(await dai.balanceOf(escrow.address)).to.be.eq(
@@ -265,12 +262,5 @@ describe("e2e", async function () {
     );
     expect(daiToFlushPost.low).to.be.eq(eth("0"));
     expect(daiToFlushPost.high).to.be.eq(eth("0"));
-    /*
-    expect(wormholeRouterFake.settle).to.have.been.calledOnce;
-    expect(wormholeRouterFake.settle).to.have.been.calledWith(
-      TARGET_DOMAIN,
-      daiToFlush,
-    );
-    */
   });
 });

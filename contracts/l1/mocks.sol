@@ -27,16 +27,21 @@ contract DAIMock is ERC20 {
 
 // slither-disable-next-line missing-inheritance
 contract WormholeRouterMock {
+
+  event RequestMint(WormholeGUID wormholeGUID, uint256 maxFeePercentage, uint256 operatorFee);
+  event Settle(bytes32 targetDomain, uint256 batchedDaiToFlush);
+
   function requestMint(
     WormholeGUID calldata wormholeGUID,
     uint256 maxFeePercentage,
     uint256 operatorFee
   ) external returns (uint256 postFeeAmount, uint256 totalFee) {
+    emit RequestMint(wormholeGUID, maxFeePercentage, operatorFee);
     postFeeAmount = maxFeePercentage;
     totalFee = operatorFee;
   }
 
   function settle(bytes32 targetDomain, uint256 batchedDaiToFlush) external {
-    uint256 totalFee = batchedDaiToFlush;
+    emit Settle(targetDomain, batchedDaiToFlush);
   }
 }
