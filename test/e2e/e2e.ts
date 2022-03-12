@@ -9,19 +9,17 @@ import { HttpNetworkConfig } from "hardhat/types";
 import { L2Signer } from "../../scripts/utils";
 import {
   asDec,
-  checkL2Balance,
   eth,
   getEvent,
   l2Eth,
   simpleDeployL2,
-  splitAdd,
-  splitSub,
+  SplitUint,
   toBytes32,
-  toUint,
 } from "../utils";
 
 const TARGET_DOMAIN = "1";
 const SOURCE_DOMAIN = "2";
+// Cairo encoding of "valid_domains"
 const VALID_DOMAINS = "9379074284324409537785911406195";
 
 describe("e2e", async function () {
@@ -52,11 +50,11 @@ describe("e2e", async function () {
     const mockStarknetMessaging = await starknet.devnet.loadL1MessagingContract(
       networkUrl
     );
-    wormholeRouterFake = (await simpleDeploy("WormholeRouterMock", [])) as any;
+    wormholeRouterFake = await simpleDeploy("WormholeRouterMock", []);
 
-    dai = (await simpleDeploy("DAIMock", [])) as any;
+    dai = await simpleDeploy("DAIMock", []);
 
-    escrow = (await simpleDeploy("L1Escrow", [])) as any;
+    escrow = await simpleDeploy("L1Escrow", []);
 
     const registry = await simpleDeployL2("registry", {});
     l2Dai = await simpleDeployL2("dai", { ward: asDec(l2Auth.address) });
@@ -70,13 +68,13 @@ describe("e2e", async function () {
       bridge: asDec(futureL1DAIBridgeAddress),
       registry: asDec(registry.address),
     });
-    l1Bridge = (await simpleDeploy("L1DAIBridge", [
+    l1Bridge = await simpleDeploy("L1DAIBridge", [
       mockStarknetMessaging.address,
       dai.address,
       l2Dai.address,
       escrow.address,
       l2Bridge.address,
-    ])) as any;
+    ]);
 
     const futureL1DAIWormholeBridgeAddress =
       await getAddressOfNextDeployedContract(admin);
@@ -86,13 +84,13 @@ describe("e2e", async function () {
       wormhole_bridge: asDec(futureL1DAIWormholeBridgeAddress),
       domain: SOURCE_DOMAIN,
     });
-    l1WormholeBridge = (await simpleDeploy("L1DAIWormholeBridge", [
+    l1WormholeBridge = await simpleDeploy("L1DAIWormholeBridge", [
       mockStarknetMessaging.address,
       dai.address,
       l2WormholeBridge.address,
       escrow.address,
       wormholeRouterFake.address,
-    ])) as any;
+    ]);
 
     const MAX = BigInt(2 ** 256) - BigInt(1);
     const MAX_HALF = BigInt(2 ** 128) - BigInt(1);
@@ -110,7 +108,7 @@ describe("e2e", async function () {
     await dai.connect(admin).approve(l1Bridge.address, MAX);
     await l2Signer.sendTransaction(l2Auth, l2Dai, "mint", [
       asDec(l2Auth.address),
-      ...l2Eth("10000").map(asDec),
+      ...l2Eth("10000").toDec(),
     ]);
     await l2Signer.sendTransaction(l2Auth, l2Dai, "rely", [
       asDec(l2Bridge.address),
@@ -129,140 +127,140 @@ describe("e2e", async function () {
     await dai.connect(l1Bob).approve(l1Bridge.address, MAX);
   });
 
-  it("deposit", async () => {
-    const depositAmountL1 = eth("100");
-    const depositAmountL2 = l2Eth("100");
-    const { res: l2AuthBalance } = await l2Dai.call("balanceOf", {
-      user: asDec(l2Auth.address),
+  describe("bridge", async () => {
+    it("deposit", async () => {
+      const depositAmountL1 = eth("100");
+      const depositAmountL2 = l2Eth("100");
+      const { res } = await l2Dai.call("balanceOf", {
+        user: asDec(l2Auth.address),
+      });
+      const l2AuthBalance = new SplitUint(res);
+
+      await dai.connect(admin).transfer(l1Alice.address, depositAmountL1);
+      await l1Bridge.connect(l1Alice).deposit(depositAmountL1, l2Auth.address);
+      await starknet.devnet.flush();
+
+      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(eth("0"));
+      expect(
+        await l2Dai.call("balanceOf", {
+          user: asDec(l2Auth.address),
+        })
+      ).to.deep.equal(l2AuthBalance.add(depositAmountL2));
     });
 
-    await dai.connect(admin).transfer(l1Alice.address, depositAmountL1);
-    await l1Bridge.connect(l1Alice).deposit(depositAmountL1, l2Auth.address);
-    await starknet.devnet.flush();
-
-    expect(await dai.balanceOf(l1Alice.address)).to.be.eq(eth("0"));
-    await checkL2Balance(
-      l2Dai,
-      l2Auth,
-      splitAdd(depositAmountL2, Object.values(l2AuthBalance))
-    );
-  });
-
-  it("withdraw", async () => {
-    const withdrawAmountL1 = eth("100");
-    const withdrawAmountL2 = l2Eth("100");
-    const { res: l2AuthBalance } = await l2Dai.call("balanceOf", {
-      user: asDec(l2Auth.address),
-    });
-    await l2Signer.sendTransaction(l2Auth, l2Bridge, "initiate_withdraw", [
-      asDec(l1Alice.address),
-      ...withdrawAmountL2.map(asDec),
-    ]);
-    await starknet.devnet.flush();
-    await l1Bridge.connect(l1Alice).withdraw(withdrawAmountL1, l1Alice.address);
-    await checkL2Balance(
-      l2Dai,
-      l2Auth,
-      splitSub(Object.values(l2AuthBalance), withdrawAmountL2)
-    );
-    expect(await dai.balanceOf(l1Alice.address)).to.be.eq(withdrawAmountL1);
-  });
-
-  it("slow path", async () => {
-    const wormholeAmountL1 = eth("100");
-    const wormholeAmountL2 = l2Eth("100");
-    const { res: l2AuthBalance } = await l2Dai.call("balanceOf", {
-      user: asDec(l2Auth.address),
-    });
-    await l2Signer.sendTransaction(
-      l2Auth,
-      l2WormholeBridge,
-      "initiate_wormhole",
-      [
-        TARGET_DOMAIN, // target_domain
-        asDec(l1Alice.address), // receiver
-        asDec(wormholeAmountL2[0]), // amount (limited to 2**128)
-        asDec(l1Alice.address), // operator
-      ]
-    );
-    const event = await getEvent(
-      "WormholeInitialized",
-      l2WormholeBridge.address
-    );
-    await l2Signer.sendTransaction(
-      l2Auth,
-      l2WormholeBridge,
-      "finalize_register_wormhole",
-      [
-        TARGET_DOMAIN, // target_domain
-        asDec(l1Alice.address), // receiver
-        asDec(wormholeAmountL2[0]), // amount
-        asDec(l1Alice.address), // operator
-        event[5], // nonce
-        event[6], // timestamp
-      ]
-    );
-    await starknet.devnet.flush();
-
-    const wormholeGUID = {
-      sourceDomain: toBytes32(SOURCE_DOMAIN), // bytes32
-      targetDomain: toBytes32(TARGET_DOMAIN), // bytes32
-      receiver: toBytes32(l1Alice.address), // bytes32
-      operator: toBytes32(l1Alice.address), // bytes32
-      amount: wormholeAmountL1, // uint128
-      nonce: parseInt(event[5]), // uint80
-      timestamp: parseInt(event[6]), // uint48
-    };
-    await expect(
-      l1WormholeBridge.connect(l1Alice).finalizeRegisterWormhole(wormholeGUID)
-    )
-      .to.emit(wormholeRouterFake, "RequestMint")
-      .withArgs(Object.values(wormholeGUID), eth("0"), eth("0"));
-
-    expect(await dai.balanceOf(l1Alice.address)).to.be.eq(wormholeAmountL1);
-    await checkL2Balance(
-      l2Dai,
-      l2Auth,
-      splitSub(Object.values(l2AuthBalance), wormholeAmountL2)
-    );
-  });
-
-  it("settle", async () => {
-    const depositAmountL1 = eth("100");
-    await l1Bridge.connect(l1Alice).deposit(depositAmountL1, l2Auth.address);
-    const escrowBalance = await dai.balanceOf(escrow.address);
-    const { res: daiToFlush } = await l2WormholeBridge.call(
-      "batched_dai_to_flush",
-      {
-        domain: TARGET_DOMAIN,
-      }
-    );
-    await l2Signer.sendTransaction(l2Auth, l2WormholeBridge, "flush", [
-      TARGET_DOMAIN,
-    ]);
-    await expect(
-      l1WormholeBridge
+    it("withdraw", async () => {
+      const withdrawAmountL1 = eth("100");
+      const withdrawAmountL2 = l2Eth("100");
+      const { res } = await l2Dai.call("balanceOf", {
+        user: asDec(l2Auth.address),
+      });
+      const l2AuthBalance = new SplitUint(res);
+      await l2Signer.sendTransaction(l2Auth, l2Bridge, "initiate_withdraw", [
+        asDec(l1Alice.address),
+        ...withdrawAmountL2.toDec(),
+      ]);
+      await starknet.devnet.flush();
+      await l1Bridge
         .connect(l1Alice)
-        .finalizeFlush(
-          toBytes32(TARGET_DOMAIN),
-          toUint(Object.values(daiToFlush))
-        )
-    )
-      .to.emit(wormholeRouterFake, "Settle")
-      .withArgs(toBytes32(TARGET_DOMAIN), toUint(Object.values(daiToFlush)));
+        .withdraw(withdrawAmountL1, l1Alice.address);
+      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(withdrawAmountL1);
+      expect(
+        await l2Dai.call("balanceOf", {
+          user: asDec(l2Auth.address),
+        })
+      ).to.deep.equal(l2AuthBalance.sub(withdrawAmountL2));
+    });
+  });
 
-    await starknet.devnet.flush();
+  describe("wormhole", async () => {
+    it("slow path", async () => {
+      const wormholeAmountL1 = eth("100");
+      const wormholeAmountL2 = l2Eth("100");
+      const { res } = await l2Dai.call("balanceOf", {
+        user: asDec(l2Auth.address),
+      });
+      const l2AuthBalance = new SplitUint(res);
+      await l2Signer.sendTransaction(
+        l2Auth,
+        l2WormholeBridge,
+        "initiate_wormhole",
+        [
+          TARGET_DOMAIN, // target_domain
+          asDec(l1Alice.address), // receiver
+          wormholeAmountL2.toDec()[0], // amount (limited to 2**128)
+          asDec(l1Alice.address), // operator
+        ]
+      );
+      const [nonce, timestamp] = (
+        await getEvent("WormholeInitialized", l2WormholeBridge.address)
+      ).slice(-2);
+      await l2Signer.sendTransaction(
+        l2Auth,
+        l2WormholeBridge,
+        "finalize_register_wormhole",
+        [
+          TARGET_DOMAIN, // target_domain
+          asDec(l1Alice.address), // receiver
+          wormholeAmountL2.toDec()[0], // amount
+          asDec(l1Alice.address), // operator
+          nonce, // nonce
+          timestamp, // timestamp
+        ]
+      );
+      await starknet.devnet.flush();
 
-    expect(await dai.balanceOf(escrow.address)).to.be.eq(
-      BigInt(escrowBalance) - toUint(Object.values(daiToFlush))
-    );
-    const { res: daiToFlushPost } = await l2WormholeBridge.call(
-      "batched_dai_to_flush",
-      {
+      const wormholeGUID = {
+        sourceDomain: toBytes32(SOURCE_DOMAIN), // bytes32
+        targetDomain: toBytes32(TARGET_DOMAIN), // bytes32
+        receiver: toBytes32(l1Alice.address), // bytes32
+        operator: toBytes32(l1Alice.address), // bytes32
+        amount: wormholeAmountL1, // uint128
+        nonce: parseInt(nonce), // uint80
+        timestamp: parseInt(timestamp), // uint48
+      };
+      await expect(
+        l1WormholeBridge.connect(l1Alice).finalizeRegisterWormhole(wormholeGUID)
+      )
+        .to.emit(wormholeRouterFake, "RequestMint")
+        .withArgs(Object.values(wormholeGUID), eth("0"), eth("0"));
+
+      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(wormholeAmountL1);
+      expect(
+        await l2Dai.call("balanceOf", {
+          user: asDec(l2Auth.address),
+        })
+      ).to.deep.equal(l2AuthBalance.sub(wormholeAmountL2));
+    });
+
+    it("settle", async () => {
+      const depositAmountL1 = eth("100");
+      await l1Bridge.connect(l1Alice).deposit(depositAmountL1, l2Auth.address);
+      const escrowBalance = await dai.balanceOf(escrow.address);
+      const { res } = await l2WormholeBridge.call("batched_dai_to_flush", {
         domain: TARGET_DOMAIN,
-      }
-    );
-    expect(daiToFlushPost.low).to.be.eq(eth("0"));
-    expect(daiToFlushPost.high).to.be.eq(eth("0"));
+      });
+      const daiToFlush = new SplitUint(res);
+      await l2Signer.sendTransaction(l2Auth, l2WormholeBridge, "flush", [
+        TARGET_DOMAIN,
+      ]);
+      await expect(
+        l1WormholeBridge
+          .connect(l1Alice)
+          .finalizeFlush(toBytes32(TARGET_DOMAIN), daiToFlush.toUint())
+      )
+        .to.emit(wormholeRouterFake, "Settle")
+        .withArgs(toBytes32(TARGET_DOMAIN), daiToFlush.toUint());
+
+      await starknet.devnet.flush();
+
+      expect(await dai.balanceOf(escrow.address)).to.be.eq(
+        BigInt(escrowBalance) - daiToFlush.toUint()
+      );
+      expect(
+        await l2WormholeBridge.call("batched_dai_to_flush", {
+          domain: TARGET_DOMAIN,
+        })
+      ).to.deep.eq(l2Eth("0"));
+    });
   });
 });

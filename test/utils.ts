@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 import { starknet } from "hardhat";
 import { StarknetContract } from "hardhat/types";
@@ -6,41 +6,68 @@ import fetch from "node-fetch";
 
 import { getSelectorFromName } from "../scripts/utils";
 
-export function toSplitUint(value: any) {
-  const bits = value.padStart(64, "0");
-  return [BigInt(`0x${bits.slice(32)}`), BigInt(`0x${bits.slice(0, 32)}`)];
+type SplitUintType = { low: bigint; high: bigint };
+
+export class SplitUint {
+  res: SplitUintType;
+
+  constructor(res: SplitUintType) {
+    this.res = res;
+  }
+
+  static fromUint(a: string | number | bigint | BigNumber): SplitUint {
+    const bits = asHex(a).padStart(64, "0");
+    const res = {
+      low: BigInt(`0x${bits.slice(32)}`),
+      high: BigInt(`0x${bits.slice(0, 32)}`),
+    };
+    return new SplitUint(res);
+  }
+
+  toArray(): bigint[] {
+    return Object.values(this.res);
+  }
+
+  toUint(): bigint {
+    const _a = this.toArray();
+    return BigInt(`0x${_a[1].toString(16)}${_a[0].toString(16)}`);
+  }
+
+  add(a: SplitUint): SplitUint {
+    return SplitUint.fromUint(this.toUint() + a.toUint());
+  }
+
+  sub(a: SplitUint): SplitUint {
+    return SplitUint.fromUint(this.toUint() - a.toUint());
+  }
+
+  toDec(): string[] {
+    return this.toArray().map(asDec);
+  }
 }
 
-export function toUint(value: BigInt[]) {
-  return BigInt(`0x${value[1].toString(16)}${value[0].toString(16)}`);
+function asHex(a: string | number | bigint | BigNumber): string {
+  return BigNumber.isBigNumber(a) ? a.toHexString() : BigInt(a).toString(16);
 }
 
-export function splitAdd(a: any, b: any) {
-  return toSplitUint((toUint(a) + toUint(b)).toString(16));
+export function split(a: BigNumber): bigint[] {
+  return SplitUint.fromUint(a).toArray();
 }
 
-export function splitSub(a: any, b: any) {
-  return toSplitUint((toUint(a) - toUint(b)).toString(16));
-}
-
-export function asDec(input: string | number | bigint): string {
-  return BigInt(input).toString();
-}
-
-export function asHex(input: string | number | bigint | any): string {
-  return BigInt(input).toString(16);
+export function toBytes32(a: string): string {
+  return `0x${BigInt(a).toString(16).padStart(64, "0")}`;
 }
 
 export function eth(amount: string) {
   return parseEther(amount);
 }
 
-export function l2Eth(amount: string) {
-  return toSplitUint(parseEther(amount).toBigInt().toString(16));
+export function l2Eth(amount: string): SplitUint {
+  return SplitUint.fromUint(parseEther(amount).toHexString());
 }
 
-export function toBytes32(value: string): string {
-  return `0x${BigInt(value).toString(16).padStart(64, "0")}`;
+export function asDec(a: string | number | bigint): string {
+  return BigInt(a).toString();
 }
 
 export async function getEvent(eventName: string, contractAddress: string) {
@@ -59,18 +86,6 @@ export async function getEvent(eventName: string, contractAddress: string) {
     throw Error("Event not found");
   }
   return event.data;
-}
-
-export async function checkL2Balance(
-  daiContract: any,
-  accountContract: any,
-  expectedBalance: any[]
-) {
-  const actualBalance = await daiContract.call("balanceOf", {
-    user: asDec(accountContract.address),
-  });
-  expect(actualBalance.res.low).to.be.eq(expectedBalance[0]);
-  expect(actualBalance.res.high).to.be.eq(expectedBalance[1]);
 }
 
 export async function simpleDeployL2(

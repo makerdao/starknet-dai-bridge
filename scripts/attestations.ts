@@ -16,7 +16,6 @@ function getRequiredEnv(key: string): string {
   const value = process.env[key];
   assert(value, `Please provide ${key} in .env file`);
 
-  // @ts-ignore
   return value;
 }
 
