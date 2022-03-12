@@ -47,7 +47,7 @@ export class SplitUint {
 }
 
 function asHex(a: string | number | bigint | BigNumber): string {
-  return BigNumber.isBigNumber(a) ? a.toHexString() : BigInt(a).toString(16);
+  return BigNumber.isBigNumber(a) ? a.toHexString().slice(2) : BigInt(a).toString(16);
 }
 
 export function split(a: BigNumber): bigint[] {
