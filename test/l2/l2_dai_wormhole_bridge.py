@@ -27,6 +27,10 @@ no_funds = 1
 
 starknet_contract_address = 0x0
 
+def check_wormhole_initialized_event(tx, values):
+    event = tx.main_call_events[0]
+    assert len(event) == 7
+    assert event[:6] == values # doesn't check timestamp
 
 #########
 # TESTS #
@@ -105,8 +109,7 @@ async def test_burns_dai_marks_it_for_future_flush(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    check_event(
-        "WormholeInitialized",
+    check_wormhole_initialized_event(
         tx, (
             DOMAIN,
             TARGET_DOMAIN,
@@ -125,7 +128,7 @@ async def test_burns_dai_marks_it_for_future_flush(
         tx.main_call_events[0][6] # timestamp
     ]
 
-    await check_balances(user1_balance - WORMHOLE_AMOUNT)
+    await check_balances(100 - WORMHOLE_AMOUNT, 100)
     batched_dai_to_flush = await l2_wormhole_bridge.batched_dai_to_flush(TARGET_DOMAIN).call()
     assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT),)
 
@@ -151,8 +154,7 @@ async def test_nonce_management(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    check_event(
-        "WormholeInitialized",
+    check_wormhole_initialized_event(
         tx, (
             DOMAIN,
             TARGET_DOMAIN,
@@ -165,8 +167,7 @@ async def test_nonce_management(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    check_event(
-        "WormholeInitialized",
+    check_wormhole_initialized_event(
         tx, (
             DOMAIN,
             TARGET_DOMAIN,
@@ -190,8 +191,7 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    check_event(
-        "WormholeInitialized",
+    check_wormhole_initialized_event(
         tx, (
             DOMAIN,
             TARGET_DOMAIN,
@@ -218,7 +218,7 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
         timestamp # timestamp
     ]
 
-    await check_balances(user1_balance - WORMHOLE_AMOUNT)
+    await check_balances(100 - WORMHOLE_AMOUNT, 100)
     batched_dai_to_flush = await l2_wormhole_bridge.batched_dai_to_flush(TARGET_DOMAIN).call()
     assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT),)
 
@@ -239,7 +239,7 @@ async def test_reverts_when_insufficient_funds(
         await l2_wormhole_bridge.initiate_wormhole(
                 TARGET_DOMAIN,
                 user2.contract_address,
-                WORMHOLE_AMOUNT,
+                100 + WORMHOLE_AMOUNT,
                 user2.contract_address).invoke(user2.contract_address)
     assert "dai/insufficient-balance" in str(err.value)
 

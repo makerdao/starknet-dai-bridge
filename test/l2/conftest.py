@@ -19,6 +19,8 @@ sys.stdout = sys.stderr
 SUPER_ADJUDICATOR_L1_ADDRESS = 0
 CONTRACT_SRC = [os.path.dirname(__file__), "..", "..", "contracts", "starknet"]
 
+VALID_DOMAINS = 36637008923134637018442198643
+TARGET_DOMAIN = get_selector_from_name("optimism")
 
 ###########
 # HELPERS #
@@ -152,6 +154,9 @@ async def build_copyable_deployment():
             get_selector_from_name("starknet"),
         ],
     )
+    await l2_wormhole_bridge.file(
+        VALID_DOMAINS, TARGET_DOMAIN, 1,
+    ).invoke(accounts.auth_user.contract_address)
 
     contract = '''%%lang starknet
         %%builtins pedersen range_check
@@ -245,6 +250,7 @@ async def build_copyable_deployment():
             dai=serialize_contract(dai, defs.dai.abi),
             sample_spell=serialize_contract(sample_spell, defs.sample_spell.abi),
             l2_bridge=serialize_contract(l2_bridge, defs.l2_bridge.abi),
+            l2_wormhole_bridge=serialize_contract(l2_wormhole_bridge, defs.l2_wormhole_bridge.abi),
             registry=serialize_contract(registry, defs.registry.abi),
             l2_governance_relay=serialize_contract(l2_governance_relay, defs.l2_governance_relay.abi),
         ),
