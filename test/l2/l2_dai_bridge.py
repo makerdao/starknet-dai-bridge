@@ -26,22 +26,18 @@ starknet_contract_address = 0x0
 def to_split_uint(a):
     return (a & ((1 << 128) - 1), a >> 128)
 
-
 def to_uint(a):
     return a[0] + (a[1] << 128)
 
-
-def check_event(event_name, tx, values):
-    event = tx.main_call_events[0]
-    assert type(event).__name__ == event_name
-    assert event == values
-
+def check_event(contract, event_name, tx, values):
+    create_event = contract.event_manager.get_contract_event(identifier=event_name)
+    assert tx.main_call_events[0] == create_event(*values)
 
 #########
 # TESTS #
 #########
 @pytest.mark.asyncio
-async def test_initiate_withdraw(
+async def test_initiate_withdraw__(
     starknet: Starknet,
     dai: StarknetContract,
     l2_bridge: StarknetContract,
@@ -58,9 +54,10 @@ async def test_initiate_withdraw(
             to_split_uint(10)).invoke(user1.contract_address)
 
     check_event(
+        l2_bridge,
         'withdraw_initiated',
         tx,
-        ((L1_ADDRESS, to_split_uint(10), user1.contract_address))
+        (L1_ADDRESS, to_split_uint(10), user1.contract_address)
     )
 
     payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
@@ -182,7 +179,7 @@ async def test_handle_deposit(
     )
 
     # check_event(
-    #     'deposit_handled', tx, ((user2.contract_address, to_split_uint(10)))
+    #     l2_bridge, 'deposit_handled', tx, (user2.contract_address, to_split_uint(10))
     # )
 
     await check_balances(100, 110)
@@ -194,7 +191,7 @@ async def test_handle_force_withdrawal(
     dai: StarknetContract,
     l2_bridge: StarknetContract,
     user1: StarknetContract,
-    check_balances, 
+    check_balances,
 ):
     await dai.approve(
             l2_bridge.contract_address,
@@ -213,9 +210,10 @@ async def test_handle_force_withdrawal(
     )
 
     # check_event(
+    #     l2_bridge,
     #     'force_withdrawal_handled',
     #     tx,
-    #     ((int(L1_ADDRESS), to_split_uint(10), user1.contract_address))
+    #     (int(L1_ADDRESS), to_split_uint(10), user1.contract_address)
     # )
 
     payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
@@ -252,9 +250,10 @@ async def test_handle_force_withdrawal_insufficient_funds(
     )
 
     # check_event(
+    #     l2_bridge,
     #     'force_withdrawal_handled',
     #     tx,
-    #     ((int(L1_ADDRESS), to_split_uint(10), user3.contract_address))
+    #     (int(L1_ADDRESS), to_split_uint(10), user3.contract_address)
     # )
 
     with pytest.raises(AssertionError):
@@ -284,9 +283,10 @@ async def test_handle_force_withdrawal_insufficient_allowance(
     )
 
     # check_event(
+    #     l2_bridge,
     #     'force_withdrawal_handled',
     #     tx,
-    #     ((int(L1_ADDRESS), to_split_uint(10), user1.contract_address))
+    #     (int(L1_ADDRESS), to_split_uint(10), user1.contract_address)
     # )
 
     with pytest.raises(AssertionError):
@@ -323,9 +323,10 @@ async def test_handle_force_withdrawal_invalid_l1_address(
     )
 
     # check_event(
+    #     l2_bridge,
     #     'force_withdrawal_handled',
     #     tx,
-    #     ((int(L1_ADDRESS), to_split_uint(10), user1.contract_address))
+    #     (int(L1_ADDRESS), to_split_uint(10), user1.contract_address)
     # )
 
     with pytest.raises(AssertionError):
