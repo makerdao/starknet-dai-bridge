@@ -16,7 +16,7 @@ describe("escrow mom", () => {
         .whenCalledWith(
           l1Bob.address,
           mom.address,
-          mom.interface.getSighash("refuse(address,address,address)")
+          mom.interface.getSighash("refuse(address)")
         )
         .returns(true);
 
@@ -26,13 +26,7 @@ describe("escrow mom", () => {
 
       expect(await dai.allowance(escrow.address, l1Alice.address)).to.be.eq(1);
 
-      // await expect(
-      //   mom.connect(admin).refuse(escrow.address, dai.address, l1Alice.address)
-      // ).to.be.revertedWith('L1EscrowMom/not-authorized')
-
-      await mom
-        .connect(l1Bob)
-        .refuse(escrow.address, dai.address, l1Alice.address);
+      await mom.connect(l1Bob).refuse(l1Alice.address);
 
       expect(await dai.allowance(escrow.address, l1Alice.address)).to.be.eq(0);
     });
@@ -44,15 +38,13 @@ describe("escrow mom", () => {
         .whenCalledWith(
           l1Bob.address,
           mom.address,
-          mom.interface.getSighash("refuse(address,address,address)")
+          mom.interface.getSighash("refuse(address)")
         )
         .returns(true);
 
       await mom.setAuthority(authorityFake.address);
 
-      await expect(
-        mom.connect(l1Bob).refuse(escrow.address, dai.address, l1Alice.address)
-      )
+      await expect(mom.connect(l1Bob).refuse(l1Alice.address))
         .to.emit(mom, "Refuse")
         .withArgs(escrow.address, dai.address, l1Alice.address);
     });
@@ -64,16 +56,14 @@ describe("escrow mom", () => {
         .whenCalledWith(
           l1Bob.address,
           mom.address,
-          mom.interface.getSighash("refuse(address,address,address)")
+          mom.interface.getSighash("refuse(address)")
         )
         .returns(true);
 
       await mom.setAuthority(authorityFake.address);
 
       await expect(
-        mom
-          .connect(l1Alice)
-          .refuse(escrow.address, dai.address, l1Alice.address)
+        mom.connect(l1Alice).refuse(l1Alice.address)
       ).to.be.revertedWith("L1EscrowMom/not-authorized");
 
       expect(await dai.allowance(escrow.address, l1Alice.address)).to.be.eq(0);
@@ -85,7 +75,7 @@ describe("escrow mom", () => {
         .whenCalledWith(
           l1Bob.address,
           mom.address,
-          mom.interface.getSighash("refuse(address,address,address)")
+          mom.interface.getSighash("refuse(address)")
         )
         .returns(true);
 
@@ -102,7 +92,7 @@ describe("escrow mom", () => {
   });
   it("has correct public interface", async () => {
     await assertPublicMutableMethods("L1EscrowMom", [
-      "refuse(address,address,address)",
+      "refuse(address)",
       "setAuthority(address)",
       "setOwner(address)",
     ]);
@@ -114,7 +104,10 @@ async function setupTest() {
 
   const dai: any = await simpleDeploy("DAIMock", []);
   const escrow: any = await simpleDeploy("L1Escrow", []);
-  const mom: any = await simpleDeploy("L1EscrowMom", []);
+  const mom: any = await simpleDeploy("L1EscrowMom", [
+    escrow.address,
+    dai.address,
+  ]);
   const authorityFake: any = await smock.fake("AuthorityLike");
 
   await escrow.rely(mom.address);

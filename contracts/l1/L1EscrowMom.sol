@@ -28,6 +28,9 @@ contract L1EscrowMom {
     address public owner;
     address public authority;
 
+    address public immutable escrow;
+    address public immutable token;
+
     event SetOwner(address indexed oldOwner, address indexed newOwner);
     event SetAuthority(address indexed oldAuthority, address indexed newAuthority);
     event Refuse(address indexed escrow, address token, address spender);
@@ -42,8 +45,10 @@ contract L1EscrowMom {
         _;
     }
 
-    constructor() {
+    constructor(address escrow_, address token_) {
         owner = msg.sender;
+        escrow = escrow_;
+        token = token_;
         emit SetOwner(address(0), msg.sender);
     }
 
@@ -71,7 +76,7 @@ contract L1EscrowMom {
     }
 
     // Governance action without delay
-    function refuse(address escrow, address token, address spender) external auth {
+    function refuse(address spender) external auth {
         emit Refuse(escrow, token, spender);
         EscrowLike(escrow).approve(token, spender, 0);
     }
