@@ -1,11 +1,10 @@
-import os
 import pytest
-import asyncio
 
-from starkware.starknet.testing.starknet import Starknet
 from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
-
+from starkware.starknet.business_logic.transaction_execution_objects import Event
+from starkware.starknet.public.abi import get_selector_from_name
+from itertools import chain
 
 MAX = (2**128-1, 2**128-1)
 L1_ADDRESS = 0x1
@@ -27,8 +26,12 @@ def to_uint(a):
     return a[0] + (a[1] << 128)
 
 def check_event(contract, event_name, tx, values):
-    create_event = contract.event_manager.get_contract_event(identifier=event_name)
-    assert tx.main_call_events[0] == create_event(*values)
+    expected_event = Event(
+        from_address=contract.contract_address,
+        keys=[get_selector_from_name(event_name)],
+        data=list(chain(*[e if isinstance(e, tuple) else [e] for e in values]))
+    )
+    assert expected_event in tx.raw_events
 
 #########
 # TESTS #
