@@ -65,7 +65,7 @@ async def test_transfer(
             to_split_uint(10),
         ).invoke(user1.contract_address)
 
-    check_event(dai, 'Transferr', tx, (
+    check_event(dai, 'Transfer', tx, (
         user1.contract_address,
         user2.contract_address,
         to_split_uint(10)
@@ -448,7 +448,6 @@ async def test_burn_using_burn_and_allowance(
     user1: StarknetContract,
     user2: StarknetContract,
     check_balances,
-    dai_transfer_event
 ):
     await dai.approve(
             user2.contract_address,
@@ -458,11 +457,11 @@ async def test_burn_using_burn_and_allowance(
             user1.contract_address,
             to_split_uint(10)).invoke(user2.contract_address)
 
-    assert tx.main_call_events[0] == dai_transfer_event(
+    check_event(dai, 'Transfer', tx, (
         user1.contract_address,
         0,
         to_split_uint(10)
-    )
+    ))
 
     await check_balances(90, 100)
 
