@@ -222,6 +222,7 @@ contract L1DAIBridge {
     function cancelDeposit(
         uint256 amount,
         uint256 l2Recipient,
+        // slither-disable-next-line similar-names
         address l1Recipient,
         uint256 nonce
     ) external {

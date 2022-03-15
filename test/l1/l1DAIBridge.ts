@@ -50,7 +50,7 @@ describe("L1DAIBridge", function () {
       "setCeiling(uint256)",
       "setMaxDeposit(uint256)",
       "startDepositCancellation(uint256,uint256,uint256)",
-      "cancelDeposit(uint256,uint256,address,uint256)"
+      "cancelDeposit(uint256,uint256,address,uint256)",
     ]);
   });
   describe("deposit", function () {
