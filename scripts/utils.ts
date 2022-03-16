@@ -198,7 +198,9 @@ export class Signer {
         selector,
         calldata: _calldata,
       },
-      [sig.r, sig.s]
+      {
+        signature: [sig.r, sig.s],
+      }
     );
   }
 }
