@@ -31,7 +31,8 @@ def check_event(contract, event_name, tx, values):
         keys=[get_selector_from_name(event_name)],
         data=list(chain(*[e if isinstance(e, tuple) else [e] for e in values]))
     )
-    assert expected_event in tx.raw_events
+    assert expected_event in ( tx.raw_events if hasattr(tx, 'raw_events') else tx.get_sorted_events())
+
 
 #########
 # TESTS #
