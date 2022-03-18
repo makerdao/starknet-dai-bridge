@@ -22,30 +22,6 @@ CONTRACT_SRC = [os.path.dirname(__file__), "..", "..", "contracts", "starknet"]
 VALID_DOMAINS = 36637008923134637018442198643
 TARGET_DOMAIN = get_selector_from_name("optimism")
 
-###########
-# HELPERS #
-###########
-def to_split_uint(a):
-    return (a & ((1 << 128) - 1), a >> 128)
-
-
-def to_uint(a):
-    return a[0] + (a[1] << 128)
-
-
-def check_event(event_name, tx, values):
-    event = tx.main_call_events[0]
-    assert type(event).__name__ == event_name
-    assert event == values
-
-
-async def deploy_account(starknet, signer, source):
-    return await starknet.deploy(
-        source=source,
-        constructor_calldata=[signer.public_key],
-    )
-
-
 def compile(path):
     return compile_starknet_files(
         files=[path],
@@ -61,6 +37,17 @@ def get_block_timestamp(starknet_state):
 def set_block_timestamp(starknet_state, timestamp):
     starknet_state.state.block_info = BlockInfo(
         starknet_state.state.block_info.block_number, timestamp
+    )
+
+
+def to_split_uint(a):
+    return (a & ((1 << 128) - 1), a >> 128)
+
+
+async def deploy_account(starknet, signer, source):
+    return await starknet.deploy(
+        source=source,
+        constructor_calldata=[signer.public_key],
     )
 
 
@@ -99,6 +86,7 @@ WORMHOLE_BRIDGE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_wormhole_bridge.ca
 SPELL_FILE = os.path.join(L2_CONTRACTS_DIR, "sample_spell.cairo")
 REGISTRY_FILE = os.path.join(L2_CONTRACTS_DIR, "registry.cairo")
 GOVERNANCE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_governance_relay.cairo")
+
 
 async def build_copyable_deployment():
     starknet = await Starknet.empty()

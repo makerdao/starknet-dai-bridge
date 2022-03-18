@@ -62,7 +62,11 @@ const config: HardhatUserConfig = {
     fork: {
       url: "http://127.0.0.1:8545",
     },
+<<<<<<< HEAD
     starknet_local: {
+=======
+    devnet: {
+>>>>>>> mk/message-cancelation
       url: "http://127.0.0.1:5000",
     },
     hardhat: {
@@ -77,8 +81,18 @@ const config: HardhatUserConfig = {
       },
     },
   },
-  mocha: {
-    starknetNetwork: `${process.env.STARKNET_NETWORK}`,
+  starknet: {
+    dockerizedVersion: "0.8.0",
+    network:
+      process.env.NODE_ENV !== "test" ? process.env.STARKNET_NETWORK : "devnet",
+    wallets: {
+      user: {
+        accountName: "OpenZeppelin",
+        modulePath:
+          "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
+        accountPath: "~/.starknet_accounts",
+      },
+    },
   },
   paths: {
     artifacts: "./artifacts",
@@ -123,9 +137,6 @@ const config: HardhatUserConfig = {
         },
       },
     ],
-  },
-  cairo: {
-    version: "0.7.0",
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,

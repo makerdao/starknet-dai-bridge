@@ -48,6 +48,9 @@ describe("L1DAIBridge", function () {
       "withdraw(uint256,address)",
       "forceWithdrawal(uint256,uint256)",
       "setCeiling(uint256)",
+      "setMaxDeposit(uint256)",
+      "startDepositCancellation(uint256,uint256,uint256)",
+      "cancelDeposit(uint256,uint256,address,uint256)",
     ]);
   });
   describe("deposit", function () {
@@ -181,6 +184,98 @@ describe("L1DAIBridge", function () {
       await expect(
         l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
       ).to.be.revertedWith("L1DAIBridge/above-ceiling");
+    });
+    it("reverts when ceiling is too low", async () => {
+      const { admin, l1Alice, dai, l1Bridge } = await setupTest();
+
+      const depositAmount = eth("333");
+      const l2User = "123";
+
+      await dai.connect(admin).transfer(l1Alice.address, depositAmount);
+      await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount);
+      await l1Bridge.connect(admin).setMaxDeposit(depositAmount.sub(1));
+
+      await expect(
+        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
+      ).to.be.revertedWith("L1DAIBridge/above-max-deposit");
+    });
+    it("properly initiates deposit cancelation", async () => {
+      const { admin, l1Alice, dai, l1Bridge, l2BridgeAddress, starkNetFake } =
+        await setupTest();
+
+      const depositAmount = eth("333");
+      const l2User = "123";
+
+      await dai.connect(admin).transfer(l1Alice.address, depositAmount);
+      await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount);
+      await l1Bridge.connect(admin).setCeiling(depositAmount);
+
+      await l1Bridge.connect(l1Alice).deposit(depositAmount, l2User);
+
+      const nonce = "1";
+      await expect(
+        l1Bridge
+          .connect(l1Alice)
+          .startDepositCancellation(depositAmount, l2User, nonce)
+      )
+        .to.emit(l1Bridge, "LogStartDepositCancellation")
+        .withArgs(l2User, depositAmount, nonce);
+
+      expect(starkNetFake.startL1ToL2MessageCancellation).to.have.been
+        .calledOnce;
+      expect(
+        starkNetFake.startL1ToL2MessageCancellation
+      ).to.have.been.calledWith(
+        l2BridgeAddress,
+        DEPOSIT,
+        [l2User, ...toSplitUint(depositAmount)],
+        nonce
+      );
+    });
+    it("properly finalises deposit cancellation", async () => {
+      const {
+        admin,
+        l1Alice,
+        l1Bob,
+        dai,
+        l1Bridge,
+        l2BridgeAddress,
+        starkNetFake,
+        escrow,
+      } = await setupTest();
+
+      const depositAmount = eth("333");
+      const l2User = "123";
+
+      await escrow.approve(dai.address, l1Bridge.address, MAX_UINT256);
+      await dai.connect(admin).transfer(l1Alice.address, depositAmount);
+      await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount);
+      await l1Bridge.connect(admin).setCeiling(depositAmount);
+
+      await l1Bridge.connect(l1Alice).deposit(depositAmount, l2User);
+
+      const nonce = "1";
+
+      await expect(
+        l1Bridge
+          .connect(l1Alice)
+          .cancelDeposit(depositAmount, l2User, l1Bob.address, nonce)
+      )
+        .to.emit(l1Bridge, "LogCancelDeposit")
+        .withArgs(l2User, l1Bob.address, depositAmount, nonce);
+
+      expect(starkNetFake.cancelL1ToL2Message).to.have.been.calledOnce;
+      expect(starkNetFake.cancelL1ToL2Message).to.have.been.calledWith(
+        l2BridgeAddress,
+        DEPOSIT,
+        [l2User, ...toSplitUint(depositAmount)],
+        nonce
+      );
+
+      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(0);
+      expect(await dai.balanceOf(l1Bob.address)).to.be.eq(depositAmount);
+      expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
+      expect(await dai.balanceOf(escrow.address)).to.be.eq(0);
     });
   });
   describe("withdraw", function () {
@@ -428,6 +523,25 @@ describe("L1DAIBridge", function () {
       await expect(l1Bridge.connect(l1Alice).setCeiling(1)).to.be.revertedWith(
         "L1DAIBridge/not-authorized"
       );
+    });
+  });
+  describe("setMaxDeposit", function () {
+    it("maxDeposit can be set by admin", async () => {
+      const { admin, l1Bridge } = await setupTest();
+
+      expect(await l1Bridge.maxDeposit()).to.be.eq(MAX_UINT256);
+      await expect(l1Bridge.connect(admin).setMaxDeposit(100))
+        .to.emit(l1Bridge, "LogMaxDeposit")
+        .withArgs(100);
+      expect(await l1Bridge.maxDeposit()).to.be.eq(100);
+    });
+    it("reverts when called not by the owner", async () => {
+      const { l1Alice, l1Bridge } = await setupTest();
+
+      expect(await l1Bridge.maxDeposit()).to.be.eq(MAX_UINT256);
+      await expect(
+        l1Bridge.connect(l1Alice).setMaxDeposit(1)
+      ).to.be.revertedWith("L1DAIBridge/not-authorized");
     });
   });
   describe("forceWithdrawal", function () {

@@ -1337,15 +1337,15 @@
     "@sentry/types" "5.30.0"
     tslib "^1.9.3"
 
-"@shardlabs/starknet-hardhat-plugin@0.3.9":
-  version "0.3.9"
-  resolved "https://registry.yarnpkg.com/@shardlabs/starknet-hardhat-plugin/-/starknet-hardhat-plugin-0.3.9.tgz#c991b0d8c2bef2edc267e831ffe2f5b6253d3387"
-  integrity sha512-yQdzSsxXPyAX2ItqN1HIvYCxUI/TlZ3ba1YM8ezoorjy8WwZAfpkX/KmkACo2Tz23In0pZjbfabG6ZUYrKcUlg==
+"@shardlabs/starknet-hardhat-plugin@0.5.1":
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/@shardlabs/starknet-hardhat-plugin/-/starknet-hardhat-plugin-0.5.1.tgz#cd5ea357f02e7fba0514f22ca4a3c46eccd08bc6"
+  integrity sha512-l+mVlB6POvVdLwdDteFIWO+tNqGyQb8uLvUnDJ5oPv7C66TdF4EUTkWDBJEQA+jNBpqLgDJU42wzxleylQwv6w==
   dependencies:
     "@nomiclabs/hardhat-docker" "^2.0.2"
     axios "^0.24.0"
     glob "^7.2.0"
-    hardhat "^2.6.2"
+    starknet "^2.5.1"
 
 "@sindresorhus/is@^0.14.0":
   version "0.14.0"
@@ -10224,6 +10224,22 @@ starknet@^2.3.1:
     pako "^2.0.4"
     url-join "^4.0.1"
 
+starknet@^2.5.1:
+  version "2.9.0"
+  resolved "https://registry.yarnpkg.com/starknet/-/starknet-2.9.0.tgz#a263e603a45441785991f2c18fcecd8722d6368b"
+  integrity sha512-i/wYJMR1DtkjagCNkPOwUsZLyyCYZtT533nJLdhL5CYw2K7ChuLQphhC8tSDKvrzMm0/PkthDVSI+xjYOPVdTw==
+  dependencies:
+    axios "^0.23.0"
+    bn.js "^5.2.0"
+    elliptic "^6.5.4"
+    ethereum-cryptography "^0.2.0"
+    hash.js "^1.1.7"
+    json-bigint "^1.0.0"
+    minimalistic-assert "^1.0.1"
+    pako "^2.0.4"
+    superstruct "^0.15.3"
+    url-join "^4.0.1"
+
 static-extend@^0.1.1:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/static-extend/-/static-extend-0.1.2.tgz#60809c39cbff55337226fd5e0b520f341f1fb5c6"
@@ -10442,6 +10458,11 @@ strip-json-comments@3.1.1, strip-json-comments@^3.1.0, strip-json-comments@^3.1.
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/strip-json-comments/-/strip-json-comments-3.1.1.tgz#31f1281b3832630434831c310c01cccda8cbe006"
   integrity sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==
+
+superstruct@^0.15.3:
+  version "0.15.4"
+  resolved "https://registry.yarnpkg.com/superstruct/-/superstruct-0.15.4.tgz#e3381dd84ca07e704e19f69eda74eee1a5efb1f9"
+  integrity sha512-eOoMeSbP9ZJChNOm/9RYjE+F36rYR966AAqeG3xhQB02j2sfAUXDp4EQ/7bAOqnlJnuFDB8yvOu50SocvKpUEw==
 
 supports-color@6.0.0:
   version "6.0.0"

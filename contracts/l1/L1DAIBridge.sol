@@ -30,11 +30,25 @@ interface StarkNetLike {
         uint256 to,
         uint256 selector,
         uint256[] calldata payload
-    ) external;
+    ) external returns (bytes32);
 
     function consumeMessageFromL2(
         uint256 from,
         uint256[] calldata payload
+    ) external returns (bytes32);
+
+    function startL1ToL2MessageCancellation(
+        uint256 toAddress,
+        uint256 selector,
+        uint256[] calldata payload,
+        uint256 nonce
+    ) external;
+
+    function cancelL1ToL2Message(
+        uint256 toAddress,
+        uint256 selector,
+        uint256[] calldata payload,
+        uint256 nonce
     ) external;
 }
 
@@ -82,6 +96,7 @@ contract L1DAIBridge {
     uint256 public immutable l2DaiBridge;
 
     uint256 public ceiling = 0;
+    uint256 public maxDeposit = type(uint256).max;
 
     uint256 constant HANDLE_WITHDRAW = 0;
 
@@ -100,12 +115,13 @@ contract L1DAIBridge {
         1137729855293860737061629600728503767337326808607526258057644140918272132445;
 
     event LogCeiling(uint256 ceiling);
+    event LogMaxDeposit(uint256 maxDeposit);
     event LogDeposit(address indexed l1Sender, uint256 amount, uint256 l2Recipient);
     event LogWithdrawal(address indexed l1Recipient, uint256 amount);
-    event LogForceWithdrawal(
-        address indexed l1Recipient,
-        uint256 amount,
-        uint256 indexed l2Sender
+    event LogForceWithdrawal(address indexed l1Recipient, uint256 amount, uint256 indexed l2Sender);
+    event LogStartDepositCancellation(uint256 indexed l2Receipient, uint256 amount, uint256 nonce);
+    event LogCancelDeposit(
+        uint256 indexed l2Receipient, address l1Recipient, uint256 amount, uint256 nonce
     );
 
     constructor(
@@ -130,6 +146,11 @@ contract L1DAIBridge {
         emit LogCeiling(_ceiling);
     }
 
+    function setMaxDeposit(uint256 _maxDeposit) external auth whenOpen {
+        maxDeposit = _maxDeposit;
+        emit LogMaxDeposit(_maxDeposit);
+    }
+
     // slither-disable-next-line similar-names
     function deposit(
         uint256 amount,
@@ -138,6 +159,8 @@ contract L1DAIBridge {
         emit LogDeposit(msg.sender, amount, l2Recipient);
 
         require(l2Recipient != 0 && l2Recipient != l2Dai && l2Recipient < SN_PRIME, "L1DAIBridge/invalid-address");
+
+        require(amount <= maxDeposit, "L1DAIBridge/above-max-deposit");
 
         TokenLike(dai).transferFrom(msg.sender, escrow, amount);
 
@@ -181,5 +204,34 @@ contract L1DAIBridge {
         (payload[2], payload[3]) = toSplitUint(amount);
 
         StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, FORCE_WITHDRAW, payload);
+    }
+
+    function startDepositCancellation(
+        uint256 amount,
+        uint256 l2Recipient,
+        uint256 nonce
+    ) external {
+        emit LogStartDepositCancellation(l2Recipient, amount, nonce);
+
+        uint256[] memory payload = new uint256[](3);
+        payload[0] = l2Recipient;
+        (payload[1], payload[2]) = toSplitUint(amount);
+        StarkNetLike(starkNet).startL1ToL2MessageCancellation(l2DaiBridge, DEPOSIT, payload, nonce);
+    }
+
+    function cancelDeposit(
+        uint256 amount,
+        uint256 l2Recipient,
+        // slither-disable-next-line similar-names
+        address l1Recipient,
+        uint256 nonce
+    ) external {
+        emit LogCancelDeposit(l2Recipient, l1Recipient, amount, nonce);
+
+        uint256[] memory payload = new uint256[](3);
+        payload[0] = l2Recipient;
+        (payload[1], payload[2]) = toSplitUint(amount);
+        StarkNetLike(starkNet).cancelL1ToL2Message(l2DaiBridge, DEPOSIT, payload, nonce);
+        TokenLike(dai).transferFrom(escrow, l1Recipient, amount);
     }
 }
