@@ -276,14 +276,19 @@ async def ctx_factory(copyable_deployment):
                 calldata,
             )
 
+        def get_block_timestamp():
+            return starknet_state.state.block_info.block_timestamp
+
         def advance_clock(num_seconds):
             set_block_timestamp(
-                starknet_state, get_block_timestamp(starknet_state) + num_seconds
+                starknet_state, get_block_timestamp() + num_seconds
             )
+
 
         return SimpleNamespace(
             starknet=Starknet(starknet_state),
             advance_clock=advance_clock,
+            get_block_timestamp=get_block_timestamp,
             consts=consts,
             execute=execute,
             **contracts,
@@ -339,6 +344,10 @@ async def l2_wormhole_bridge(ctx) -> StarknetContract:
 @pytest.fixture(scope="function")
 async def dai(ctx) -> StarknetContract:
     return ctx.dai
+
+@pytest.fixture(scope="function")
+async def get_block_timestamp(ctx) -> StarknetContract:
+    return ctx.get_block_timestamp
 
 @pytest.fixture
 async def check_balances(

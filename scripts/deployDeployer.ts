@@ -9,8 +9,7 @@ import { deployL2, genAndSaveKeyPair } from "./utils";
 task("deploy-deployer", "Deploy deployer").setAction(async (_, hre) => {
   const NETWORK = hre.network.name;
 
-  const STARKNET_NETWORK =
-    hre.config.mocha.starknetNetwork || DEFAULT_STARKNET_NETWORK;
+  const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
 
   const [l1Signer] = await hre.ethers.getSigners();
 

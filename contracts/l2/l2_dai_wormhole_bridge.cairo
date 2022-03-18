@@ -50,15 +50,18 @@ end
 func File(what : felt, domain : felt, data : felt):
 end
 
+struct WormholeGUID:
+  member source_domain : felt
+  member target_domain : felt
+  member receiver : felt
+  member operator : felt
+  member amount : felt
+  member nonce : felt
+  member timestamp : felt
+end
+
 @event
-func WormholeInitialized(
-  source_domain : felt,
-  target_domain : felt,
-  receiver : felt,
-  operator : felt,
-  amount : felt,
-  nonce : felt,
-  timestamp : felt):
+func WormholeInitialized(wormhole : WormholeGUID):
 end
 
 @event
@@ -98,7 +101,7 @@ func _wards(user : felt) -> (res : felt):
 end
 
 @storage_var
-func _wormhole_hashes(hash : felt) -> (res : felt):
+func _wormholes(wormhole : WormholeGUID) -> (res : felt):
 end
 
 @view
@@ -314,7 +317,7 @@ func initiate_wormhole{
     with_attr error_message("l2_dai_wormhole_bridge/invalid-domain"):
       assert valid_domain = 1
     end
-    
+
     # amount should be uint128
     let amount_uint256 = Uint256(low=amount, high=0)
     with_attr error_message("l2_dai_wormhole_bridge/invalid-amount"):
@@ -329,49 +332,25 @@ func initiate_wormhole{
     let (caller) = get_caller_address()
     Burnable.burn(dai, caller, amount_uint256)
 
-    let (domain) = _domain.read()
+    let (source_domain) = _domain.read()
     let (nonce) = read_and_update_nonce()
 
-    let (payload) = alloc()
-    assert payload[0] = FINALIZE_REGISTER_WORMHOLE
-    assert payload[1] = domain
-    assert payload[2] = target_domain
-    assert payload[3] = receiver
-    assert payload[4] = operator
-    assert payload[5] = amount
-    assert payload[6] = nonce
     let (timestamp) = get_block_timestamp()
-    assert payload[7] = timestamp
 
-    WormholeInitialized.emit(
-      source_domain=domain,
-      target_domain=target_domain,
-      receiver=receiver,
-      operator=operator,
-      amount=amount,
-      nonce=nonce,
-      timestamp=timestamp)
+    let wormhole = WormholeGUID(
+      source_domain,
+      target_domain,
+      receiver,
+      operator,
+      amount,
+      nonce,
+      timestamp
+    )
+    _wormholes.write(wormhole, 1)
 
-    let (hash) = hash_message(payload)
-    _wormhole_hashes.write(hash, 1)
+    WormholeInitialized.emit(wormhole)
 
     return ()
-end
-
-func hash_message{
-    syscall_ptr : felt*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(
-    payload : felt*,
-  ) -> (hash : felt):
-    let (_hash1) = hash2{hash_ptr=pedersen_ptr}([payload], [payload+1])
-    let (_hash2) = hash2{hash_ptr=pedersen_ptr}(_hash1, [payload+2])
-    let (_hash3) = hash2{hash_ptr=pedersen_ptr}(_hash2, [payload+3])
-    let (_hash4) = hash2{hash_ptr=pedersen_ptr}(_hash3, [payload+4])
-    let (hash) = hash2{hash_ptr=pedersen_ptr}(_hash4, [payload+5])
-
-    return (hash)
 end
 
 @external
@@ -391,11 +370,31 @@ func finalize_register_wormhole{
     with_attr error_message("l2_dai_wormhole_bridge/bridge-closed"):
       assert is_open = 1
     end
-    let (domain) = _domain.read()
+    let (source_domain) = _domain.read()
+
+    let wormhole = WormholeGUID(
+      source_domain,
+      target_domain,
+      receiver,
+      operator,
+      amount,
+      nonce,
+      timestamp
+    )
+
+    let (exists) = _wormholes.read(wormhole)
+    with_attr error_message("l2_dai_wormhole_bridge/wormhole-does-not-exist"):
+      assert exists = 1
+    end
+
+    # TODO: does this makes sense?
+    _wormholes.write(wormhole, 0)
+
+    let (wormhole_bridge) = _wormhole_bridge.read()
 
     let (payload) = alloc()
     assert payload[0] = FINALIZE_REGISTER_WORMHOLE
-    assert payload[1] = domain
+    assert payload[1] = source_domain
     assert payload[2] = target_domain
     assert payload[3] = receiver
     assert payload[4] = operator
@@ -403,19 +402,11 @@ func finalize_register_wormhole{
     assert payload[6] = nonce
     assert payload[7] = timestamp
 
-    let (hash) = hash_message(payload)
-    let (hash_exists) = _wormhole_hashes.read(hash)
-    with_attr error_message("l2_dai_wormhole_bridge/wormhole-does-not-exist"):
-      assert hash_exists = 1
-    end
-    _wormhole_hashes.write(hash, 0)
-
-    let (wormhole_bridge) = _wormhole_bridge.read()
     send_message_to_l1(wormhole_bridge, 8, payload)
-
     return ()
 end
 
+# TODO: moving this function to the end of the file results in revoked references in flush
 func uint256_assert_not_zero{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
@@ -426,7 +417,6 @@ func uint256_assert_not_zero{
     with_attr error_message("l2_dai_wormhole_bridge/value-is-zero"):
       assert_not_zero(low_check + high_check)
     end
-
     return ()
 end
 

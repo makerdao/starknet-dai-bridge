@@ -62,11 +62,7 @@ const config: HardhatUserConfig = {
     fork: {
       url: "http://127.0.0.1:8545",
     },
-<<<<<<< HEAD
-    starknet_local: {
-=======
     devnet: {
->>>>>>> mk/message-cancelation
       url: "http://127.0.0.1:5000",
     },
     hardhat: {

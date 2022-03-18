@@ -37,11 +37,7 @@ def check_event(contract, event_name, tx, values):
         keys=[get_selector_from_name(event_name)],
         data=list(chain(*[e if isinstance(e, tuple) else [e] for e in values]))
     )
-
-    print(expected_event)
-    print((tx.raw_events if hasattr(tx, 'raw_events') else tx.get_sorted_events()))
     assert expected_event in ( tx.raw_events if hasattr(tx, 'raw_events') else tx.get_sorted_events())
-
 
 #########
 # TESTS #
@@ -113,6 +109,7 @@ async def test_burns_dai_marks_it_for_future_flush(
     dai: StarknetContract,
     user1: StarknetContract,
     check_balances,
+    get_block_timestamp
 ):
     await dai.approve(l2_wormhole_bridge.contract_address, to_split_uint(WORMHOLE_AMOUNT)).invoke(user1.contract_address)
     tx = await l2_wormhole_bridge.initiate_wormhole(
@@ -123,7 +120,7 @@ async def test_burns_dai_marks_it_for_future_flush(
 
     check_event(
         l2_wormhole_bridge,
-        'WormholeInitialized',
+        "WormholeInitialized",
         tx,
         (
             DOMAIN,
@@ -131,7 +128,8 @@ async def test_burns_dai_marks_it_for_future_flush(
             user1.contract_address,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-            0
+            0,
+            get_block_timestamp()
         )
     )
 
@@ -142,7 +140,7 @@ async def test_burns_dai_marks_it_for_future_flush(
         user1.contract_address, # operator
         WORMHOLE_AMOUNT, # amount
         0, # nonce
-        tx.main_call_events[0][6] # timestamp
+        get_block_timestamp() # timestamp
     ]
 
     await check_balances(100 - WORMHOLE_AMOUNT, 100)
@@ -163,7 +161,7 @@ async def test_nonce_management___(
     l2_wormhole_bridge: StarknetContract,
     dai: StarknetContract,
     user1: StarknetContract,
-    check_balances,
+    get_block_timestamp,
 ):
     await dai.approve(l2_wormhole_bridge.contract_address, to_split_uint(WORMHOLE_AMOUNT*2)).invoke(user1.contract_address)
     tx = await l2_wormhole_bridge.initiate_wormhole(
@@ -171,17 +169,17 @@ async def test_nonce_management___(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    print(tx)
     check_event(
         l2_wormhole_bridge,
-        'WormholeInitialized',
+        "WormholeInitialized",
         tx, (
             DOMAIN,
             TARGET_DOMAIN,
             user1.contract_address,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-            0))
+            0,
+            get_block_timestamp()))
     tx = await l2_wormhole_bridge.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
@@ -189,14 +187,15 @@ async def test_nonce_management___(
             user1.contract_address).invoke(user1.contract_address)
     check_event(
         l2_wormhole_bridge,
-        'WormholeInitialized',
+        "WormholeInitialized",
         tx, (
             DOMAIN,
             TARGET_DOMAIN,
             user1.contract_address,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-            1))
+            1,
+            get_block_timestamp()))
 
 
 @pytest.mark.asyncio
@@ -206,6 +205,7 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     dai: StarknetContract,
     user1: StarknetContract,
     check_balances,
+    get_block_timestamp
 ):
     await dai.approve(l2_wormhole_bridge.contract_address, to_split_uint(WORMHOLE_AMOUNT)).invoke(user1.contract_address)
     tx = await l2_wormhole_bridge.initiate_wormhole(
@@ -215,22 +215,23 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
             user1.contract_address).invoke(user1.contract_address)
     check_event(
         l2_wormhole_bridge,
-        'WormholeInitialized',
+        "WormholeInitialized",
         tx, (
             DOMAIN,
             TARGET_DOMAIN,
             user1.contract_address,
             user1.contract_address,
             WORMHOLE_AMOUNT,
-            0))
-    timestamp = tx.main_call_events[0][6]
+            0,
+            get_block_timestamp()))
+
     await l2_wormhole_bridge.finalize_register_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address,
             0,
-            timestamp).invoke(user1.contract_address)
+            get_block_timestamp()).invoke(user1.contract_address)
 
     wormhole = [
         DOMAIN, # sourceDomain
@@ -239,7 +240,7 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
         user1.contract_address, # operator
         WORMHOLE_AMOUNT, # amount
         0, # nonce
-        timestamp # timestamp
+        get_block_timestamp() # timestamp
     ]
 
     await check_balances(100 - WORMHOLE_AMOUNT, 100)
