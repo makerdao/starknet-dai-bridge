@@ -177,7 +177,8 @@ async def test_handle_deposit(
         selector="handle_deposit",
         payload=[
             user2.contract_address,
-            *to_split_uint(10)
+            *to_split_uint(10),
+            L1_ADDRESS
         ],
     )
 

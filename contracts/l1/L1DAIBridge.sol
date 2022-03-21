@@ -169,9 +169,10 @@ contract L1DAIBridge {
             "L1DAIBridge/above-ceiling"
         );
 
-        uint256[] memory payload = new uint256[](3);
+        uint256[] memory payload = new uint256[](4);
         payload[0] = l2Recipient;
         (payload[1], payload[2]) = toSplitUint(amount);
+        payload[3] = uint256(uint160(msg.sender));
 
         StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, DEPOSIT, payload);
     }
@@ -213,9 +214,10 @@ contract L1DAIBridge {
     ) external {
         emit LogStartDepositCancellation(l2Recipient, amount, nonce);
 
-        uint256[] memory payload = new uint256[](3);
+        uint256[] memory payload = new uint256[](4);
         payload[0] = l2Recipient;
         (payload[1], payload[2]) = toSplitUint(amount);
+        payload[3] = uint256(uint160(msg.sender));
         StarkNetLike(starkNet).startL1ToL2MessageCancellation(l2DaiBridge, DEPOSIT, payload, nonce);
     }
 
@@ -228,9 +230,10 @@ contract L1DAIBridge {
     ) external {
         emit LogCancelDeposit(l2Recipient, l1Recipient, amount, nonce);
 
-        uint256[] memory payload = new uint256[](3);
+        uint256[] memory payload = new uint256[](4);
         payload[0] = l2Recipient;
         (payload[1], payload[2]) = toSplitUint(amount);
+        payload[3] = uint256(uint160(msg.sender));
         StarkNetLike(starkNet).cancelL1ToL2Message(l2DaiBridge, DEPOSIT, payload, nonce);
         TokenLike(dai).transferFrom(escrow, l1Recipient, amount);
     }

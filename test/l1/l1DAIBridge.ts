@@ -85,7 +85,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
         l2BridgeAddress,
         DEPOSIT,
-        [l2User, ...toSplitUint(depositAmount)]
+        [l2User, ...toSplitUint(depositAmount), l1Alice.address],
       );
     });
     it("reverts when to address is invalid", async () => {
@@ -228,7 +228,7 @@ describe("L1DAIBridge", function () {
       ).to.have.been.calledWith(
         l2BridgeAddress,
         DEPOSIT,
-        [l2User, ...toSplitUint(depositAmount)],
+        [l2User, ...toSplitUint(depositAmount), l1Alice.address],
         nonce
       );
     });
@@ -268,7 +268,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.cancelL1ToL2Message).to.have.been.calledWith(
         l2BridgeAddress,
         DEPOSIT,
-        [l2User, ...toSplitUint(depositAmount)],
+        [l2User, ...toSplitUint(depositAmount), l1Alice.address],
         nonce
       );
 
