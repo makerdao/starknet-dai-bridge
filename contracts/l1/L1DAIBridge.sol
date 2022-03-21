@@ -121,7 +121,7 @@ contract L1DAIBridge {
     event LogForceWithdrawal(address indexed l1Recipient, uint256 amount, uint256 indexed l2Sender);
     event LogStartDepositCancellation(uint256 indexed l2Receipient, uint256 amount, uint256 nonce);
     event LogCancelDeposit(
-        uint256 indexed l2Receipient, address l1Recipient, uint256 amount, uint256 nonce
+        uint256 indexed l2Recipient, address l1Recipient, uint256 amount, uint256 nonce
     );
 
     constructor(
