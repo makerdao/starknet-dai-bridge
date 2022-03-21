@@ -1,21 +1,7 @@
 /**
  * Full goerli deploy including any permissions that need to be set.
  */
-<<<<<<< HEAD
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
-=======
-import {
-  getActiveWards,
-  getAddressOfNextDeployedContract,
-  getRequiredEnv,
-  waitForTx,
-} from "@makerdao/hardhat-utils";
-import { getOptionalEnv } from "@makerdao/hardhat-utils/dist/env";
-import {
-  CHECK_STATUS_TIMEOUT,
-  DEFAULT_STARKNET_NETWORK,
-} from "@shardlabs/starknet-hardhat-plugin/dist/constants";
->>>>>>> mk/message-cancelation
 import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
 import { ethers } from "ethers";
 import { writeFileSync } from "fs";
