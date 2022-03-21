@@ -218,6 +218,7 @@ contract L1DAIBridge {
         payload[0] = l2Recipient;
         (payload[1], payload[2]) = toSplitUint(amount);
         payload[3] = uint256(uint160(msg.sender));
+
         StarkNetLike(starkNet).startL1ToL2MessageCancellation(l2DaiBridge, DEPOSIT, payload, nonce);
     }
 
@@ -234,6 +235,7 @@ contract L1DAIBridge {
         payload[0] = l2Recipient;
         (payload[1], payload[2]) = toSplitUint(amount);
         payload[3] = uint256(uint160(msg.sender));
+
         StarkNetLike(starkNet).cancelL1ToL2Message(l2DaiBridge, DEPOSIT, payload, nonce);
         TokenLike(dai).transferFrom(escrow, l1Recipient, amount);
     }
