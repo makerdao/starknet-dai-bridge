@@ -229,7 +229,7 @@ export function save(
   );
 }
 
-function getSelectorFromName(name: string) {
+export function getSelectorFromName(name: string) {
   return (
     BigInt(ethers.utils.keccak256(Buffer.from(name))) % MASK_250
   ).toString();
@@ -299,7 +299,9 @@ export class L2Signer {
         selector,
         calldata: _calldata,
       },
-      [sig.r, sig.s]
+      {
+        signature: [sig.r, sig.s],
+      }
     );
   }
 }

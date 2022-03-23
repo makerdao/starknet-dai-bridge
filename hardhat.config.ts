@@ -12,8 +12,7 @@ import "./scripts/account";
 import "./scripts/fork";
 
 import { config as dotenvConfig } from "dotenv";
-import { HardhatUserConfig } from "hardhat/config";
-import { NetworkUserConfig } from "hardhat/types";
+import { HardhatUserConfig, NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
@@ -62,14 +61,10 @@ const config: HardhatUserConfig = {
     fork: {
       url: "http://127.0.0.1:8545",
     },
-    starknet_local: {
+    devnet: {
       url: "http://127.0.0.1:5000",
     },
     hardhat: {
-      forking: {
-        url: `https://mainnet.infura.io/v3/${infuraApiKey}`,
-        enabled: process.env.NODE_ENV !== "test",
-      },
       accounts: {
         count: 10,
         mnemonic,
@@ -77,8 +72,18 @@ const config: HardhatUserConfig = {
       },
     },
   },
-  mocha: {
-    starknetNetwork: `${process.env.STARKNET_NETWORK}`,
+  starknet: {
+    dockerizedVersion: "0.7.1",
+    network:
+      process.env.NODE_ENV !== "test" ? process.env.STARKNET_NETWORK : "devnet",
+    wallets: {
+      user: {
+        accountName: "OpenZeppelin",
+        modulePath:
+          "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
+        accountPath: "~/.starknet_accounts",
+      },
+    },
   },
   paths: {
     artifacts: "./artifacts",
@@ -87,6 +92,9 @@ const config: HardhatUserConfig = {
     tests: "./test",
     starknetSources: "./contracts",
     starknetArtifacts: "./starknet-artifacts",
+  },
+  mocha: {
+    grep: process.env.TEST_ENV === "e2e" ? "e2e" : "l1:*",
   },
   solidity: {
     compilers: [
@@ -123,9 +131,6 @@ const config: HardhatUserConfig = {
         },
       },
     ],
-  },
-  cairo: {
-    version: "0.7.0",
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
