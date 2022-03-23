@@ -95,7 +95,7 @@ L2_CONTRACTS_DIR = os.path.join(os.getcwd(), "contracts/l2")
 ACCOUNT_FILE = os.path.join(L2_CONTRACTS_DIR, "account.cairo")
 DAI_FILE = os.path.join(L2_CONTRACTS_DIR, "dai.cairo")
 BRIDGE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_bridge.cairo")
-WORMHOLE_BRIDGE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_wormhole_bridge.cairo")
+WORMHOLE_GATEWAY_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_wormhole_gateway.cairo")
 SPELL_FILE = os.path.join(L2_CONTRACTS_DIR, "sample_spell.cairo")
 REGISTRY_FILE = os.path.join(L2_CONTRACTS_DIR, "registry.cairo")
 GOVERNANCE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_governance_relay.cairo")
@@ -145,8 +145,8 @@ async def build_copyable_deployment():
         ],
     )
 
-    l2_wormhole_bridge = await starknet.deploy(
-        source=WORMHOLE_BRIDGE_FILE,
+    l2_wormhole_gateway = await starknet.deploy(
+        source=WORMHOLE_GATEWAY_FILE,
         constructor_calldata=[
             accounts.auth_user.contract_address,
             dai.contract_address,
@@ -154,7 +154,7 @@ async def build_copyable_deployment():
             get_selector_from_name("starknet"),
         ],
     )
-    await l2_wormhole_bridge.file(
+    await l2_wormhole_gateway.file(
         VALID_DOMAINS, TARGET_DOMAIN, 1,
     ).invoke(accounts.auth_user.contract_address)
 
@@ -216,7 +216,7 @@ async def build_copyable_deployment():
         account=compile(ACCOUNT_FILE),
         dai=compile(DAI_FILE),
         l2_bridge=compile(BRIDGE_FILE),
-        l2_wormhole_bridge=compile(WORMHOLE_BRIDGE_FILE),
+        l2_wormhole_gateway=compile(WORMHOLE_GATEWAY_FILE),
         sample_spell=compile(SPELL_FILE),
         registry=compile(REGISTRY_FILE),
         l2_governance_relay=compile(GOVERNANCE_FILE),
@@ -250,7 +250,7 @@ async def build_copyable_deployment():
             dai=serialize_contract(dai, defs.dai.abi),
             sample_spell=serialize_contract(sample_spell, defs.sample_spell.abi),
             l2_bridge=serialize_contract(l2_bridge, defs.l2_bridge.abi),
-            l2_wormhole_bridge=serialize_contract(l2_wormhole_bridge, defs.l2_wormhole_bridge.abi),
+            l2_wormhole_gateway=serialize_contract(l2_wormhole_gateway, defs.l2_wormhole_gateway.abi),
             registry=serialize_contract(registry, defs.registry.abi),
             l2_governance_relay=serialize_contract(l2_governance_relay, defs.l2_governance_relay.abi),
         ),
@@ -345,8 +345,8 @@ async def l2_bridge(ctx) -> StarknetContract:
     return ctx.l2_bridge
 
 @pytest.fixture(scope="function")
-async def l2_wormhole_bridge(ctx) -> StarknetContract:
-    return ctx.l2_wormhole_bridge
+async def l2_wormhole_gateway(ctx) -> StarknetContract:
+    return ctx.l2_wormhole_gateway
 
 @pytest.fixture(scope="function")
 async def dai(ctx) -> StarknetContract:

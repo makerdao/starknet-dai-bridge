@@ -50,7 +50,7 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
-  console.log(`Deploying bridge on ${NETWORK}/${STARKNET_NETWORK}`);
+  console.log(`Deploying gateway on ${NETWORK}/${STARKNET_NETWORK}`);
 
   const DEPLOYER_KEY = getRequiredEnv(`DEPLOYER_ECDSA_PRIVATE_KEY`);
   const l2Signer = new L2Signer(DEPLOYER_KEY);
@@ -68,52 +68,52 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
     L2_GOVERNANCE_RELAY_ADDRESS
   );
 
-  const futureL1DAIWormholeBridgeAddress =
+  const futureL1DAIWormholeGatewayAddress =
     await getAddressOfNextDeployedContract(l1Signer);
-  const l2DAIWormholeBridge = await deployL2(
+  const l2DAIWormholeGateway = await deployL2(
     hre,
-    "l2_dai_wormhole_bridge",
+    "l2_dai_wormhole_gateway",
     BLOCK_NUMBER,
     {
       ward: asDec(deployer.address),
       dai: asDec(L2_DAI_ADDRESS),
-      wormhole_bridge: asDec(futureL1DAIWormholeBridgeAddress),
+      wormhole_gateway: asDec(futureL1DAIWormholeGatewayAddress),
       domain: asDec(L1_DAI_ADDRESS),
     }
   );
 
-  const l1DAIWormholeBridge = await deployL1(
+  const l1DAIWormholeGateway = await deployL1(
     hre,
-    "L1DAIWormholeBridge",
+    "L1DAIWormholeGateway",
     BLOCK_NUMBER,
     [
       L1_STARKNET_ADDRESS,
       L1_DAI_ADDRESS,
-      l2DAIWormholeBridge.address,
+      l2DAIWormholeGateway.address,
       L1_ESCROW_ADDRESS,
       L1_WORMHOLE_ROUTER_ADDRESS,
     ]
   );
   expect(
-    futureL1DAIWormholeBridgeAddress === l1DAIWormholeBridge.address,
-    "futureL1DAIWormholeBridgeAddress != l1DAIWormholeBridge.address"
+    futureL1DAIWormholeGatewayAddress === l1DAIWormholeGateway.address,
+    "futureL1DAIWormholeGatewayAddress != l1DAIWormholeGateway.address"
   );
 
-  console.log("Finalizing permissions for l2_dai_wormhole_bridge...");
-  await l2Signer.sendTransaction(deployer, l2DAIWormholeBridge, "rely", [
+  console.log("Finalizing permissions for l2_dai_wormhole_gateway...");
+  await l2Signer.sendTransaction(deployer, l2DAIWormholeGateway, "rely", [
     asDec(L2_GOVERNANCE_RELAY_ADDRESS),
   ]);
   if (DENY_DEPLOYER) {
-    await l2Signer.sendTransaction(deployer, l2DAIWormholeBridge, "deny", [
+    await l2Signer.sendTransaction(deployer, l2DAIWormholeGateway, "deny", [
       asDec(deployer.address),
     ]);
   }
 
-  console.log("L2 wormhole bridge permission sanity checks...");
-  expect(await wards(l2DAIWormholeBridge, l2GovernanceRelay)).to.deep.eq(
+  console.log("L2 wormhole gateway permission sanity checks...");
+  expect(await wards(l2DAIWormholeGateway, l2GovernanceRelay)).to.deep.eq(
     BigInt(1)
   );
-  expect(await wards(l2DAIWormholeBridge, deployer)).to.deep.eq(
+  expect(await wards(l2DAIWormholeGateway, deployer)).to.deep.eq(
     BigInt(!DENY_DEPLOYER)
   );
 

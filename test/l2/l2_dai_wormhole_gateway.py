@@ -40,71 +40,71 @@ def check_wormhole_initialized_event(tx, values):
 @pytest.mark.asyncio
 async def test_can_be_called_by_owner(
     auth_user: StarknetContract,
-    l2_wormhole_bridge: StarknetContract,
+    l2_wormhole_gateway: StarknetContract,
 ):
-    is_open = await l2_wormhole_bridge.is_open().call()
+    is_open = await l2_wormhole_gateway.is_open().call()
     assert is_open.result == (1,)
 
-    close = await l2_wormhole_bridge.close().invoke(auth_user.contract_address)
+    close = await l2_wormhole_gateway.close().invoke(auth_user.contract_address)
 
-    is_open = await l2_wormhole_bridge.is_open().call()
+    is_open = await l2_wormhole_gateway.is_open().call()
     assert is_open.result == (0,)
 
 
 @pytest.mark.asyncio
 async def test_can_be_called_multiple_times_by_owner(
     auth_user: StarknetContract,
-    l2_wormhole_bridge: StarknetContract,
+    l2_wormhole_gateway: StarknetContract,
 ):
-    close = await l2_wormhole_bridge.close().invoke(auth_user.contract_address)
+    close = await l2_wormhole_gateway.close().invoke(auth_user.contract_address)
 
-    is_open = await l2_wormhole_bridge.is_open().call()
+    is_open = await l2_wormhole_gateway.is_open().call()
     assert is_open.result == (0,)
 
-    close = await l2_wormhole_bridge.close().invoke(auth_user.contract_address)
+    close = await l2_wormhole_gateway.close().invoke(auth_user.contract_address)
 
-    is_open = await l2_wormhole_bridge.is_open().call()
+    is_open = await l2_wormhole_gateway.is_open().call()
     assert is_open.result == (0,)
 
 
 @pytest.mark.asyncio
 async def test_reverts_when_not_called_by_owner(
-    l2_wormhole_bridge: StarknetContract,
+    l2_wormhole_gateway: StarknetContract,
     user1: StarknetContract,
 ):
     with pytest.raises(StarkException) as err:
-        await l2_wormhole_bridge.close().invoke(user1.contract_address)
-    assert "l2_dai_wormhole_bridge/not-authorized" in str(err.value)
+        await l2_wormhole_gateway.close().invoke(user1.contract_address)
+    assert "l2_dai_wormhole_gateway/not-authorized" in str(err.value)
 
 # file()
 @pytest.mark.asyncio
 async def test_file_should_not_accept_invalid_data(
-    l2_wormhole_bridge: StarknetContract,
+    l2_wormhole_gateway: StarknetContract,
     auth_user: StarknetContract,
 ):
     with pytest.raises(StarkException) as err:
-        await l2_wormhole_bridge.file(
+        await l2_wormhole_gateway.file(
                 VALID_DOMAINS, TARGET_DOMAIN, -1,
             ).invoke(auth_user.contract_address)
-    assert "l2_dai_wormhole_bridge/invalid-data" in str(err.value)
+    assert "l2_dai_wormhole_gateway/invalid-data" in str(err.value)
     with pytest.raises(StarkException) as err:
-        await l2_wormhole_bridge.file(
+        await l2_wormhole_gateway.file(
                 VALID_DOMAINS, TARGET_DOMAIN, 2,
             ).invoke(auth_user.contract_address)
-    assert "l2_dai_wormhole_bridge/invalid-data" in str(err.value)
+    assert "l2_dai_wormhole_gateway/invalid-data" in str(err.value)
 
 
 ## initiateWormhole()
 @pytest.mark.asyncio
 async def test_burns_dai_marks_it_for_future_flush(
     starknet: Starknet,
-    l2_wormhole_bridge: StarknetContract,
+    l2_wormhole_gateway: StarknetContract,
     dai: StarknetContract,
     user1: StarknetContract,
     check_balances,
 ):
-    await dai.approve(l2_wormhole_bridge.contract_address, to_split_uint(WORMHOLE_AMOUNT)).invoke(user1.contract_address)
-    tx = await l2_wormhole_bridge.initiate_wormhole(
+    await dai.approve(l2_wormhole_gateway.contract_address, to_split_uint(WORMHOLE_AMOUNT)).invoke(user1.contract_address)
+    tx = await l2_wormhole_gateway.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
@@ -129,13 +129,13 @@ async def test_burns_dai_marks_it_for_future_flush(
     ]
 
     await check_balances(100 - WORMHOLE_AMOUNT, 100)
-    batched_dai_to_flush = await l2_wormhole_bridge.batched_dai_to_flush(TARGET_DOMAIN).call()
+    batched_dai_to_flush = await l2_wormhole_gateway.batched_dai_to_flush(TARGET_DOMAIN).call()
     assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT),)
 
     payload = [FINALIZE_REGISTER_WORMHOLE, *wormhole]
     with pytest.raises(AssertionError):
         starknet.consume_message_from_l2(
-            from_address=l2_wormhole_bridge.contract_address,
+            from_address=l2_wormhole_gateway.contract_address,
             to_address=L1_WORMHOLE_BRIDGE_ADDRESS,
             payload=payload,
         )
@@ -143,13 +143,13 @@ async def test_burns_dai_marks_it_for_future_flush(
 
 @pytest.mark.asyncio
 async def test_nonce_management(
-    l2_wormhole_bridge: StarknetContract,
+    l2_wormhole_gateway: StarknetContract,
     dai: StarknetContract,
     user1: StarknetContract,
     check_balances,
 ):
-    await dai.approve(l2_wormhole_bridge.contract_address, to_split_uint(WORMHOLE_AMOUNT*2)).invoke(user1.contract_address)
-    tx = await l2_wormhole_bridge.initiate_wormhole(
+    await dai.approve(l2_wormhole_gateway.contract_address, to_split_uint(WORMHOLE_AMOUNT*2)).invoke(user1.contract_address)
+    tx = await l2_wormhole_gateway.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
@@ -162,7 +162,7 @@ async def test_nonce_management(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             0))
-    tx = await l2_wormhole_bridge.initiate_wormhole(
+    tx = await l2_wormhole_gateway.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
@@ -180,13 +180,13 @@ async def test_nonce_management(
 @pytest.mark.asyncio
 async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     starknet: Starknet,
-    l2_wormhole_bridge: StarknetContract,
+    l2_wormhole_gateway: StarknetContract,
     dai: StarknetContract,
     user1: StarknetContract,
     check_balances,
 ):
-    await dai.approve(l2_wormhole_bridge.contract_address, to_split_uint(WORMHOLE_AMOUNT)).invoke(user1.contract_address)
-    tx = await l2_wormhole_bridge.initiate_wormhole(
+    await dai.approve(l2_wormhole_gateway.contract_address, to_split_uint(WORMHOLE_AMOUNT)).invoke(user1.contract_address)
+    tx = await l2_wormhole_gateway.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
@@ -200,7 +200,7 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
             WORMHOLE_AMOUNT,
             0))
     timestamp = tx.main_call_events[0][6]
-    await l2_wormhole_bridge.finalize_register_wormhole(
+    await l2_wormhole_gateway.finalize_register_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
@@ -219,12 +219,12 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     ]
 
     await check_balances(100 - WORMHOLE_AMOUNT, 100)
-    batched_dai_to_flush = await l2_wormhole_bridge.batched_dai_to_flush(TARGET_DOMAIN).call()
+    batched_dai_to_flush = await l2_wormhole_gateway.batched_dai_to_flush(TARGET_DOMAIN).call()
     assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT),)
 
     payload = [FINALIZE_REGISTER_WORMHOLE, *wormhole]
     starknet.consume_message_from_l2(
-        from_address=l2_wormhole_bridge.contract_address,
+        from_address=l2_wormhole_gateway.contract_address,
         to_address=L1_WORMHOLE_BRIDGE_ADDRESS,
         payload=payload,
     )
@@ -232,11 +232,11 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
 
 @pytest.mark.asyncio
 async def test_reverts_when_insufficient_funds(
-    l2_wormhole_bridge: StarknetContract,
+    l2_wormhole_gateway: StarknetContract,
     user2: StarknetContract,
 ):
     with pytest.raises(StarkException) as err:
-        await l2_wormhole_bridge.initiate_wormhole(
+        await l2_wormhole_gateway.initiate_wormhole(
                 TARGET_DOMAIN,
                 user2.contract_address,
                 100 + WORMHOLE_AMOUNT,
@@ -246,74 +246,74 @@ async def test_reverts_when_insufficient_funds(
 
 @pytest.mark.asyncio
 async def test_reverts_when_invalid_amount(
-    l2_wormhole_bridge: StarknetContract,
+    l2_wormhole_gateway: StarknetContract,
     user2: StarknetContract,
 ):
     with pytest.raises(StarkException) as err:
-        await l2_wormhole_bridge.initiate_wormhole(
+        await l2_wormhole_gateway.initiate_wormhole(
                 TARGET_DOMAIN,
                 user2.contract_address,
                 2**128,
                 user2.contract_address).invoke(user2.contract_address)
-    assert "l2_dai_wormhole_bridge/invalid-amount" in str(err.value)
+    assert "l2_dai_wormhole_gateway/invalid-amount" in str(err.value)
 
 
 @pytest.mark.asyncio
-async def test_reverts_when_bridge_is_closed(
-    l2_wormhole_bridge: StarknetContract,
+async def test_reverts_when_gateway_is_closed(
+    l2_wormhole_gateway: StarknetContract,
     auth_user: StarknetContract,
     user1: StarknetContract,
     user2: StarknetContract,
 ):
-    await l2_wormhole_bridge.close().invoke(auth_user.contract_address)
+    await l2_wormhole_gateway.close().invoke(auth_user.contract_address)
 
     with pytest.raises(StarkException) as err:
-        await l2_wormhole_bridge.initiate_wormhole(
+        await l2_wormhole_gateway.initiate_wormhole(
                 TARGET_DOMAIN,
                 user2.contract_address,
                 WORMHOLE_AMOUNT,
                 user2.contract_address).invoke(user1.contract_address)
-    assert "l2_dai_wormhole_bridge/bridge-closed" in str(err.value)
+    assert "l2_dai_wormhole_gateway/gateway-closed" in str(err.value)
 
 
 @pytest.mark.asyncio
 async def test_reverts_when_domain_is_not_whitelisted(
-    l2_wormhole_bridge: StarknetContract,
+    l2_wormhole_gateway: StarknetContract,
     user1: StarknetContract,
     user2: StarknetContract,
 ):
     with pytest.raises(StarkException) as err:
-        await l2_wormhole_bridge.initiate_wormhole(
+        await l2_wormhole_gateway.initiate_wormhole(
                 INVALID_DOMAIN,
                 user2.contract_address,
                 WORMHOLE_AMOUNT,
                 user2.contract_address).invoke(user1.contract_address)
-    assert "l2_dai_wormhole_bridge/invalid-domain" in str(err.value)
+    assert "l2_dai_wormhole_gateway/invalid-domain" in str(err.value)
 
 
 ## flush()
 @pytest.mark.asyncio
 async def test_flushes_batched_dai(
     starknet: Starknet,
-    l2_wormhole_bridge: StarknetContract,
+    l2_wormhole_gateway: StarknetContract,
     dai: StarknetContract,
     user1: StarknetContract,
 ):
-    await dai.approve(l2_wormhole_bridge.contract_address, to_split_uint(WORMHOLE_AMOUNT * 2)).invoke(user1.contract_address)
-    await l2_wormhole_bridge.initiate_wormhole(
+    await dai.approve(l2_wormhole_gateway.contract_address, to_split_uint(WORMHOLE_AMOUNT * 2)).invoke(user1.contract_address)
+    await l2_wormhole_gateway.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    await l2_wormhole_bridge.initiate_wormhole(
+    await l2_wormhole_gateway.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    batched_dai_to_flush = await l2_wormhole_bridge.batched_dai_to_flush(TARGET_DOMAIN).call()
+    batched_dai_to_flush = await l2_wormhole_gateway.batched_dai_to_flush(TARGET_DOMAIN).call()
     assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT * 2),)
 
-    tx = await l2_wormhole_bridge.flush(
+    tx = await l2_wormhole_gateway.flush(
             TARGET_DOMAIN,
         ).invoke(user1.contract_address)
     check_event("Flushed", tx, (TARGET_DOMAIN, to_split_uint(WORMHOLE_AMOUNT * 2)))
@@ -324,7 +324,7 @@ async def test_flushes_batched_dai(
         *to_split_uint(WORMHOLE_AMOUNT * 2),
     ]
     starknet.consume_message_from_l2(
-        from_address=l2_wormhole_bridge.contract_address,
+        from_address=l2_wormhole_gateway.contract_address,
         to_address=L1_WORMHOLE_BRIDGE_ADDRESS,
         payload=payload,
     )
@@ -332,12 +332,12 @@ async def test_flushes_batched_dai(
 
 @pytest.mark.asyncio
 async def test_cannot_flush_zero_debt(
-    l2_wormhole_bridge: StarknetContract,
+    l2_wormhole_gateway: StarknetContract,
     user1: StarknetContract,
 ):
-    batched_dai_to_flush = await l2_wormhole_bridge.batched_dai_to_flush(TARGET_DOMAIN).call()
+    batched_dai_to_flush = await l2_wormhole_gateway.batched_dai_to_flush(TARGET_DOMAIN).call()
     assert batched_dai_to_flush.result == (to_split_uint(0),)
 
     with pytest.raises(StarkException) as err:
-        await l2_wormhole_bridge.flush(TARGET_DOMAIN).invoke(user1.contract_address)
-    assert "l2_dai_wormhole_bridge/value-is-zero" in str(err.value)
+        await l2_wormhole_gateway.flush(TARGET_DOMAIN).invoke(user1.contract_address)
+    assert "l2_dai_wormhole_gateway/value-is-zero" in str(err.value)

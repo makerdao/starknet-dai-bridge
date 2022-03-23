@@ -15,23 +15,23 @@ const AMOUNT = BigInt(10);
 const SOURCE_DOMAIN = hre.ethers.utils.formatBytes32String("starknet");
 const TARGET_DOMAIN = hre.ethers.utils.formatBytes32String("optimism");
 
-describe("l1:L1DAIWormholeBridge", () => {
+describe("l1:L1DAIWormholeGateway", () => {
   it("initializes properly", async () => {
     const {
       admin,
       dai,
       starkNetFake,
       escrow,
-      l1WormholeBridge,
-      l2WormholeBridgeAddress,
+      l1WormholeGateway,
+      l2WormholeGatewayAddress,
     } = await setupTest();
 
-    expect(await l1WormholeBridge.starkNet()).to.be.eq(starkNetFake.address);
-    expect(await l1WormholeBridge.dai()).to.be.eq(dai.address);
-    expect(await l1WormholeBridge.l2DaiWormholeBridge()).to.be.eq(
-      l2WormholeBridgeAddress
+    expect(await l1WormholeGateway.starkNet()).to.be.eq(starkNetFake.address);
+    expect(await l1WormholeGateway.dai()).to.be.eq(dai.address);
+    expect(await l1WormholeGateway.l2DaiWormholeGateway()).to.be.eq(
+      l2WormholeGatewayAddress
     );
-    expect(await l1WormholeBridge.escrow()).to.be.eq(escrow.address);
+    expect(await l1WormholeGateway.escrow()).to.be.eq(escrow.address);
 
     expect(await dai.balanceOf(admin.address)).to.be.eq(
       eth((1000000 - 100).toString())
@@ -39,7 +39,7 @@ describe("l1:L1DAIWormholeBridge", () => {
   });
 
   it("has correct public interface", async () => {
-    await assertPublicMutableMethods("L1DAIWormholeBridge", [
+    await assertPublicMutableMethods("L1DAIWormholeGateway", [
       "finalizeFlush(bytes32,uint256)",
       "finalizeRegisterWormhole((bytes32,bytes32,bytes32,bytes32,uint128,uint80,uint48))",
     ]);
@@ -52,15 +52,15 @@ describe("l1:L1DAIWormholeBridge", () => {
         escrow,
         starkNetFake,
         wormholeRouterFake,
-        l1WormholeBridge,
-        l2WormholeBridgeAddress,
+        l1WormholeGateway,
+        l2WormholeGatewayAddress,
       } = await setupTest();
 
-      await l1WormholeBridge.finalizeFlush(TARGET_DOMAIN, AMOUNT);
+      await l1WormholeGateway.finalizeFlush(TARGET_DOMAIN, AMOUNT);
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
-        l2WormholeBridgeAddress,
+        l2WormholeGatewayAddress,
         [
           HANDLE_FLUSH,
           TARGET_DOMAIN,
@@ -83,14 +83,14 @@ describe("l1:L1DAIWormholeBridge", () => {
   describe("finalizeRegisterWormhole", () => {
     it("calls the router to request DAI", async () => {
       const {
-        l1WormholeBridge,
+        l1WormholeGateway,
         l1Alice,
         l1Bob,
         dai,
         escrow,
         starkNetFake,
         wormholeRouterFake,
-        l2WormholeBridgeAddress,
+        l2WormholeGatewayAddress,
       } = await setupTest();
 
       expect(await dai.allowance(escrow.address, l1Alice.address)).to.be.eq(0);
@@ -110,10 +110,10 @@ describe("l1:L1DAIWormholeBridge", () => {
         0, // nonce
         0, // timestamp
       ];
-      await l1WormholeBridge.finalizeRegisterWormhole(wormhole);
+      await l1WormholeGateway.finalizeRegisterWormhole(wormhole);
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
-        l2WormholeBridgeAddress,
+        l2WormholeGatewayAddress,
         [HANDLE_REGISTER_WORMHOLE, ...wormhole]
       );
 
@@ -139,7 +139,7 @@ async function setupTest() {
   const [admin, l1Alice, l1Bob] = await hre.ethers.getSigners();
 
   const starkNetFake = await smock.fake(
-    "./contracts/l1/L1DAIWormholeBridge.sol:StarkNetLike"
+    "./contracts/l1/L1DAIWormholeGateway.sol:StarkNetLike"
   );
   const wormholeRouterFake = await smock.fake("WormholeRouter");
 
@@ -147,12 +147,12 @@ async function setupTest() {
 
   const escrow: any = await simpleDeploy("L1Escrow", []);
 
-  const L2_DAI_WORMHOLE_BRIDGE_ADDRESS = 31414;
+  const L2_DAI_WORMHOLE_GATEWAY_ADDRESS = 31414;
 
-  const l1WormholeBridge = await simpleDeploy("L1DAIWormholeBridge", [
+  const l1WormholeGateway = await simpleDeploy("L1DAIWormholeGateway", [
     starkNetFake.address,
     dai.address,
-    L2_DAI_WORMHOLE_BRIDGE_ADDRESS,
+    L2_DAI_WORMHOLE_GATEWAY_ADDRESS,
     escrow.address,
     wormholeRouterFake.address,
   ]);
@@ -160,7 +160,7 @@ async function setupTest() {
   const MAX = BigInt(2 ** 256) - BigInt(1);
   await escrow
     .connect(admin)
-    .approve(dai.address, l1WormholeBridge.address, MAX);
+    .approve(dai.address, l1WormholeGateway.address, MAX);
   await dai.connect(admin).transfer(escrow.address, INITIAL_ESCROW_BALANCE);
 
   return {
@@ -171,8 +171,8 @@ async function setupTest() {
     escrow: escrow as any,
     starkNetFake: starkNetFake as any,
     wormholeRouterFake: wormholeRouterFake as any,
-    l1WormholeBridge: l1WormholeBridge as any,
-    l2WormholeBridgeAddress: L2_DAI_WORMHOLE_BRIDGE_ADDRESS,
+    l1WormholeGateway: l1WormholeGateway as any,
+    l2WormholeGatewayAddress: L2_DAI_WORMHOLE_GATEWAY_ADDRESS,
   };
 }
 

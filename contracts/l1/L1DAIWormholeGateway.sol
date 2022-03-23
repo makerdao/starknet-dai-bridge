@@ -55,10 +55,10 @@ interface WormholeRouter {
   function settle(bytes32 targetDomain, uint256 batchedDaiToFlush) external;
 }
 
-contract L1DAIWormholeBridge {
+contract L1DAIWormholeGateway {
   address public immutable starkNet;
   address public immutable dai;
-  uint256 public immutable l2DaiWormholeBridge;
+  uint256 public immutable l2DaiWormholeGateway;
   address public immutable escrow;
   WormholeRouter public immutable wormholeRouter;
 
@@ -68,14 +68,14 @@ contract L1DAIWormholeBridge {
   constructor(
     address _starkNet,
     address _dai,
-    uint256 _l2DaiWormholeBridge,
+    uint256 _l2DaiWormholeGateway,
     address _escrow,
     address _wormholeRouter
   ) {
 
     starkNet = _starkNet;
     dai = _dai;
-    l2DaiWormholeBridge = _l2DaiWormholeBridge;
+    l2DaiWormholeGateway = _l2DaiWormholeGateway;
     escrow = _escrow;
     wormholeRouter = WormholeRouter(_wormholeRouter);
     // Approve the router to pull DAI from this contract during settle() (after the DAI has been pulled by this contract from the escrow)
@@ -90,7 +90,7 @@ contract L1DAIWormholeBridge {
     payload[1] = uint256(targetDomain);
     (payload[2], payload[3]) = toSplitUint(daiToFlush);
 
-    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeBridge, payload);
+    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeGateway, payload);
 
     // Pull DAI from the escrow to this contract
     TokenLike(dai).transferFrom(escrow, address(this), daiToFlush);
@@ -111,7 +111,7 @@ contract L1DAIWormholeBridge {
     payload[6] = uint256(wormhole.nonce); // uint80 -> uint256
     payload[7] = uint256(wormhole.timestamp); // uint48 -> uint256
 
-    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeBridge, payload);
+    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeGateway, payload);
     
     wormholeRouter.requestMint(wormhole, 0, 0);
   }
