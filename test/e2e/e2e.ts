@@ -78,10 +78,10 @@ describe("e2e", async function () {
 
     const futureL1DAIWormholeBridgeAddress =
       await getAddressOfNextDeployedContract(admin);
-    l2WormholeBridge = await simpleDeployL2("l2_dai_wormhole_bridge", {
+    l2WormholeBridge = await simpleDeployL2("l2_dai_wormhole_gateway", {
       ward: asDec(l2Auth.address),
       dai: asDec(l2Dai.address),
-      wormhole_bridge: asDec(futureL1DAIWormholeBridgeAddress),
+      wormhole_gateway: asDec(futureL1DAIWormholeBridgeAddress),
       domain: SOURCE_DOMAIN,
     });
     l1WormholeBridge = await simpleDeploy("L1DAIWormholeBridge", [

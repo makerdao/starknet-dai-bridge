@@ -78,7 +78,7 @@ func _dai() -> (res : felt):
 end
 
 @storage_var
-func _wormhole_bridge() -> (res : felt):
+func _wormhole_gateway() -> (res : felt):
 end
 
 @storage_var
@@ -132,12 +132,12 @@ func dai{
 end
 
 @view
-func wormhole_bridge{
+func wormhole_gateway{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> (res : felt):
-    let (res) = _wormhole_bridge.read()
+    let (res) = _wormhole_gateway.read()
     return (res)
 end
 
@@ -187,7 +187,7 @@ func auth{
   }():
     let (caller) = get_caller_address()
     let (ward) = _wards.read(caller)
-    with_attr error_message("l2_dai_wormhole_bridge/not-authorized"):
+    with_attr error_message("l2_dai_wormhole_gateway/not-authorized"):
       assert ward = 1
     end
     return ()
@@ -253,7 +253,7 @@ func constructor{
   }(
     ward : felt,
     dai : felt,
-    wormhole_bridge : felt,
+    wormhole_gateway: felt,
     domain : felt,
   ):
     _wards.write(ward, 1)
@@ -262,7 +262,7 @@ func constructor{
 
     _is_open.write(1)
     _dai.write(dai)
-    _wormhole_bridge.write(wormhole_bridge)
+    _wormhole_gateway.write(wormhole_gateway)
     _domain.write(domain)
 
     return ()
@@ -278,11 +278,11 @@ func file{
     domain : felt,
     data : felt,
   ):
-    with_attr error_message("l2_dai_wormhole_bridge/invalid-file"):
+    with_attr error_message("l2_dai_wormhole_gateway/invalid-file"):
       assert what = valid_domains_file
     end
 
-    with_attr error_message("l2_dai_wormhole_bridge/invalid-data"):
+    with_attr error_message("l2_dai_wormhole_gateway/invalid-data"):
       assert (1 - data)*data = 0
     end
 
@@ -305,19 +305,19 @@ func initiate_wormhole{
     operator : felt
   ):
     let (is_open) = _is_open.read()
-    with_attr error_message("l2_dai_wormhole_bridge/bridge-closed"):
+    with_attr error_message("l2_dai_wormhole_gateway/gateway-closed"):
       assert is_open = 1
     end
 
     # valid domain check
     let (valid_domain) = _valid_domains.read(target_domain)
-    with_attr error_message("l2_dai_wormhole_bridge/invalid-domain"):
+    with_attr error_message("l2_dai_wormhole_gateway/invalid-domain"):
       assert valid_domain = 1
     end
     
     # amount should be uint128
     let amount_uint256 = Uint256(low=amount, high=0)
-    with_attr error_message("l2_dai_wormhole_bridge/invalid-amount"):
+    with_attr error_message("l2_dai_wormhole_gateway/invalid-amount"):
       uint256_check(amount_uint256)
     end
 
@@ -388,7 +388,7 @@ func finalize_register_wormhole{
     timestamp : felt
   ):
     let (is_open) = _is_open.read()
-    with_attr error_message("l2_dai_wormhole_bridge/bridge-closed"):
+    with_attr error_message("l2_dai_wormhole_gateway/gateway-closed"):
       assert is_open = 1
     end
     let (domain) = _domain.read()
@@ -405,13 +405,13 @@ func finalize_register_wormhole{
 
     let (hash) = hash_message(payload)
     let (hash_exists) = _wormhole_hashes.read(hash)
-    with_attr error_message("l2_dai_wormhole_bridge/wormhole-does-not-exist"):
+    with_attr error_message("l2_dai_wormhole_gateway/wormhole-does-not-exist"):
       assert hash_exists = 1
     end
     _wormhole_hashes.write(hash, 0)
 
-    let (wormhole_bridge) = _wormhole_bridge.read()
-    send_message_to_l1(wormhole_bridge, 8, payload)
+    let (wormhole_gateway) = _wormhole_gateway.read()
+    send_message_to_l1(wormhole_gateway, 8, payload)
 
     return ()
 end
@@ -423,7 +423,7 @@ func uint256_assert_not_zero{
   }(a : Uint256):
     let (low_check) = is_not_zero(a.low)
     let (high_check) = is_not_zero(a.high)
-    with_attr error_message("l2_dai_wormhole_bridge/value-is-zero"):
+    with_attr error_message("l2_dai_wormhole_gateway/value-is-zero"):
       assert_not_zero(low_check + high_check)
     end
 
@@ -449,9 +449,9 @@ func flush{
     assert payload[2] = dai_to_flush.low
     assert payload[3] = dai_to_flush.high
 
-    let (wormhole_bridge) = _wormhole_bridge.read()
+    let (wormhole_gateway) = _wormhole_gateway.read()
 
-    send_message_to_l1(wormhole_bridge, 4, payload)
+    send_message_to_l1(wormhole_gateway, 4, payload)
 
     Flushed.emit(target_domain=target_domain, dai=dai_to_flush)
 
@@ -464,7 +464,7 @@ func uint256_add_safe{
     range_check_ptr
   }(a : Uint256, b : Uint256) -> (sum : Uint256):
     let (sum, carry) = uint256_add(a, b)
-    with_attr error_message("l2_dai_wormhole_bridge/uint256-overflow"):
+    with_attr error_message("l2_dai_wormhole_gateway/uint256-overflow"):
       assert carry = 0
     end
     return (sum)
