@@ -157,7 +157,7 @@ async def test_burns_dai_marks_it_for_future_flush(
 
 
 @pytest.mark.asyncio
-async def test_nonce_management___(
+async def test_nonce_management(
     l2_wormhole_bridge: StarknetContract,
     dai: StarknetContract,
     user1: StarknetContract,
