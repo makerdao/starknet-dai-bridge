@@ -284,7 +284,6 @@ describe("e2e", async function () {
       const { res } = await l2Dai.call("balanceOf", {
         user: asDec(l2Auth.address),
       });
-      console.log("HERE", currentL1Balance);
       const l2AuthBalance = new SplitUint(res);
       const wormholeAmountL1 = eth("100");
       const wormholeAmountL2 = l2Eth("100");
@@ -339,23 +338,24 @@ describe("e2e", async function () {
       ).to.deep.equal(l2AuthBalance.sub(wormholeAmountL2));
 
       // check that can't withdraw twice
-      /*
-      await l2Signer.sendTransaction(
-        l2Auth,
-        l2WormholeGateway,
-        "finalize_register_wormhole",
-        [
-          TARGET_DOMAIN, // target_domain
-          asDec(l1Alice.address), // receiver
-          wormholeAmountL2.toDec()[0], // amount
-          asDec(l1Alice.address), // operator
-          nonce, // nonce
-          timestamp, // timestamp
-        ]
-      )
-        .catch(expect(true).to.be.eq(true))
-        .then(expect(false).to.be.eq(true));
-      */
+      try {
+        await l2Signer.sendTransaction(
+          l2Auth,
+          l2WormholeGateway,
+          "finalize_register_wormhole",
+          [
+            TARGET_DOMAIN, // target_domain
+            asDec(l1Alice.address), // receiver
+            wormholeAmountL2.toDec()[0], // amount
+            asDec(l1Alice.address), // operator
+            nonce, // nonce
+            timestamp, // timestamp
+          ]
+        );
+        expect(true).to.be.eq(false);
+      } catch {
+        expect(true).to.be.eq(true);
+      }
     });
 
     it("settle", async () => {
