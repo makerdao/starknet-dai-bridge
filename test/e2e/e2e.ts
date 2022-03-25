@@ -145,7 +145,9 @@ describe("e2e", async function () {
       await l1Bridge.connect(l1Alice).deposit(depositAmountL1, l2Auth.address);
       await starknet.devnet.flush();
 
-      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(currentL1Balance.sub(depositAmountL1));
+      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(
+        currentL1Balance.sub(depositAmountL1)
+      );
       expect(
         await l2Dai.call("balanceOf", {
           user: asDec(l2Auth.address),
@@ -169,7 +171,9 @@ describe("e2e", async function () {
       await l1Bridge
         .connect(l1Alice)
         .withdraw(withdrawAmountL1, l1Alice.address);
-      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(currentL1Balance.add(withdrawAmountL1));
+      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(
+        currentL1Balance.add(withdrawAmountL1)
+      );
       expect(
         await l2Dai.call("balanceOf", {
           user: asDec(l2Auth.address),
@@ -197,7 +201,9 @@ describe("e2e", async function () {
           .connect(l1Alice)
           .withdraw(withdrawAmountL1, l1Alice.address);
 
-        expect(await dai.balanceOf(l1Alice.address)).to.be.eq(currentL1Balance.add(withdrawAmountL1));
+        expect(await dai.balanceOf(l1Alice.address)).to.be.eq(
+          currentL1Balance.add(withdrawAmountL1)
+        );
         expect(
           await l2Dai.call("balanceOf", {
             user: asDec(l2Auth.address),
@@ -210,20 +216,21 @@ describe("e2e", async function () {
         const currentL2Balance = await l2Dai.call("balanceOf", {
           user: asDec(l2Auth.address),
         });
-        const withdrawAmountL2 = (new SplitUint(currentL2Balance.res)).add(SplitUint.fromUint(1));
+        const withdrawAmountL2 = new SplitUint(currentL2Balance.res).add(
+          SplitUint.fromUint(1)
+        );
         const withdrawAmountL1 = withdrawAmountL2.toUint();
 
         await l1Bridge
           .connect(l1Alice)
           .forceWithdrawal(withdrawAmountL1, l2Auth.address);
         await starknet.devnet.flush();
-        
+
         // TODO: get events from message triggered call
         // await getEvent("force_withdrawal_handled", l2Bridge.address); // will error if not found
-        
-        await expect(l1Bridge
-          .connect(l1Alice)
-          .withdraw(withdrawAmountL1, l1Alice.address)
+
+        await expect(
+          l1Bridge.connect(l1Alice).withdraw(withdrawAmountL1, l1Alice.address)
         ).to.be.revertedWith("INVALID_MESSAGE_TO_CONSUME");
 
         expect(await dai.balanceOf(l1Alice.address)).to.be.eq(currentL1Balance);
@@ -256,9 +263,8 @@ describe("e2e", async function () {
         // TODO: get events from message triggered call
         // await getEvent("force_withdrawal_handled", l2Bridge.address); // will error if not found
 
-        await expect(l1Bridge
-          .connect(l1Alice)
-          .withdraw(withdrawAmountL1, l1Alice.address)
+        await expect(
+          l1Bridge.connect(l1Alice).withdraw(withdrawAmountL1, l1Alice.address)
         ).to.be.revertedWith("INVALID_MESSAGE_TO_CONSUME");
         expect(await dai.balanceOf(l1Alice.address)).to.be.eq(currentL1Balance);
         expect(
@@ -280,7 +286,6 @@ describe("e2e", async function () {
 
   describe("wormhole", async () => {
     it("slow path", async () => {
-      const currentL1Balance = await dai.balanceOf(l1Alice.address);
       const { res } = await l2Dai.call("balanceOf", {
         user: asDec(l2Auth.address),
       });
@@ -326,7 +331,9 @@ describe("e2e", async function () {
         timestamp: parseInt(timestamp), // uint48
       };
       await expect(
-        l1WormholeGateway.connect(l1Alice).finalizeRegisterWormhole(wormholeGUID)
+        l1WormholeGateway
+          .connect(l1Alice)
+          .finalizeRegisterWormhole(wormholeGUID)
       )
         .to.emit(wormholeRouterFake, "RequestMint")
         .withArgs(Object.values(wormholeGUID), eth("0"), eth("0"));
