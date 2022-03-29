@@ -376,6 +376,8 @@ describe("e2e", async function () {
       await l2Signer.sendTransaction(l2Auth, l2WormholeGateway, "flush", [
         TARGET_DOMAIN,
       ]);
+      await starknet.devnet.flush();
+
       await expect(
         l1WormholeGateway
           .connect(l1Alice)
@@ -383,8 +385,6 @@ describe("e2e", async function () {
       )
         .to.emit(wormholeRouterFake, "Settle")
         .withArgs(toBytes32(TARGET_DOMAIN), daiToFlush.toUint());
-
-      await starknet.devnet.flush();
 
       expect(await dai.balanceOf(escrow.address)).to.be.eq(
         BigInt(escrowBalance) - daiToFlush.toUint()
