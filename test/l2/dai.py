@@ -243,9 +243,9 @@ async def test_should_not_burn_other(
 
 @pytest.mark.asyncio
 async def test_deployer_should_not_be_able_to_burn(
-    dai: StarknetContract,
-    auth_user: StarknetContract,
-    user1: StarknetContract,
+    dai: StarknetContract,   
+    auth_user: StarknetContract,   
+    user1: StarknetContract,   
 ):
     with pytest.raises(StarkException) as err:
         await dai.burn(

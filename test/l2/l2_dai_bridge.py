@@ -178,7 +178,7 @@ async def test_handle_force_withdrawal(
     dai: StarknetContract,
     l2_bridge: StarknetContract,
     user1: StarknetContract,
-    check_balances,
+    check_balances, 
 ):
     await dai.approve(
             l2_bridge.contract_address,
@@ -198,7 +198,7 @@ async def test_handle_force_withdrawal(
 
     # check_event(
     #     'force_withdrawal_handled',
-    #    tx,
+    #     tx,
     #     ((int(L1_ADDRESS), to_split_uint(10), user1.contract_address))
     # )
 
