@@ -413,7 +413,6 @@ func finalize_register_wormhole{
     with_attr error_message("l2_dai_wormhole_gateway/wormhole-does-not-exist"):
       assert hash_exists = 1
     end
-    _wormholes.write(hash, 0)
 
     let (wormhole_gateway) = _wormhole_gateway.read()
     send_message_to_l1(wormhole_gateway, 8, payload)
