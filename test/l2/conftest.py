@@ -19,7 +19,7 @@ sys.stdout = sys.stderr
 SUPER_ADJUDICATOR_L1_ADDRESS = 0
 CONTRACT_SRC = [os.path.dirname(__file__), "..", "..", "contracts", "starknet"]
 
-VALID_DOMAINS = 9379074284324409537785911406195
+VALID_DOMAINS = int.from_bytes("valid_domains".encode(), byteorder="big")
 TARGET_DOMAIN = get_selector_from_name("optimism")
 
 ###########

@@ -7,7 +7,7 @@ from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
 from starkware.starknet.public.abi import get_selector_from_name
 from starkware.crypto.signature.fast_pedersen_hash import pedersen_hash
-from conftest import to_split_uint, to_uint, check_event
+from conftest import to_split_uint, to_uint, check_event, VALID_DOMAINS
 
 
 L1_ADDRESS = 0x1
@@ -16,7 +16,6 @@ L1_WORMHOLE_BRIDGE_ADDRESS = 0x1
 DOMAIN = get_selector_from_name("starknet")
 TARGET_DOMAIN = get_selector_from_name("optimism")
 INVALID_DOMAIN = get_selector_from_name("invalid_domain")
-VALID_DOMAINS = 9379074284324409537785911406195
 WORMHOLE_AMOUNT = 10
 FINALIZE_REGISTER_WORMHOLE = 0
 FINALIZE_FLUSH = 1

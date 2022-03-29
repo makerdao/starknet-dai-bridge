@@ -365,13 +365,17 @@ func hash7{
   }(
     payload : felt*,
   ) -> (hash : felt):
-    let (_hash1) = hash2{hash_ptr=pedersen_ptr}([payload], [payload+1])
-    let (_hash2) = hash2{hash_ptr=pedersen_ptr}(_hash1, [payload+2])
-    let (_hash3) = hash2{hash_ptr=pedersen_ptr}(_hash2, [payload+3])
-    let (_hash4) = hash2{hash_ptr=pedersen_ptr}(_hash3, [payload+4])
-    let (_hash5) = hash2{hash_ptr=pedersen_ptr}(_hash4, [payload+5])
-    let (hash) = hash2{hash_ptr=pedersen_ptr}(_hash5, [payload+6])
+    let hash_ptr = pedersen_ptr
+    with hash_ptr:
+      let (_hash1) = hash2([payload], [payload+1])
+      let (_hash2) = hash2(_hash1, [payload+2])
+      let (_hash3) = hash2(_hash2, [payload+3])
+      let (_hash4) = hash2(_hash3, [payload+4])
+      let (_hash5) = hash2(_hash4, [payload+5])
+      let (hash) = hash2(_hash5, [payload+6])
+    end
 
+    let pedersen_ptr = hash_ptr
     return (hash)
 end
 
