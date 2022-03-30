@@ -4,3 +4,4 @@ pytest-asyncio==0.15.1
 lark==0.11.3
 starknet-devnet==0.1.16
 dill==0.3.4
+werkzeug==2.0.2
