@@ -98,7 +98,7 @@ func _wards(user : felt) -> (res : felt):
 end
 
 @storage_var
-func _wormhole_hashes(hash : felt) -> (res : felt):
+func _wormholes(hash : felt) -> (res : felt):
 end
 
 @view
@@ -352,25 +352,30 @@ func initiate_wormhole{
       nonce=nonce,
       timestamp=timestamp)
 
-    let (hash) = hash_message(payload)
-    _wormhole_hashes.write(hash, 1)
+    let (hash) = hash7(payload+1)
+    _wormholes.write(hash, 1)
 
     return ()
 end
 
-func hash_message{
+func hash7{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(
     payload : felt*,
   ) -> (hash : felt):
-    let (_hash1) = hash2{hash_ptr=pedersen_ptr}([payload], [payload+1])
-    let (_hash2) = hash2{hash_ptr=pedersen_ptr}(_hash1, [payload+2])
-    let (_hash3) = hash2{hash_ptr=pedersen_ptr}(_hash2, [payload+3])
-    let (_hash4) = hash2{hash_ptr=pedersen_ptr}(_hash3, [payload+4])
-    let (hash) = hash2{hash_ptr=pedersen_ptr}(_hash4, [payload+5])
+    let hash_ptr = pedersen_ptr
+    with hash_ptr:
+      let (_hash1) = hash2([payload], [payload+1])
+      let (_hash2) = hash2(_hash1, [payload+2])
+      let (_hash3) = hash2(_hash2, [payload+3])
+      let (_hash4) = hash2(_hash3, [payload+4])
+      let (_hash5) = hash2(_hash4, [payload+5])
+      let (hash) = hash2(_hash5, [payload+6])
+    end
 
+    let pedersen_ptr = hash_ptr
     return (hash)
 end
 
@@ -403,12 +408,11 @@ func finalize_register_wormhole{
     assert payload[6] = nonce
     assert payload[7] = timestamp
 
-    let (hash) = hash_message(payload)
-    let (hash_exists) = _wormhole_hashes.read(hash)
+    let (hash) = hash7(payload+1)
+    let (hash_exists) = _wormholes.read(hash)
     with_attr error_message("l2_dai_wormhole_gateway/wormhole-does-not-exist"):
       assert hash_exists = 1
     end
-    _wormhole_hashes.write(hash, 0)
 
     let (wormhole_gateway) = _wormhole_gateway.read()
     send_message_to_l1(wormhole_gateway, 8, payload)
@@ -421,10 +425,8 @@ func uint256_assert_not_zero{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(a : Uint256):
-    let (low_check) = is_not_zero(a.low)
-    let (high_check) = is_not_zero(a.high)
     with_attr error_message("l2_dai_wormhole_gateway/value-is-zero"):
-      assert_not_zero(low_check + high_check)
+      assert_not_zero(a.low + a.high)
     end
 
     return ()

@@ -44,6 +44,7 @@ describe("l1:L1DAIBridge", function () {
       "withdraw(uint256,address)",
       "forceWithdrawal(uint256,uint256)",
       "setCeiling(uint256)",
+      "setMaxDeposit(uint256)",
     ]);
   });
   describe("deposit", function () {
@@ -177,6 +178,20 @@ describe("l1:L1DAIBridge", function () {
       await expect(
         l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
       ).to.be.revertedWith("L1DAIBridge/above-ceiling");
+    });
+    it("reverts when ceiling is too low", async () => {
+      const { admin, l1Alice, dai, l1Bridge } = await setupTest();
+
+      const depositAmount = eth("333");
+      const l2User = "123";
+
+      await dai.connect(admin).transfer(l1Alice.address, depositAmount);
+      await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount);
+      await l1Bridge.connect(admin).setMaxDeposit(depositAmount.sub(1));
+
+      await expect(
+        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
+      ).to.be.revertedWith("L1DAIBridge/above-max-deposit");
     });
   });
   describe("withdraw", function () {
@@ -424,6 +439,25 @@ describe("l1:L1DAIBridge", function () {
       await expect(l1Bridge.connect(l1Alice).setCeiling(1)).to.be.revertedWith(
         "L1DAIBridge/not-authorized"
       );
+    });
+  });
+  describe("setMaxDeposit", function () {
+    it("maxDeposit can be set by admin", async () => {
+      const { admin, l1Bridge } = await setupTest();
+
+      expect(await l1Bridge.maxDeposit()).to.be.eq(MAX_UINT256);
+      await expect(l1Bridge.connect(admin).setMaxDeposit(100))
+        .to.emit(l1Bridge, "LogMaxDeposit")
+        .withArgs(100);
+      expect(await l1Bridge.maxDeposit()).to.be.eq(100);
+    });
+    it("reverts when called not by the owner", async () => {
+      const { l1Alice, l1Bridge } = await setupTest();
+
+      expect(await l1Bridge.maxDeposit()).to.be.eq(MAX_UINT256);
+      await expect(
+        l1Bridge.connect(l1Alice).setMaxDeposit(1)
+      ).to.be.revertedWith("L1DAIBridge/not-authorized");
     });
   });
   describe("forceWithdrawal", function () {

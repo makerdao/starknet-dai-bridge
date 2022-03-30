@@ -45,7 +45,6 @@ async def deploy_account(starknet, signer, source):
         constructor_calldata=[signer.public_key],
     )
 
-
 def compile(path):
     return compile_starknet_files(
         files=[path],
