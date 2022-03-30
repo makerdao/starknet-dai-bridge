@@ -80,7 +80,8 @@ export async function getEvent(eventName: string, contractAddress: string) {
   const [event] = json["transaction_receipts"][0]["events"].filter(
     (event: any) => {
       return (
-        BigInt(event.keys[0]).toString() === eventKey && event.from_address === _contractAddress
+        BigInt(event.keys[0]).toString() === eventKey &&
+        event.from_address === _contractAddress
       );
     }
   );
