@@ -7,7 +7,7 @@ from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
 from starkware.starknet.public.abi import get_selector_from_name
 from starkware.crypto.signature.fast_pedersen_hash import pedersen_hash
-from conftest import to_split_uint, to_uint, check_event, VALID_DOMAINS
+from conftest import to_split_uint, to_uint, VALID_DOMAINS
 
 
 L1_ADDRESS = 0x1
@@ -26,10 +26,25 @@ no_funds = 1
 
 starknet_contract_address = 0x0
 
+
 def check_wormhole_initialized_event(tx, values):
     event = tx.main_call_events[0]
-    assert len(event) == 7
-    assert event[:6] == values # doesn't check timestamp
+    assert type(event).__name__ == "WormholeInitialized"
+    assert event.source_domain == values["source_domain"]
+    assert event.target_domain == values["target_domain"]
+    assert event.receiver == values["receiver"]
+    assert event.operator == values["operator"]
+    assert event.amount == values["amount"]
+    assert event.nonce == values["nonce"]
+
+
+def check_flushed_event(tx, values):
+    event = tx.main_call_events[0]
+    assert type(event).__name__ == "Flushed"
+    assert event.target_domain == values["target_domain"]
+    assert event.dai.low == values["dai"][0]
+    assert event.dai.high == values["dai"][1]
+
 
 #########
 # TESTS #
@@ -108,14 +123,14 @@ async def test_burns_dai_marks_it_for_future_flush(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    check_wormhole_initialized_event(
-        tx, (
-            DOMAIN,
-            TARGET_DOMAIN,
-            user1.contract_address,
-            user1.contract_address,
-            WORMHOLE_AMOUNT,
-            0))
+    check_wormhole_initialized_event(tx, {
+        "source_domain": DOMAIN,
+        "target_domain": TARGET_DOMAIN,
+        "receiver": user1.contract_address,
+        "operator": user1.contract_address,
+        "amount": WORMHOLE_AMOUNT,
+        "nonce": 0,
+    })
 
     wormhole = [
         DOMAIN, # sourceDomain
@@ -124,7 +139,7 @@ async def test_burns_dai_marks_it_for_future_flush(
         user1.contract_address, # operator
         WORMHOLE_AMOUNT, # amount
         0, # nonce
-        tx.main_call_events[0][6] # timestamp
+        tx.main_call_events[0].timestamp # timestamp
     ]
 
     await check_balances(100 - WORMHOLE_AMOUNT, 100)
@@ -153,27 +168,27 @@ async def test_nonce_management(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    check_wormhole_initialized_event(
-        tx, (
-            DOMAIN,
-            TARGET_DOMAIN,
-            user1.contract_address,
-            user1.contract_address,
-            WORMHOLE_AMOUNT,
-            0))
+    check_wormhole_initialized_event(tx, {
+        "source_domain": DOMAIN,
+        "target_domain": TARGET_DOMAIN,
+        "receiver": user1.contract_address,
+        "operator": user1.contract_address,
+        "amount": WORMHOLE_AMOUNT,
+        "nonce": 0,
+    })
     tx = await l2_wormhole_gateway.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    check_wormhole_initialized_event(
-        tx, (
-            DOMAIN,
-            TARGET_DOMAIN,
-            user1.contract_address,
-            user1.contract_address,
-            WORMHOLE_AMOUNT,
-            1))
+    check_wormhole_initialized_event(tx, {
+        "source_domain": DOMAIN,
+        "target_domain": TARGET_DOMAIN,
+        "receiver": user1.contract_address,
+        "operator": user1.contract_address,
+        "amount": WORMHOLE_AMOUNT,
+        "nonce": 1,
+    })
 
 
 @pytest.mark.asyncio
@@ -190,15 +205,15 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-    check_wormhole_initialized_event(
-        tx, (
-            DOMAIN,
-            TARGET_DOMAIN,
-            user1.contract_address,
-            user1.contract_address,
-            WORMHOLE_AMOUNT,
-            0))
-    timestamp = tx.main_call_events[0][6]
+    check_wormhole_initialized_event(tx, {
+        "source_domain": DOMAIN,
+        "target_domain": TARGET_DOMAIN,
+        "receiver": user1.contract_address,
+        "operator": user1.contract_address,
+        "amount": WORMHOLE_AMOUNT,
+        "nonce": 0,
+    })
+    timestamp = tx.main_call_events[0].timestamp
     await l2_wormhole_gateway.finalize_register_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
@@ -315,7 +330,10 @@ async def test_flushes_batched_dai(
     tx = await l2_wormhole_gateway.flush(
             TARGET_DOMAIN,
         ).invoke(user1.contract_address)
-    check_event("Flushed", tx, (TARGET_DOMAIN, to_split_uint(WORMHOLE_AMOUNT * 2)))
+    check_flushed_event(tx, {
+        "target_domain": TARGET_DOMAIN,
+        "dai": to_split_uint(WORMHOLE_AMOUNT * 2),
+    })
 
     payload = [
         FINALIZE_FLUSH,

@@ -6,7 +6,7 @@ from starkware.starknet.testing.starknet import Starknet
 from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
 from starkware.starknet.definitions.error_codes import StarknetErrorCode
-from conftest import to_split_uint, to_uint, check_event
+from conftest import to_split_uint, to_uint
 
 
 L1_ADDRESS = 0x1
@@ -19,6 +19,15 @@ burn = 0
 no_funds = 1
 
 starknet_contract_address = 0x0
+
+
+def check_withdraw_initiated_event(tx, values):
+    event = tx.main_call_events[0]
+    assert type(event).__name__ == "withdraw_initiated"
+    assert event.l1_recipient == values["l1_recipient"]
+    assert event.amount.low == values["amount"][0]
+    assert event.amount.high == values["amount"][1]
+    assert event.caller == values["caller"]
 
 
 #########
@@ -41,11 +50,11 @@ async def test_initiate_withdraw(
             L1_ADDRESS,
             to_split_uint(10)).invoke(user1.contract_address)
 
-    check_event(
-        'withdraw_initiated',
-        tx,
-        ((L1_ADDRESS, to_split_uint(10), user1.contract_address))
-    )
+    check_withdraw_initiated_event(tx, {
+        "l1_recipient": L1_ADDRESS,
+        "amount": to_split_uint(10),
+        "caller": user1.contract_address,
+    })
 
     payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
     starknet.consume_message_from_l2(

@@ -33,12 +33,6 @@ def to_uint(a):
     return a[0] + (a[1] << 128)
 
 
-def check_event(event_name, tx, values):
-    event = tx.main_call_events[0]
-    assert type(event).__name__ == event_name
-    assert event == values
-
-
 async def deploy_account(starknet, signer, source):
     return await starknet.deploy(
         source=source,
