@@ -1,7 +1,4 @@
-
-import os
 import pytest
-import asyncio
 
 from starkware.starknet.testing.starknet import Starknet
 from starkware.starknet.testing.contract import StarknetContract
