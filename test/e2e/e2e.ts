@@ -219,7 +219,9 @@ describe("e2e", async function () {
         timestamp: parseInt(timestamp), // uint48
       };
       await expect(
-        l1WormholeGateway.connect(l1Alice).finalizeRegisterWormhole(wormholeGUID)
+        l1WormholeGateway
+          .connect(l1Alice)
+          .finalizeRegisterWormhole(wormholeGUID)
       )
         .to.emit(wormholeRouterFake, "RequestMint")
         .withArgs(Object.values(wormholeGUID), eth("0"), eth("0"));
