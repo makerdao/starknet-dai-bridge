@@ -203,8 +203,8 @@ describe("e2e", async function () {
           asDec(l1Alice.address), // receiver
           wormholeAmountL2.toDec()[0], // amount
           asDec(l1Alice.address), // operator
-          nonce, // nonce
-          timestamp, // timestamp
+          parseInt(nonce), // nonce
+          parseInt(timestamp), // timestamp
         ]
       );
       await starknet.devnet.flush();
@@ -245,6 +245,7 @@ describe("e2e", async function () {
       await l2Signer.sendTransaction(l2Auth, l2WormholeGateway, "flush", [
         TARGET_DOMAIN,
       ]);
+      await starknet.devnet.flush();
       await expect(
         l1WormholeGateway
           .connect(l1Alice)
@@ -252,8 +253,6 @@ describe("e2e", async function () {
       )
         .to.emit(wormholeRouterFake, "Settle")
         .withArgs(toBytes32(TARGET_DOMAIN), daiToFlush.toUint());
-
-      await starknet.devnet.flush();
 
       expect(await dai.balanceOf(escrow.address)).to.be.eq(
         BigInt(escrowBalance) - daiToFlush.toUint()
