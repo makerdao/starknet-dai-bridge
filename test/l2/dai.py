@@ -5,7 +5,7 @@ import asyncio
 from starkware.starknet.testing.starknet import Starknet
 from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
-from conftest import to_split_uint, to_uint
+from conftest import to_split_uint, to_uint, check_event
 
 
 MAX = (2**128-1, 2**128-1)
@@ -16,23 +16,6 @@ burn = 0
 no_funds = 1
 
 starknet_contract_address = 0x0
-
-
-def check_transfer_event(tx, values):
-    event = tx.main_call_events[0]
-    assert type(event).__name__ == "Transfer"
-    assert event.sender == values["sender"]
-    assert event.recipient == values["recipient"]
-    assert event.value.low == values["value"][0]
-    assert event.value.high == values["value"][1]
-
-def check_approval_event(tx, values):
-    event = tx.main_call_events[0]
-    assert type(event).__name__ == "Approval"
-    assert event.owner == values["owner"]
-    assert event.spender == values["spender"]
-    assert event.value.low == values["value"][0]
-    assert event.value.high == values["value"][1]
 
 
 #########
@@ -69,11 +52,15 @@ async def test_transfer(
             user2.contract_address,
             to_split_uint(10),
         ).invoke(user1.contract_address)
-    check_transfer_event(tx, {
-        "sender": user1.contract_address,
-        "recipient": user2.contract_address,
-        "value": to_split_uint(10),
-    })
+    check_event(
+        dai,
+        "Transfer",
+        tx, (
+            user1.contract_address,
+            user2.contract_address,
+            to_split_uint(10)
+        )
+    )
 
     await check_balances(90, 110)
 
@@ -88,11 +75,15 @@ async def test_transfer_to_yourself(
             user1.contract_address,
             to_split_uint(10),
         ).invoke(user1.contract_address)
-    check_transfer_event(tx, {
-        "sender": user1.contract_address,
-        "recipient": user1.contract_address,
-        "value": to_split_uint(10),
-    })
+    check_event(
+        dai,
+        "Transfer",
+        tx, (
+            user1.contract_address,
+            user1.contract_address,
+            to_split_uint(10)
+        )
+    )
 
     await check_balances(100, 100)
 
@@ -112,11 +103,15 @@ async def test_transfer_from(
         user1.contract_address,
         user2.contract_address,
         to_split_uint(10)).invoke(user3.contract_address)
-    check_transfer_event(tx, {
-        "sender": user1.contract_address,
-        "recipient": user2.contract_address,
-        "value": to_split_uint(10),
-    })
+    check_event(
+        dai,
+        "Transfer",
+        tx, (
+            user1.contract_address,
+            user2.contract_address,
+            to_split_uint(10)
+        )
+    )
 
     await check_balances(90, 110)
 
@@ -130,11 +125,15 @@ async def test_transfer_to_yourself_using_transfer_from(
         user1.contract_address,
         user1.contract_address,
         to_split_uint(10)).invoke(user1.contract_address)
-    check_transfer_event(tx, {
-        "sender": user1.contract_address,
-        "recipient": user1.contract_address,
-        "value": to_split_uint(10),
-    })
+    check_event(
+        dai,
+        "Transfer",
+        tx, (
+            user1.contract_address,
+            user1.contract_address,
+            to_split_uint(10)
+        )
+    )
 
 
 @pytest.mark.asyncio
@@ -286,11 +285,15 @@ async def test_approve(
     tx = await dai.approve(
             user2.contract_address,
             to_split_uint(10)).invoke(user1.contract_address)
-    check_approval_event(tx, {
-        "owner": user1.contract_address,
-        "spender": user2.contract_address,
-        "value": to_split_uint(10)
-    })
+    check_event(
+        dai,
+        "Approval",
+        tx, (
+            user1.contract_address,
+            user2.contract_address,
+            to_split_uint(10)
+        )
+    )
 
     allowance = await dai.allowance(
         user1.contract_address,
@@ -313,11 +316,15 @@ async def test_can_burn_other_if_approved(
     tx = await dai.burn(
             user1.contract_address,
             to_split_uint(10)).invoke(user2.contract_address)
-    check_transfer_event(tx, {
-        "sender": user1.contract_address,
-        "recipient": 0,
-        "value": to_split_uint(10),
-    })
+    check_event(
+        dai,
+        "Transfer",
+        tx, (
+            user1.contract_address,
+            0,
+            to_split_uint(10)
+        )
+    )
 
     await check_balances(90, 100)
 
@@ -455,11 +462,15 @@ async def test_burn_using_burn_and_allowance(
     tx = await dai.burn(
             user1.contract_address,
             to_split_uint(10)).invoke(user2.contract_address)
-    check_transfer_event(tx, {
-        "sender": user1.contract_address,
-        "recipient": 0,
-        "value": to_split_uint(10),
-    })
+    check_event(
+        dai,
+        "Transfer",
+        tx, (
+            user1.contract_address,
+            0,
+            to_split_uint(10)
+        )
+    )
 
     await check_balances(90, 100)
 
@@ -577,11 +588,15 @@ async def test_does_not_decrease_allowance_using_transfer_from(
             user2.contract_address,
             to_split_uint(10),
         ).invoke(user3.contract_address)
-    check_transfer_event(tx, {
-        "sender": user1.contract_address,
-        "recipient": user2.contract_address,
-        "value": to_split_uint(10),
-    })
+    check_event(
+        dai,
+        "Transfer",
+        tx, (
+            user1.contract_address,
+            user2.contract_address,
+            to_split_uint(10)
+        )
+    )
 
     allowance = await dai.allowance(
         user1.contract_address,
@@ -603,11 +618,15 @@ async def test_does_not_decrease_allowance_using_burn(
     tx = await dai.burn(
             user1.contract_address,
             to_split_uint(10)).invoke(user3.contract_address)
-    check_transfer_event(tx, {
-        "sender": user1.contract_address,
-        "recipient": 0,
-        "value": to_split_uint(10),
-    })
+    check_event(
+        dai,
+        "Transfer",
+        tx, (
+            user1.contract_address,
+            0,
+            to_split_uint(10)
+        )
+    )
 
     allowance = await dai.allowance(
         user1.contract_address,

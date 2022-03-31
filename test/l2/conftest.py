@@ -9,7 +9,9 @@ import time
 from starkware.starknet.compiler.compile import compile_starknet_files
 from starkware.starknet.testing.starknet import Starknet, StarknetContract
 from starkware.starknet.business_logic.state import BlockInfo
+from starkware.starknet.business_logic.transaction_execution_objects import Event
 from starkware.starknet.public.abi import get_selector_from_name
+from itertools import chain
 
 from Signer import Signer
 
@@ -25,6 +27,15 @@ TARGET_DOMAIN = get_selector_from_name("optimism")
 ###########
 # HELPERS #
 ###########
+def check_event(contract, event_name, tx, values):
+    expected_event = Event(
+        from_address=contract.contract_address,
+        keys=[get_selector_from_name(event_name)],
+        data=list(chain(*[e if isinstance(e, tuple) else [e] for e in values]))
+    )
+    assert expected_event in ( tx.raw_events if hasattr(tx, 'raw_events') else tx.get_sorted_events())
+
+
 def to_split_uint(a):
     return (a & ((1 << 128) - 1), a >> 128)
 
@@ -304,6 +315,10 @@ def ctx(ctx_factory):
 @pytest.fixture(scope="function")
 async def starknet(ctx) -> Starknet:
     return ctx.starknet
+
+@pytest.fixture(scope="function")
+async def block_timestamp(starknet):
+    return lambda: get_block_timestamp(starknet.state)
 
 @pytest.fixture(scope="function")
 async def user1(ctx) -> StarknetContract:
