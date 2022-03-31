@@ -194,7 +194,7 @@ func burn{
     # decrease supply
     let (local total_supply) = _total_supply.read()
 
-    # underflow check disabled since amount <= balance <= total_amount
+    # underflow check disabled since amount <= balance <= total_supply
     let (new_total_supply) = uint256_sub(total_supply, amount)
     _total_supply.write(new_total_supply)
 
