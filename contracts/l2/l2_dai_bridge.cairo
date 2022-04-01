@@ -245,7 +245,8 @@ func handle_deposit{
     from_address : felt,
     l2_recipient: felt,
     amount_low : felt,
-    amount_high : felt
+    amount_high : felt,
+    sender_address : felt, #l1 msg.sender ignored
   ):
     # check l1 message sender
     let (bridge) = _bridge.read()

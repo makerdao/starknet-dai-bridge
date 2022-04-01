@@ -1,7 +1,7 @@
-https://github.com/starkware-libs/cairo-lang/releases/download/v0.7.1/cairo-lang-0.7.1.zip
+https://github.com/starkware-libs/cairo-lang/releases/download/v0.8.0/cairo-lang-0.8.0.zip
 pytest==6.2.5
 pytest-asyncio==0.15.1
 lark==0.11.3
-starknet-devnet==0.1.16
+starknet-devnet==0.1.19
 dill==0.3.4
 werkzeug==2.0.2
