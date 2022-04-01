@@ -286,7 +286,7 @@ func handle_force_withdrawal{
       assert from_address = bridge
     end
 
-    # check l1 recipent address
+    # check l1 recipient address
     let (registry) = _registry.read()
     let (_l1_recipient) = IRegistry.get_L1_address(registry, l2_sender)
     if _l1_recipient != l1_recipient:

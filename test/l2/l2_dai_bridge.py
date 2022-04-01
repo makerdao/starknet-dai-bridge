@@ -56,9 +56,12 @@ async def test_initiate_withdraw(
 
     check_event(
         l2_bridge,
-        'withdraw_initiated',
-        tx,
-        (L1_ADDRESS, to_split_uint(10), user1.contract_address)
+        "withdraw_initiated",
+        tx, (
+            L1_ADDRESS,
+            to_split_uint(10),
+            user1.contract_address
+        )
     )
 
     payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
