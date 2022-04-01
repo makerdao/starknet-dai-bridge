@@ -25,6 +25,11 @@ starknet_contract_address = 0x0
 ###########
 # HELPERS #
 ###########
+def to_split_uint(a):
+    return (a & ((1 << 128) - 1), a >> 128)
+
+def to_uint(a):
+    return a[0] + (a[1] << 128)
 
 def check_event(contract, event_name, tx, values):
     expected_event = Event(

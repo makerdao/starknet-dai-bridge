@@ -5,8 +5,7 @@ from starkware.starkware_utils.error_handling import StarkException
 from starkware.starknet.business_logic.transaction_execution_objects import Event
 from starkware.starknet.public.abi import get_selector_from_name
 from itertools import chain
-from conftest import to_split_uint, to_uint
-
+from conftest import to_split_uint, to_uint, check_event
 
 MAX = (2**128-1, 2**128-1)
 L1_ADDRESS = 0x1
@@ -293,7 +292,6 @@ async def test_approve(
             to_split_uint(10)
         )
     )
-
 
     allowance = await dai.allowance(
         user1.contract_address,
