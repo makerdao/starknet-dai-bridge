@@ -1,13 +1,14 @@
-import os
 import pytest
-import asyncio
 
 from starkware.starknet.testing.starknet import Starknet
 from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
 from starkware.starknet.definitions.error_codes import StarknetErrorCode
-from conftest import to_split_uint, to_uint, check_event
+from conftest import to_split_uint, to_uint
 
+from starkware.starknet.business_logic.transaction_execution_objects import Event
+from starkware.starknet.public.abi import get_selector_from_name
+from itertools import chain
 
 L1_ADDRESS = 0x1
 INVALID_L1_ADDRESS = 0x10000000000000000000000000000000000000000
@@ -20,6 +21,18 @@ no_funds = 1
 
 starknet_contract_address = 0x0
 
+
+###########
+# HELPERS #
+###########
+
+def check_event(contract, event_name, tx, values):
+    expected_event = Event(
+        from_address=contract.contract_address,
+        keys=[get_selector_from_name(event_name)],
+        data=list(chain(*[e if isinstance(e, tuple) else [e] for e in values]))
+    )
+    assert expected_event in ( tx.raw_events if hasattr(tx, 'raw_events') else tx.get_sorted_events())
 
 #########
 # TESTS #
@@ -165,13 +178,14 @@ async def test_handle_deposit(
         selector="handle_deposit",
         payload=[
             user2.contract_address,
-            *to_split_uint(10)
+            *to_split_uint(10),
+            L1_ADDRESS
         ],
     )
 
-    # check_event(
-    #     'deposit_handled', tx, ((user2.contract_address, to_split_uint(10)))
-    # )
+    check_event(
+        l2_bridge, 'deposit_handled', tx, (user2.contract_address, to_split_uint(10))
+    )
 
     await check_balances(100, 110)
 
@@ -182,7 +196,7 @@ async def test_handle_force_withdrawal(
     dai: StarknetContract,
     l2_bridge: StarknetContract,
     user1: StarknetContract,
-    check_balances, 
+    check_balances,
 ):
     await dai.approve(
             l2_bridge.contract_address,
@@ -200,11 +214,12 @@ async def test_handle_force_withdrawal(
         ],
     )
 
-    # check_event(
-    #     'force_withdrawal_handled',
-    #     tx,
-    #     ((int(L1_ADDRESS), to_split_uint(10), user1.contract_address))
-    # )
+    check_event(
+        l2_bridge,
+        'force_withdrawal_handled',
+        tx,
+        (int(L1_ADDRESS), to_split_uint(10), user1.contract_address)
+    )
 
     payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
     starknet.consume_message_from_l2(
@@ -239,11 +254,12 @@ async def test_handle_force_withdrawal_insufficient_funds(
         ],
     )
 
-    # check_event(
-    #     'force_withdrawal_handled',
-    #     tx,
-    #     ((int(L1_ADDRESS), to_split_uint(10), user3.contract_address))
-    # )
+    check_event(
+        l2_bridge,
+        'force_withdrawal_handled',
+        tx,
+        (int(L1_ADDRESS), to_split_uint(10), user3.contract_address)
+    )
 
     with pytest.raises(AssertionError):
         payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
@@ -271,11 +287,12 @@ async def test_handle_force_withdrawal_insufficient_allowance(
         ],
     )
 
-    # check_event(
-    #     'force_withdrawal_handled',
-    #     tx,
-    #     ((int(L1_ADDRESS), to_split_uint(10), user1.contract_address))
-    # )
+    check_event(
+        l2_bridge,
+        'force_withdrawal_handled',
+        tx,
+        (int(L1_ADDRESS), to_split_uint(10), user1.contract_address)
+    )
 
     with pytest.raises(AssertionError):
         payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
@@ -310,11 +327,12 @@ async def test_handle_force_withdrawal_invalid_l1_address(
         ],
     )
 
-    # check_event(
-    #     'force_withdrawal_handled',
-    #     tx,
-    #     ((int(L1_ADDRESS), to_split_uint(10), user1.contract_address))
-    # )
+    check_event(
+        l2_bridge,
+        'force_withdrawal_handled',
+        tx,
+        (int(INVALID_L1_ADDRESS), to_split_uint(10), user1.contract_address)
+    )
 
     with pytest.raises(AssertionError):
         payload = [FINALIZE_WITHDRAW, INVALID_L1_ADDRESS, *to_split_uint(10)]

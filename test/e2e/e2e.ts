@@ -315,8 +315,8 @@ describe("e2e", async function () {
           asDec(l1Alice.address), // receiver
           wormholeAmountL2.toDec()[0], // amount
           asDec(l1Alice.address), // operator
-          nonce, // nonce
-          timestamp, // timestamp
+          parseInt(nonce), // nonce
+          parseInt(timestamp), // timestamp
         ]
       );
       await starknet.devnet.flush();

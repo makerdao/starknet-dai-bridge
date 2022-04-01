@@ -7,8 +7,10 @@ from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
 from starkware.starknet.public.abi import get_selector_from_name
 from starkware.crypto.signature.fast_pedersen_hash import pedersen_hash
-from conftest import to_split_uint, to_uint, VALID_DOMAINS, check_event
-
+from conftest import to_split_uint, to_uint, check_event, VALID_DOMAINS
+from starkware.starknet.business_logic.transaction_execution_objects import Event
+from itertools import chain
+import pprint
 
 L1_ADDRESS = 0x1
 INVALID_L1_ADDRESS = 0x10000000000000000000000000000000000000000
@@ -97,7 +99,7 @@ async def test_burns_dai_marks_it_for_future_flush(
     dai: StarknetContract,
     user1: StarknetContract,
     check_balances,
-    block_timestamp,
+    block_timestamp
 ):
     await dai.approve(l2_wormhole_gateway.contract_address, to_split_uint(WORMHOLE_AMOUNT)).invoke(user1.contract_address)
     tx = await l2_wormhole_gateway.initiate_wormhole(
@@ -126,7 +128,7 @@ async def test_burns_dai_marks_it_for_future_flush(
         user1.contract_address, # operator
         WORMHOLE_AMOUNT, # amount
         0, # nonce
-        block_timestamp(), # timestamp
+        block_timestamp() # timestamp
     ]
 
     await check_balances(100 - WORMHOLE_AMOUNT, 100)
@@ -169,6 +171,7 @@ async def test_nonce_management(
             block_timestamp()
         )
     )
+
     tx = await l2_wormhole_gateway.initiate_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,
@@ -217,7 +220,9 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
             block_timestamp()
         )
     )
+
     timestamp = block_timestamp()
+
     await l2_wormhole_gateway.finalize_register_wormhole(
             TARGET_DOMAIN,
             user1.contract_address,

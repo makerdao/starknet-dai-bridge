@@ -202,10 +202,6 @@ async def build_copyable_deployment():
     await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(accounts.user3.contract_address)
 
-    print("-------------------------------------------")
-    print(l2_bridge.contract_address)
-    print("-------------------------------------------")
-
     await dai.rely(
             l2_bridge.contract_address,
         ).invoke(accounts.auth_user.contract_address)
