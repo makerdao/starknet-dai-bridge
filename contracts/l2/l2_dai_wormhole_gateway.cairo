@@ -98,8 +98,16 @@ end
 func _wards(user : felt) -> (res : felt):
 end
 
+struct WormholeData:
+  member target_domain: felt
+  member receiver: felt
+  member operator: felt
+  member amount: felt
+  member timestamp: felt #TODO: join amount and timestamp
+end
+
 @storage_var
-func _wormholes(hash : felt) -> (res : felt):
+func _wormholes(nonce : felt) -> (res : WormholeData):
 end
 
 @view
@@ -318,7 +326,7 @@ func initiate_wormhole{
     with_attr error_message("l2_dai_wormhole_gateway/invalid-domain"):
       assert valid_domain = 1
     end
-    
+
     # amount should be uint128
     let amount_uint256 = Uint256(low=amount, high=0)
     with_attr error_message("l2_dai_wormhole_gateway/invalid-amount"):
@@ -356,31 +364,12 @@ func initiate_wormhole{
       nonce=nonce,
       timestamp=timestamp)
 
-    let (hash) = hash7(payload+1)
-    _wormholes.write(hash, 1)
+    _wormholes.write(
+      nonce,
+      WormholeData(target_domain, receiver, operator, amount, timestamp)
+    )
 
     return ()
-end
-
-func hash7{
-    syscall_ptr : felt*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr
-  }(
-    payload : felt*,
-  ) -> (hash : felt):
-    let hash_ptr = pedersen_ptr
-    with hash_ptr:
-      let (_hash1) = hash2([payload], [payload+1])
-      let (_hash2) = hash2(_hash1, [payload+2])
-      let (_hash3) = hash2(_hash2, [payload+3])
-      let (_hash4) = hash2(_hash3, [payload+4])
-      let (_hash5) = hash2(_hash4, [payload+5])
-      let (hash) = hash2(_hash5, [payload+6])
-    end
-
-    let pedersen_ptr = hash_ptr
-    return (hash)
 end
 
 @external
@@ -412,10 +401,13 @@ func finalize_register_wormhole{
     assert payload[6] = nonce
     assert payload[7] = timestamp
 
-    let (hash) = hash7(payload+1)
-    let (hash_exists) = _wormholes.read(hash)
+    let (wormhole) = _wormholes.read(nonce)
     with_attr error_message("l2_dai_wormhole_gateway/wormhole-does-not-exist"):
-      assert hash_exists = 1
+      assert target_domain = wormhole.target_domain
+      assert receiver = wormhole.receiver
+      assert operator = wormhole.operator
+      assert amount = wormhole.amount
+      assert timestamp = wormhole.timestamp
     end
 
     let (wormhole_gateway) = _wormhole_gateway.read()

@@ -17,6 +17,7 @@ no_funds = 1
 starknet_contract_address = 0x0
 
 
+
 #########
 # TESTS #
 #########
