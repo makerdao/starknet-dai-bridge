@@ -3,13 +3,16 @@
 [![Check](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/check.yml/badge.svg)](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/check.yml)
 [![Tests](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/tests.yml/badge.svg)](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/tests.yml)
 
-StarkNet interpretation of DAI token and basic DAI bridge.
-
 ## :warning: :skull_and_crossbones: :warning:️ WARNING! :warning: :skull_and_crossbones:️ :warning:
 This codebase is still in an experimental phase, has not been audited, might contain bugs and should not be used in production.
 
+
+StarkNet interpretation of DAI token, basic DAI bridge, DAI wormhole gateway.
+
 ## Additional Documentation
 [Development documentation](./docs/development.md)
+
+# Basic Bridge
 
 ## Overview
 
@@ -17,7 +20,7 @@ Bridge provides two main functions: `deposit` and `withdraw`. On L1 `deposit`, b
 
 ![Architecture](./docs/architecture.png?raw=true)
 
-### Contracts
+## Contracts
 * `L1DAIBridge` - L1 side of the bridge
 * `L1Escrow` - holds bridge funds on L1
 * `L1GovernanceRelay` - relays governance action to L2
@@ -26,13 +29,13 @@ Bridge provides two main functions: `deposit` and `withdraw`. On L1 `deposit`, b
 * `l2_governance_delay` - executes governance action relayed from L1
 * `registry` - provides L2 to L1 address mapping
 
-### Bridge Ceiling
+## Bridge Ceiling
 The amount of bridged DAI can be restricted by setting a ceiling property(`setCeiling`) on the L1DAIBridge. Setting it to Uint256.max will make it effectively unlimited, setting it to anything lower than the amount currently bridged will temporarily disable deposits.
 
-### Deposit Limit
+## Deposit Limit
 To make DAI bridge compatible with generic StarkNet token bridges a single deposit limit(`setMaxDeposit`) was added. Setting it to a value above the ceiling will make deposits unlimited, setting it to 0 will temporarily disable the bridge.
 
-### Starknet DAI
+## Starknet DAI
 Since StarkNet execution environment is significantly different than EVM, Starknet DAI is not a one to one copy of L1 DAI. Here are the diferences:
 * [`uint256`](https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/uint256.cairo) to represent balances, for compatibility with L1
 * no permit function - StarkNet account abstraction should be used for UX optimizations
@@ -53,7 +56,7 @@ It is expected that admin rights to the bridge contracts will be given to the [M
 ## Governance relay
 `L1GovernanceRelay` allows to relay L1 governance actions to a spell contract on the StarkNet via `l2_governance_relay`.
 
-### Initial configuration
+## Initial configuration
 Maker [PauseProxy](https://docs.makerdao.com/smart-contract-modules/governance-module/pause-detailed-documentation) should be relied on: `L1DAIBridge`, `L1Escrow`, `l2_dai_bridge`, `dai`, `L1GovernanceRelay`. Unlimited allowance on `L1Escrow` should be given to `L1DAIBridge`.
 In order to withdraw allowance needs to be given to the `l2_dai_bridge` individually by each L2 DAI user.
 
@@ -97,3 +100,51 @@ Bridge consists of several interacting contracts and it is possible to misconfig
 ## Emergency Circuit Breaker
 Since StarkNet is expected to finalize its state on L1 at most every several hours, there is very little time to organize any preventive action in case of uncollateralized DAI is minted on L2. Maker Governance with its 2 day delay won't be able to respond in time. `L1EscrowMom` provides `refuse` method that sets L1Escrow allowance to 0. It can be used to freeze withdrawals immediately.
 As soon as problem is fixed Governance could increase allowance. `Refuse` access is controlled by `AuthorityLike` contract. It is expected to be set to: [DSChief](https://docs.makerdao.com/smart-contract-modules/governance-module/chief-detailed-documentation) to bypass the governance delay.
+
+# Wormhole Gateway
+
+![Wormhole L2/L1 usecase](./docs/wormhole.png?raw=true)
+
+## Overview
+Starknet DAI Wormhole is part of general Maker Wormhole infrastructure spread over several repos:
+* [dss-wormhole](https://github.com/makerdao/dss-wormhole) - L1 relayer, L1 domain
+* [optimism-dai-bridge](https://github.com/makerdao/optimism-dai-bridge) - Optimism implementation
+* [arbitrum-dai-bridge](https://github.com/makerdao/arbitrum-dai-bridge) - Arbitrum implemenetation
+
+## Architecture TODO better caption
+`l2_dai_wormhole_gateway`
+`L1DAIWormholeGateway`
+
+#### Fast path
+`initiate_wormhole`
+get attestation API
+
+
+```
+@event
+func WormholeInitialized(
+  source_domain : felt,
+  target_domain : felt,
+  receiver : felt,
+  operator : felt,
+  amount : felt,
+  nonce : felt,
+  timestamp : felt):
+end
+```
+
+`https://github.com/makerdao/dss-wormhole/blob/d0ee051b992f06c091fab01a9b6cca7fc6cd6d2a/src/WormholeOracleAuth.sol#L100`
+
+#### Settlement through L1
+`flush`
+`finalizeFlush`
+
+#### Slow path
+`finalize_register_wormhole`
+`finalizeRegisterWormhole`
+
+## Risks
+general wormhole  [risks](https://github.com/makerdao/dss-wormhole#risks)
+
+### Data unavailable
+extra edge case
