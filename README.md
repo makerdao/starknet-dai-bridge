@@ -109,7 +109,7 @@ Starknet DAI Wormhole is part of general Maker Wormhole infrastructure spread ov
 implemenetation
 * TODO: a link to AttestationOracle
 
-There parallel implementations for optimistic L2s:
+There are parallel implementations for optimistic L2s:
 * [optimism-dai-bridge](https://github.com/makerdao/optimism-dai-bridge) - Optimism implementation
 * [arbitrum-dai-bridge](https://github.com/makerdao/arbitrum-dai-bridge) - Arbitrum
 
@@ -148,13 +148,13 @@ If attestations cannot be obtained (Oracles down or censoring), `l2_dai_wormhole
 ## Risks
 In addition to general wormhole risks described [here](https://github.com/makerdao/dss-wormhole#risks) there are a few  StarkNet specific risks that are worth mentioning.
 
-## Attestation finality
-At the current stage of StarkNet development there is no middle ground between L1 finality reached after state update on L1 and no finality at all. Any system trying to build functionality that will result in non reversible consequences based on non final rollup state will need take the risk L2 state rollback. There are a few reasons why L2 state might be rolled back:
+### Attestations finality
+At the current stage of StarkNet development there is no middle ground between L1 finality reached after state update on L1 and no finality at all. Any system trying to build functionality that will result in non reversible consequences based on non final rollup state will need take the risk of L2 state rollback. There are a few reasons why L2 state might be rolled back:
 * deep L1 rollback
 * malicious sequncer
 * bugs in the sequncer
-Wormhole attestations are sensitive to L2 state rollback as attestations are nonreversible and wormhole reopening with the same funds might result in double withdrawals on L1, bad debt that eventually will need to be healed with system surplus. This peculiar nature of withdrawal attestations will need to be taken under consideration when setting StarkNet wormhole join risk parameters.
+
+Wormhole attestations are sensitive to L2 state rollback as attestations are nonreversible and wormhole reopening with the same funds might result in double withdrawals on L1 and bad debt that eventually will need to be healed with system surplus. This peculiar nature of withdrawal attestations will need to be taken under consideration when setting StarkNet wormhole join risk parameters.
 
 ### Data availability
-
-extra edge case
+In case of rollup becoming unavailable after consequences of `l2_dai_wormhole_gateway.initiate_wormhole` call were finnalized on L1 and user not being able to use wormhole attestation because of Attestation Oracle being unavailable full wormhole data is stored in `l2_dai_wormhole_gateway.wormholes`. This should allow to execute wormhole evacuation procedure in case of catastrophic rollup failure.
