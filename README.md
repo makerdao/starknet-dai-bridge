@@ -106,22 +106,25 @@ As soon as problem is fixed Governance could increase allowance. `Refuse` access
 ## Overview
 Starknet DAI Wormhole is part of general Maker Wormhole infrastructure spread over several repos:
 * [dss-wormhole](https://github.com/makerdao/dss-wormhole) - L1 relayer, L1 domain
-* [optimism-dai-bridge](https://github.com/makerdao/optimism-dai-bridge) - Optimism implementation
-* [arbitrum-dai-bridge](https://github.com/makerdao/arbitrum-dai-bridge) - Arbitrum implemenetation
+implemenetation
 * TODO: a link to AttestationOracle
 
-## Architecture
+There parallel implementations for optimistic L2s:
+* [optimism-dai-bridge](https://github.com/makerdao/optimism-dai-bridge) - Optimism implementation
+* [arbitrum-dai-bridge](https://github.com/makerdao/arbitrum-dai-bridge) - Arbitrum
 
+StarkNet wormhole implementation allows to open wormhole on StarkNet and finalize it on L1. In the future, when full MCD system is deployed to L2s it will be possible to finalize StarkNet originating wormholes on other L2 and finalize wormholes originating from other L2 on StarkNet.
+
+Following documentation describes special case of L2 to L1 wormholes also called _fast withdrawals_.
+
+## Architecture
 ![Wormhole L2/L1 usecase](./docs/wormhole.png?raw=true)
 
-There are several components that provide wormhole functionality on StarkNet:
+There are several components that provide _fast withdrawals_ functionality on StarkNet:
 * `l2_dai_wormhole_gateway` - a StarkNet smart contract that allows to open the wormhole, initiate wormhole debt settlement, and initiate emergency wormhole finalization in case for some reason Attestions Oracle does not work
-* `L1DAIWormholeGateway` - a L1 smart contract that conterparts `l2_dai_wormhole_gateway` and forwards calls to internal components of dss-wormhole
+* `L1DAIWormholeGateway` - a L1 smart contract that counterparts `l2_dai_wormhole_gateway` and forwards calls to internal components of dss-wormhole
 * _AttestationOracle_ - a service that watches for `WormholeInitialized` events on StarkNet and based on those serves attestions that can be used to finalize the wormhole by calling `requestMint` on `WormholeOracleAuth`
 * `WormholeOracleAuth` - part of [dss-wormhole](https://github.com/makerdao/dss-wormhole), allows to finalized the wormhole in a fast way by providing attestation
-
-Currently wormholes can be finalized only on L1. In the future, when full MCD system is deployed to L2s it will be possible to finalize wormholes there.
-
 
 #### Fast path
 Aka 'fast withdrawal':
@@ -131,21 +134,27 @@ Aka 'fast withdrawal':
 
 #### Settlement through L1
 Settlement process moves DAI from L1 Bridge to WormholeJoin to clear the debt that accumulates there. It is triggered by keepers.
-1. On L2 keeper calls `l2_dai_wormhole_gateway.flush`
+1. On StarkNet keeper calls `l2_dai_wormhole_gateway.flush`
 2. L2 -> L1 message `finalizeFlush` is sent to `L1DAIWormholeGateway` and relayed by a keeper
 3. `L1DAIWormholeGateway` upon receiving `finalizeFlush` calls `WormholeRouter.settle()` which will:
     1. Transfer DAI from bridges' escrow to `WormholeJoin`
     2. Call `WormholeJoin.settle` which will use transfered DAI to clear any outstanding debt
 
 #### Slow path
-`finalize_register_wormhole`
-`finalizeRegisterWormhole`
+If attestations cannot be obtained (Oracles down or censoring), `l2_dai_wormhole_gateway` provides a way to finalize wormhole through L2->L1 messages:
+1. Initiate slow path on L2 by calling `l2_dai_wormhole_gateway.finalize_register_wormhole`. After checking in `l2_dai_wormhole_gateway.wormholes` that wormhole was opened, `FINALIZE_REGISTER_WORMHOLE` L2->L1 message will sent to `L1DAIWormholeGateway`
+2. Receive `FINALIZE_REGISTER_WORMHOLE` message by calling `L1DAIWormholeGateway.finalizeRegisterWormhole`, which in turn will call `WormholeJoin.requestMint` which will finalize wormhole if it was not finalized already.
 
 ## Risks
-general wormhole  [risks](https://github.com/makerdao/dss-wormhole#risks)
+In addition to general wormhole risks described [here](https://github.com/makerdao/dss-wormhole#risks) there are a few  StarkNet specific risks that are worth mentioning.
 
-## Soft confirmations
-In sequncer we trust!
+## Attestation finality
+At the current stage of StarkNet development there is no middle ground between L1 finality reached after state update on L1 and no finality at all. Any system trying to build functionality that will result in non reversible consequences based on non final rollup state will need take the risk L2 state rollback. There are a few reasons why L2 state might be rolled back:
+* deep L1 rollback
+* malicious sequncer
+* bugs in the sequncer
+Wormhole attestations are sensitive to L2 state rollback as attestations are nonreversible and wormhole reopening with the same funds might result in double withdrawals on L1, bad debt that eventually will need to be healed with system surplus. This peculiar nature of withdrawal attestations will need to be taken under consideration when setting StarkNet wormhole join risk parameters.
 
-### Data unavailable
+### Data availability
+
 extra edge case
