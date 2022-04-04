@@ -120,26 +120,14 @@ There are several components that provide wormhole functionality on StarkNet:
 * _AttestationOracle_ - a service that watches for `WormholeInitialized` events on StarkNet and based on those serves attestions that can be used to finalize the wormhole by calling `requestMint` on `WormholeOracleAuth`
 * `WormholeOracleAuth` - part of [dss-wormhole](https://github.com/makerdao/dss-wormhole), allows to finalized the wormhole in a fast way by providing attestation
 
+Currently wormholes can be finalized only on L1. In the future, when full MCD system is deployed to L2s it will be possible to finalize wormholes there.
+
 
 #### Fast path
-`initiate_wormhole`
-get attestation API
-
-
-```
-@event
-func WormholeInitialized(
-  source_domain : felt,
-  target_domain : felt,
-  receiver : felt,
-  operator : felt,
-  amount : felt,
-  nonce : felt,
-  timestamp : felt):
-end
-```
-
-`https://github.com/makerdao/dss-wormhole/blob/d0ee051b992f06c091fab01a9b6cca7fc6cd6d2a/src/WormholeOracleAuth.sol#L100`
+Aka 'fast withdrawal':
+1. The user calls `l2_dai_wormhole_gateway.initiate_wormhole` - this burns DAI on L2 and stores wormhole data in `l2_dai_wormhole_gateway.wormholes` storage variable. It also emmits `WormholeInitialized` event.
+2. Attestation Oracle obserserves `WormholeInitialized` event and create an attestations
+3. As soon as enough attestations are available user calls `WormholeOracleAuth.requestMint` which will finnalize the wormhole
 
 #### Settlement through L1
 `flush`
