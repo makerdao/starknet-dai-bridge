@@ -130,8 +130,12 @@ Aka 'fast withdrawal':
 3. As soon as enough attestations are available user calls `WormholeOracleAuth.requestMint` which will finnalize the wormhole
 
 #### Settlement through L1
-`flush`
-`finalizeFlush`
+Settlement process moves DAI from L1 Bridge to WormholeJoin to clear the debt that accumulates there. It is triggered by keepers.
+1. On L2 keeper calls `l2_dai_wormhole_gateway.flush`
+2. L2 -> L1 message `finalizeFlush` is sent to `L1DAIWormholeGateway` and relayed by a keeper
+3. `L1DAIWormholeGateway` upon receiving `finalizeFlush` calls `WormholeRouter.settle()` which will:
+    1. Transfer DAI from bridges' escrow to `WormholeJoin`
+    2. Call `WormholeJoin.settle` which will use transfered DAI to clear any outstanding debt
 
 #### Slow path
 `finalize_register_wormhole`
@@ -139,6 +143,9 @@ Aka 'fast withdrawal':
 
 ## Risks
 general wormhole  [risks](https://github.com/makerdao/dss-wormhole#risks)
+
+## Soft confirmations
+In sequncer we trust!
 
 ### Data unavailable
 extra edge case
