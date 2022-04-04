@@ -300,7 +300,7 @@ export class L2Signer {
         calldata: _calldata,
       },
       {
-        signature: sig.map((_) => BigInt(_.toString())),
+        signature: [sig.r, sig.s],
       }
     );
   }

@@ -19,7 +19,7 @@ from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
 from starkware.cairo.common.hash import hash2
-from starkware.cairo.common.math import (assert_le, assert_not_zero)
+from starkware.cairo.common.math import (assert_le, assert_lt, assert_not_zero)
 from starkware.cairo.common.math_cmp import (is_not_zero)
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address, get_block_timestamp)
 from starkware.cairo.common.uint256 import (Uint256, uint256_lt, uint256_add, uint256_check)
@@ -27,6 +27,7 @@ from starkware.cairo.common.uint256 import (Uint256, uint256_lt, uint256_add, ui
 const FINALIZE_REGISTER_WORMHOLE = 0
 const FINALIZE_FLUSH = 1
 const valid_domains_file = 'valid_domains'
+const MAX_NONCE = 2**80-1
 
 @contract_interface
 namespace Burnable:
@@ -207,6 +208,9 @@ func read_and_update_nonce{
     range_check_ptr
   }() -> (res : felt):
     let (nonce) = _nonce.read()
+    with_attr error_message("l2_dai_wormhole_gateway/nonce-overflow"):
+      assert_lt(nonce, MAX_NONCE)
+    end
     _nonce.write(nonce+1)
     return (res=nonce)
 end

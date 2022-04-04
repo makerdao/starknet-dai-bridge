@@ -28,13 +28,6 @@ no_funds = 1
 
 starknet_contract_address = 0x0
 
-def check_event(contract, event_name, tx, values):
-    expected_event = Event(
-        from_address=contract.contract_address,
-        keys=[get_selector_from_name(event_name)],
-        data=list(chain(*[e if isinstance(e, tuple) else [e] for e in values]))
-    )
-    assert expected_event in ( tx.raw_events if hasattr(tx, 'raw_events') else tx.get_sorted_events())
 
 #########
 # TESTS #
@@ -114,10 +107,9 @@ async def test_burns_dai_marks_it_for_future_flush(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-
     check_event(
         l2_wormhole_gateway,
-        'WormholeInitialized',
+        "WormholeInitialized",
         tx, (
             DOMAIN,
             TARGET_DOMAIN,
@@ -136,7 +128,7 @@ async def test_burns_dai_marks_it_for_future_flush(
         user1.contract_address, # operator
         WORMHOLE_AMOUNT, # amount
         0, # nonce
-        block_timestamp()
+        block_timestamp() # timestamp
     ]
 
     await check_balances(100 - WORMHOLE_AMOUNT, 100)
@@ -166,10 +158,9 @@ async def test_nonce_management(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-
     check_event(
         l2_wormhole_gateway,
-        'WormholeInitialized',
+        "WormholeInitialized",
         tx, (
             DOMAIN,
             TARGET_DOMAIN,
@@ -186,10 +177,9 @@ async def test_nonce_management(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-
     check_event(
         l2_wormhole_gateway,
-        'WormholeInitialized',
+        "WormholeInitialized",
         tx, (
             DOMAIN,
             TARGET_DOMAIN,
@@ -217,10 +207,9 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
             user1.contract_address,
             WORMHOLE_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
-
     check_event(
         l2_wormhole_gateway,
-        'WormholeInitialized',
+        "WormholeInitialized",
         tx, (
             DOMAIN,
             TARGET_DOMAIN,
@@ -350,8 +339,14 @@ async def test_flushes_batched_dai(
     tx = await l2_wormhole_gateway.flush(
             TARGET_DOMAIN,
         ).invoke(user1.contract_address)
-
-    check_event(l2_wormhole_gateway, "Flushed", tx, (TARGET_DOMAIN, to_split_uint(WORMHOLE_AMOUNT * 2)))
+    check_event(
+        l2_wormhole_gateway,
+        "Flushed",
+        tx, (
+            TARGET_DOMAIN,
+            to_split_uint(WORMHOLE_AMOUNT * 2)
+        )
+    )
 
     payload = [
         FINALIZE_FLUSH,
