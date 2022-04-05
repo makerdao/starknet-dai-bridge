@@ -104,7 +104,7 @@ As soon as problem is fixed Governance could increase allowance. `Refuse` access
 # Wormhole Gateway
 
 ## Overview
-Starknet DAI Wormhole is part of general Maker Wormhole infrastructure spread over several repos:
+Starknet DAI Wormhole is part of general wormhole infrastructure spread over several repos:
 * [dss-wormhole](https://github.com/makerdao/dss-wormhole) - L1 relayer, L1 domain
 implemenetation
 * TODO: a link to AttestationOracle
@@ -122,7 +122,7 @@ Following documentation describes special case of L2 to L1 wormholes also called
 
 There are several components that provide _fast withdrawals_ functionality on StarkNet:
 * `l2_dai_wormhole_gateway` - a StarkNet smart contract that allows to open the wormhole, initiate wormhole debt settlement, and initiate emergency wormhole finalization in case for some reason Attestions Oracle does not work
-* `L1DAIWormholeGateway` - a L1 smart contract that counterparts `l2_dai_wormhole_gateway` and forwards calls to internal components of dss-wormhole
+* `L1DAIWormholeGateway` - a L1 smart contract that is the counterpart to `l2_dai_wormhole_gateway` and forwards calls to internal components of dss-wormhole
 * _AttestationOracle_ - a service that watches for `WormholeInitialized` events on StarkNet and based on those serves attestions that can be used to finalize the wormhole by calling `requestMint` on `WormholeOracleAuth`
 * `WormholeOracleAuth` - part of [dss-wormhole](https://github.com/makerdao/dss-wormhole), allows to finalized the wormhole in a fast way by providing attestation
 
