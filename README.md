@@ -129,7 +129,7 @@ There are several components that provide _fast withdrawals_ functionality on St
 #### Fast path
 Aka 'fast withdrawal':
 1. The user calls `l2_dai_wormhole_gateway.initiate_wormhole` - this burns DAI on L2 and stores wormhole data in `l2_dai_wormhole_gateway.wormholes` storage variable. It also emmits `WormholeInitialized` event.
-2. Attestation Oracle obserserves `WormholeInitialized` event and create an attestations
+2. Attestation Oracle observes `WormholeInitialized` event and creates an attestation
 3. As soon as enough attestations are available user calls `WormholeOracleAuth.requestMint` which will finnalize the wormhole
 
 #### Settlement through L1
@@ -157,4 +157,10 @@ At the current stage of StarkNet development there is no middle ground between L
 Wormhole attestations are sensitive to L2 state rollback as attestations are nonreversible and wormhole reopening with the same funds might result in double withdrawals on L1 and bad debt that eventually will need to be healed with system surplus. This peculiar nature of withdrawal attestations will need to be taken under consideration when setting StarkNet wormhole join risk parameters.
 
 ### Data availability
-In case of rollup becoming unavailable after consequences of `l2_dai_wormhole_gateway.initiate_wormhole` call were finnalized on L1 and user not being able to use wormhole attestation because of Attestation Oracle being unavailable full wormhole data is stored in `l2_dai_wormhole_gateway.wormholes`. This should allow to execute wormhole evacuation procedure in case of catastrophic rollup failure.
+In case of the following two failures:
+* rollup becomes unavailable after the consequences of the `l2_dai_wormhole_gateway.initiate_wormhole` call become finalized on L1
+* user is not able to use the wormhole attestation because the Attestation Oracle becomes unavailable
+
+the full wormhole data is stored in `l2_dai_wormhole_gateway.wormholes`.
+
+This should allow to execute wormhole evacuation procedure in case of catastrophic rollup failure.
