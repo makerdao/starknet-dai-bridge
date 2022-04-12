@@ -141,10 +141,10 @@ contract DssSpellAction is DssAction {
     address constantFees = 0xd40EA2981B350D38281402c058b1Ef1058dbac53;
     address slaveDomainGateway = 0xBD8605d11b8D3557b7399eFE1866992Eed6F9A7c; // TODO @nulven
     L1EscrowLike escrow = L1EscrowLike(0x8FdA2c4323850F974C7Abf4B16eD129D45f9E2e2); // TODO @nulven
-    address dai = 0x03e85bfbb8e2a42b7bead9e88e9a1b19dbccf661471061807292120462396ec9; // TODO @nulven
+    address dai = 0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844; // TODO @nulven
 
     GovernanceRelayLike l1GovRelay = GovernanceRelayLike(0x73c0049Dd6560E644984Fa3Af30A55a02a7D81fB);
-    address l2ConfigureDomainSpell = 0xEd326504C77Dcd0Ffbb554a7925338EEd3F5fE01; // TODO @nulven
+    uint256 l2ConfigureDomainSpell = 123; // TODO @nulven
 
     router.file(bytes32("gateway"), slaveDomain, slaveDomainGateway);
     wormholeJoin.file(bytes32("fees"), slaveDomain, constantFees);
