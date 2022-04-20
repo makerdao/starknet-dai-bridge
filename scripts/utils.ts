@@ -143,14 +143,12 @@ export function parseCalldataL1(calldata: string, network: string) {
       return getAddress("l2_dai_bridge", network);
     } else if (input === "L1DAIBridge") {
       return getAddress("L1DAIBridge", network);
-    } else if (input === "L1DAIWormholeBridge") {
-      return getAddress("L1DAIWormholeBridge", network);
+    } else if (input === "L1DAIWormholeGateway") {
+      return getAddress("L1DAIWormholeGateway", network);
     } else if (input === "L1Escrow") {
       return getAddress("L1Escrow", network);
     } else if (input === "DAI") {
       return getAddress("DAI", network);
-    } else if (input === "EscrowApproveAction") {
-      return getAddress("EscrowApproveAction", network);
     } else {
       return input;
     }
@@ -192,10 +190,10 @@ export function parseCalldataL2(
       res[inputName] = BigInt(
         getAddress(`account-${input}`, network)
       ).toString();
-    } else if (input === "l2_dai_bridge") {
-      res[inputName] = BigInt(getAddress("l2_dai_bridge", network)).toString();
     } else if (input === "L1DAIBridge") {
       res[inputName] = BigInt(getAddress("L1DAIBridge", network)).toString();
+    } else if (input === "l2_dai_bridge") {
+      res[inputName] = BigInt(getAddress("l2_dai_bridge", network)).toString();
     } else if (inputType === "Uint256") {
       res[inputName] = [input, _calldata[i + 1]];
       i++;
@@ -263,8 +261,8 @@ export function printAddresses(hre: any, includeWormhole: boolean = false) {
 export function writeAddresses(hre: any, includeWormhole: boolean = false) {
   const NETWORK = hre.network.name;
   let ADDRESS_NETWORK: string;
-  if (NETWORK.slice(0, 4) === "fork") {
-    ADDRESS_NETWORK = NETWORK.slice(5).toUpperCase();
+  if (NETWORK === "fork") {
+    ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
   } else {
     ADDRESS_NETWORK = NETWORK.toUpperCase();
   }

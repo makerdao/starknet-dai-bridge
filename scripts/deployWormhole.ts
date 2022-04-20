@@ -20,8 +20,8 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
 
   const NETWORK = hre.network.name;
   let ADDRESS_NETWORK;
-  if (NETWORK.slice(0, 4) === "fork") {
-    ADDRESS_NETWORK = NETWORK.slice(5).toUpperCase();
+  if (NETWORK === "fork") {
+    ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
   } else {
     ADDRESS_NETWORK = NETWORK.toUpperCase();
   }

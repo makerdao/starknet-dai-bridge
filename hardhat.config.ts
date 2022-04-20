@@ -6,6 +6,8 @@ import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
 import "./scripts/interact";
 import "./scripts/deployDeployer";
+import "./scripts/deployProxy";
+import "./scripts/deploySpell";
 import "./scripts/deployBridge";
 import "./scripts/deployWormhole";
 import "./scripts/account";
@@ -58,10 +60,7 @@ const config: HardhatUserConfig = {
     localhost: {
       url: "http://127.0.0.1:8545",
     },
-    "fork-mainnet": {
-      url: "http://127.0.0.1:8545",
-    },
-    "fork-goerli": {
+    fork: {
       url: "http://127.0.0.1:8545",
     },
     devnet: {
@@ -69,7 +68,7 @@ const config: HardhatUserConfig = {
     },
     hardhat: {
       forking: {
-        url: `https://goerli.infura.io/v3/${infuraApiKey}`,
+        url: `https://${process.env.FORK_NETWORK}.infura.io/v3/${infuraApiKey}`,
         enabled: process.env.NODE_ENV !== "test",
       },
       accounts: {

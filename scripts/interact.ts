@@ -62,6 +62,4 @@ task("call:l1", "Call an L1 contract")
     // @ts-ignore
     const res = await contractInstance[func](..._calldata);
     console.log("Response:", res);
-    const x = await res.wait();
-    console.log(x);
   });
