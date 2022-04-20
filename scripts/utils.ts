@@ -4,13 +4,6 @@
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
 import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
 import { ethers } from "ethers";
-import { writeFileSync } from "fs";
-import fs from "fs";
-import { isEmpty } from "lodash";
-import { ec, hash } from "starknet";
-import { assert } from "ts-essentials";
-const { genKeyPair, getKeyPair, getStarkKey, sign, verify } = ec;
-const { hashMessage } = hash;
 import {
   BaseContract,
   BigNumber,
@@ -23,7 +16,9 @@ import {
   Signer,
 } from "ethers";
 import { getContractAddress, Result } from "ethers/lib/utils";
-import type { KeyPair, Signature } from "starknet";
+import fs from "fs";
+import { isEmpty } from "lodash";
+import { assert } from "ts-essentials";
 
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
@@ -235,99 +230,27 @@ export function getSelectorFromName(name: string) {
   ).toString();
 }
 
-function flatten(calldata: any): any[] {
-  const res: any = [];
-  Object.values(calldata).forEach((data: any) => {
-    if (typeof data === "object") {
-      res.push(...data);
-    } else {
-      res.push(data);
-    }
-  });
-  return res;
-}
-
-export class L2Signer {
-  privateKey;
-  keyPair: KeyPair;
-  publicKey;
-
-  constructor(privateKey: string) {
-    this.privateKey = privateKey;
-    this.keyPair = getKeyPair(this.privateKey);
-    this.publicKey = getStarkKey(this.keyPair);
-  }
-
-  sign(msgHash: string): Signature {
-    return sign(this.keyPair, msgHash);
-  }
-
-  verify(msgHash: string, sig: Signature): boolean {
-    return verify(this.keyPair, msgHash, sig);
-  }
-
-  async sendTransaction(
-    caller: StarknetContract,
-    contract: StarknetContract,
-    selectorName: string,
-    calldata: any[] | any,
-    nonce: number = 0
-  ) {
-    if (nonce === 0) {
-      const executionInfo = await caller.call("get_nonce");
-      nonce = executionInfo.res;
-    }
-
-    const selector = getSelectorFromName(selectorName);
-    const contractAddress = BigInt(contract.address).toString();
-    const _calldata = flatten(calldata);
-    const msgHash = hashMessage(
-      caller.address,
-      contract.address,
-      selector,
-      _calldata,
-      nonce.toString()
-    );
-
-    const sig = this.sign(msgHash);
-    // const verified = this.verify(msgHash, sig);
-
-    return caller.invoke(
-      "execute",
-      {
-        to: contractAddress,
-        selector,
-        calldata: _calldata,
-      },
-      {
-        signature: [sig.r, sig.s],
-      }
-    );
-  }
-}
-
-export async function genAndSaveKeyPair(): Promise<KeyPair> {
-  const keyPair = genKeyPair();
-  writeFileSync(
-    ".env.deployer",
-    `DEPLOYER_ECDSA_PRIVATE_KEY=${keyPair.priv.toString()}`
-  );
-  return keyPair;
-}
-
-export function printAddresses(hre: any) {
+export function printAddresses(hre: any, includeWormhole: boolean = false) {
   const NETWORK = hre.network.name;
 
-  const contracts = [
+  let contracts = [
     "account-deployer",
     "dai",
     "registry",
     "L1Escrow",
-    "l2_dai_bridge",
     "L1DAIBridge",
-    "l2_governance_relay",
+    "l2_dai_bridge",
     "L1GovernanceRelay",
+    "l2_governance_relay",
   ];
+
+  if (includeWormhole) {
+    contracts = [
+      ...contracts,
+      "L1DAIWormholeGateway",
+      "l2_dai_wormhole_gateway",
+    ];
+  }
 
   const addresses = contracts.reduce(
     (a, c) => Object.assign(a, { [c]: getAddress(c, NETWORK) }),
@@ -337,24 +260,37 @@ export function printAddresses(hre: any) {
   console.log(addresses);
 }
 
-export function writeAddresses(hre: any) {
+export function writeAddresses(hre: any, includeWormhole: boolean = false) {
   const NETWORK = hre.network.name;
+  let ADDRESS_NETWORK: string;
+  if (NETWORK.slice(0, 4) === "fork") {
+    ADDRESS_NETWORK = NETWORK.slice(5).toUpperCase();
+  } else {
+    ADDRESS_NETWORK = NETWORK.toUpperCase();
+  }
 
-  const variables = [
+  let variables = [
     ["L1_ESCROW_ADDRESS", "L1Escrow"],
     ["L2_DAI_ADDRESS", "l2_dai_bridge"],
     ["L1_GOVERNANCE_RELAY_ADDRESS", "L1GovernanceRelay"],
     ["L2_GOVERNANCE_RELAY_ADDRESS", "l2_governance_relay"],
     ["L1_DAI_BRIDGE_ADDRESS", "L1DAIBridge"],
     ["L2_DAI_BRIDGE_ADDRESS", "l2_dai_bridge"],
-    ["L1_DAI_WORMHOLE_BRIDGE_ADDRESS", "L1DAIWormholeBridge"],
-    ["L2_DAI_WORMHOLE_BRIDGE_ADDRESS", "l2_dai_wormhole_bridge"],
+    ["REGISTRY_ADDRESS", "registry"],
   ];
+
+  if (includeWormhole) {
+    variables = [
+      ...variables,
+      ["L1_DAI_WORMHOLE_GATEWAY_ADDRESS", "L1DAIWormholeGateway"],
+      ["L2_DAI_WORMHOLE_GATEWAY_ADDRESS", "l2_dai_wormhole_gateway"],
+    ];
+  }
 
   const addresses = variables.reduce((a, c) => {
     const address = getAddress(c[1], NETWORK);
     if (address) {
-      return `${a}${NETWORK.toUpperCase()}_${c[0]}=${address}\n`;
+      return `${a}${ADDRESS_NETWORK}_${c[0]}=${address}\n`;
     } else {
       return a;
     }
@@ -386,27 +322,6 @@ export async function getL2ContractAt(hre: any, name: string, address: string) {
   return contractFactory.getContractAt(address);
 }
 
-export async function deployL2(
-  hre: any,
-  name: string,
-  blockNumber: number,
-  calldata: any = {},
-  saveName?: string
-) {
-  const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
-  console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
-  const contractFactory = await hre.starknet.getContractFactory(name);
-
-  const contract = await contractFactory.deploy(calldata);
-  save(saveName || name, contract, hre.network.name, blockNumber);
-
-  console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
-  console.log(
-    `To verify: npx hardhat starknet-verify --starknet-network ${STARKNET_NETWORK} --path contracts/l2/${name}.cairo --address ${contract.address}`
-  );
-  return contract;
-}
-
 export async function deployL1(
   hre: any,
   name: string,
@@ -426,5 +341,26 @@ export async function deployL1(
       .join(" ")}`
   );
   await contract.deployed();
+  return contract;
+}
+
+export async function deployL2(
+  hre: any,
+  name: string,
+  blockNumber: number,
+  calldata: any = {},
+  saveName?: string
+) {
+  const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
+  console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
+  const contractFactory = await hre.starknet.getContractFactory(name);
+
+  const contract = await contractFactory.deploy(calldata);
+  save(saveName || name, contract, hre.network.name, blockNumber);
+
+  console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
+  console.log(
+    `To verify: npx hardhat starknet-verify --starknet-network ${STARKNET_NETWORK} --path contracts/l2/${name}.cairo --address ${contract.address}`
+  );
   return contract;
 }

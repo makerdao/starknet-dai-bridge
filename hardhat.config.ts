@@ -58,13 +58,20 @@ const config: HardhatUserConfig = {
     localhost: {
       url: "http://127.0.0.1:8545",
     },
-    fork: {
+    "fork-mainnet": {
+      url: "http://127.0.0.1:8545",
+    },
+    "fork-goerli": {
       url: "http://127.0.0.1:8545",
     },
     devnet: {
       url: "http://127.0.0.1:5000",
     },
     hardhat: {
+      forking: {
+        url: `https://goerli.infura.io/v3/${infuraApiKey}`,
+        enabled: process.env.NODE_ENV !== "test",
+      },
       accounts: {
         count: 10,
         mnemonic,
