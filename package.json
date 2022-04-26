@@ -19,6 +19,8 @@
     "setDaiBalance": "hardhat setDaiBalance --network fork",
     "deploy-deployer:goerli": "STARKNET_NETWORK=alpha hardhat deploy-deployer --network goerli",
     "deploy-bridge:goerli": "STARKNET_NETWORK=alpha hardhat deploy-bridge --network goerli",
+    "deploy-deployer:mainnet": "STARKNET_NETWORK=alpha-mainnet hardhat deploy-deployer --network mainnet",
+    "deploy-bridge:mainnet": "STARKNET_NETWORK=alpha-mainnet hardhat deploy-bridge --network mainnet",
     "account:create": "hardhat account:create --network goerli",
     "account:get": "hardhat account:get --network goerli",
     "call:l1": "hardhat call:l1 --network goerli",
@@ -89,6 +91,7 @@
     "eslint-plugin-unused-imports": "^1.1.5",
     "lodash": "^4.17.21",
     "starknet": "^2.3.1",
+    "ts-essentials": "^9.1.2",
     "yargs": "^17.3.0"
   }
 }
