@@ -1,6 +1,4 @@
 import { task } from "hardhat/config";
-import { ethers, Contract, Signer } from "ethers";
-import { Interface } from "ethers/lib/utils";
 
 import { getAddress, parseCalldataL1, parseCalldataL2 } from "./utils";
 
