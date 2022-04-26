@@ -1,6 +1,8 @@
 import { task } from "hardhat/config";
+import { ethers, Contract, Signer } from "ethers";
+import { Interface } from "ethers/lib/utils";
 
-import { getAddress, parseCalldataL1, parseCalldataL2, Signer } from "./utils";
+import { getAddress, parseCalldataL1, parseCalldataL2 } from "./utils";
 
 task("invoke:l2", "Invoke an L2 contract")
   .addParam("contract", "Contract to call")
@@ -14,23 +16,18 @@ task("invoke:l2", "Invoke an L2 contract")
     const contractFactory = await hre.starknet.getContractFactory(contract);
     const contractInstance = contractFactory.getContractAt(address);
     const _name = name || "default";
-    const accountAddress = getAddress(`account-${_name}`, NETWORK);
-    const accountFactory = await hre.starknet.getContractFactory("account");
-    const accountInstance = accountFactory.getContractAt(accountAddress);
-
     const _calldata = parseCalldataL2(calldata, NETWORK, contract, func);
     const ECDSA_PRIVATE_KEY =
       process.env[`${_name.toUpperCase()}_ECDSA_PRIVATE_KEY`];
     if (!ECDSA_PRIVATE_KEY) {
       throw new Error(`Set ${_name.toUpperCase()}_ECDSA_PRIVATE_KEY in .env`);
     }
-    const l2Signer = new Signer(ECDSA_PRIVATE_KEY);
-    const res = await l2Signer.sendTransaction(
-      accountInstance,
-      contractInstance,
-      func,
-      _calldata
+    const l2Signer = await hre.starknet.getAccountFromAddress(
+      getAddress(`account-${_name}`, NETWORK),
+      ECDSA_PRIVATE_KEY,
+      "OpenZeppelin"
     );
+    const res = await l2Signer.invoke(contractInstance, func, _calldata);
     console.log("Response:", res);
   });
 
@@ -63,7 +60,6 @@ task("call:l1", "Call an L1 contract")
       contractAbiName
     )) as any;
     const contractInstance = await contractFactory.attach(address);
-
     const _calldata = parseCalldataL1(calldata, NETWORK);
     // @ts-ignore
     const res = await contractInstance[func](..._calldata);
