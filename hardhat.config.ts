@@ -75,7 +75,7 @@ const config: HardhatUserConfig = {
     },
   },
   starknet: {
-    dockerizedVersion: "0.8.0",
+    dockerizedVersion: "0.8.1",
     network:
       process.env.NODE_ENV !== "test" ? process.env.STARKNET_NETWORK : "devnet",
     wallets: {
