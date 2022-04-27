@@ -8,7 +8,7 @@ import time
 
 from starkware.starknet.compiler.compile import compile_starknet_files
 from starkware.starknet.testing.starknet import Starknet, StarknetContract
-from starkware.starknet.business_logic.state import BlockInfo
+from starkware.starknet.business_logic.state.state import BlockInfo
 
 from Signer import Signer
 
@@ -33,7 +33,7 @@ def get_block_timestamp(starknet_state):
 
 def set_block_timestamp(starknet_state, timestamp):
     starknet_state.state.block_info = BlockInfo(
-        starknet_state.state.block_info.block_number, timestamp
+        starknet_state.state.block_info.block_number, timestamp, 0
     )
 
 
