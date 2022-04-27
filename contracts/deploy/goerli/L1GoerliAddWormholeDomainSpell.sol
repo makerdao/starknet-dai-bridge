@@ -113,7 +113,7 @@ contract DssSpellAction is DssAction {
     WormholeJoinLike wormholeJoin = WormholeJoinLike(0x7954DA41E6D18e25Ad6365a146091c9D75E4b568);
     address vow = 0x23f78612769b9013b3145E43896Fa1578cAa2c2a;
     VatLike vat = VatLike(0xB966002DDAa2Baf48369f5015329750019736031);
-    uint256 globalLine = 10000000000 * RAD;
+    uint256 globalLine = 10**10 * RAD;
     RouterLike router = RouterLike(0xac22Eea777cd98A357f2E2f26e7Acd37651DBA9c);
     OracleAuthLike oracleAuth = OracleAuthLike(0x70FEdb21fF40E8bAf9f1a631fA9c34F179f29442);
     address[] memory oracles = new address[](5);

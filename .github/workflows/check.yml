@@ -50,4 +50,4 @@ jobs:
         run: cp .env.ci .env
 
       - name: Run Slither
-        run: slither .
+        run: slither --filter-paths contracts/deploy/common\|node_modules/@openzeppelin/contracts .
