@@ -10,6 +10,8 @@ import {
   getAddressOfNextDeployedContract,
   getL2ContractAt,
   getRequiredEnv,
+  getRequiredEnvDeployments,
+  getRequiredEnvDeployer,
   printAddresses,
   wards,
   writeAddresses,
@@ -34,11 +36,11 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
   const L1_WORMHOLE_ROUTER_ADDRESS = getRequiredEnv(
     `${ADDRESS_NETWORK}_L1_WORMHOLE_ROUTER_ADDRESS`
   );
-  const L1_ESCROW_ADDRESS = getRequiredEnv(
+  const L1_ESCROW_ADDRESS = getRequiredEnvDeployments(
     `${ADDRESS_NETWORK}_L1_ESCROW_ADDRESS`
   );
-  const L2_DAI_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L2_DAI_ADDRESS`);
-  const L2_GOVERNANCE_RELAY_ADDRESS = getRequiredEnv(
+  const L2_DAI_ADDRESS = getRequiredEnvDeployments(`${ADDRESS_NETWORK}_L2_DAI_ADDRESS`);
+  const L2_GOVERNANCE_RELAY_ADDRESS = getRequiredEnvDeployments(
     `${ADDRESS_NETWORK}_L2_GOVERNANCE_RELAY_ADDRESS`
   );
   const DENY_DEPLOYER = getRequiredEnv("DENY_DEPLOYER") === "true";
@@ -48,7 +50,7 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
 
   console.log(`Deploying gateway on ${NETWORK}/${STARKNET_NETWORK}`);
 
-  const DEPLOYER_KEY = getRequiredEnv(`DEPLOYER_ECDSA_PRIVATE_KEY`);
+  const DEPLOYER_KEY = getRequiredEnvDeployer(`DEPLOYER_ECDSA_PRIVATE_KEY`);
   const deployer = await hre.starknet.getAccountFromAddress(
     getAddress("account-deployer", NETWORK),
     DEPLOYER_KEY,
@@ -66,6 +68,8 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
 
   const futureL1DAIWormholeGatewayAddress =
     await getAddressOfNextDeployedContract(l1Signer);
+
+  const DOMAIN = `0x0${hre.ethers.utils.formatBytes32String("GOERLI-SLAVE-STARKNET-1").slice(2, 65)}`;
   const l2DAIWormholeGateway = await deployL2(
     hre,
     "l2_dai_wormhole_gateway",
@@ -74,7 +78,7 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
       ward: asDec(deployer.starknetContract.address),
       dai: asDec(L2_DAI_ADDRESS),
       wormhole_gateway: asDec(futureL1DAIWormholeGatewayAddress),
-      domain: asDec(L1_DAI_ADDRESS),
+      domain: DOMAIN,
     }
   );
 

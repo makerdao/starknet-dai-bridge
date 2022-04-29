@@ -1,0 +1,1 @@
+[{"inputs":[{"internalType":"address","name":"_libAddressManager","type":"address"},{"internalType":"string","name":"_implementationName","type":"string"}],"stateMutability":"nonpayable","type":"constructor"},{"stateMutability":"payable","type":"fallback"}]

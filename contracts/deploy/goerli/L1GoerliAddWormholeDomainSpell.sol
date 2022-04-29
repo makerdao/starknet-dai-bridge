@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2021 Dai Foundation
 //
@@ -71,11 +72,18 @@ interface L1EscrowLike {
   ) external;
 }
 
+interface L1BridgeLike {
+  function setCeiling(
+    uint256 _maxDeposit
+  ) external;
+}
+
 interface GovernanceRelayLike {
   function relay(uint256 spell) external;
 }
 
 contract DssSpellAction is DssAction {
+  uint256 public constant WAD = 10**18;
   uint256 public constant RAY = 10**27;
   uint256 public constant RAD = 10**45;
 
@@ -107,25 +115,23 @@ contract DssSpellAction is DssAction {
   //  "relay": "0x29e07B88a51281f3C3CDD9F8De94DfCf7Ff24C7B"
   // }
 
-  event Test2(bytes32 x);
   function actions() public override {
-    bytes32 masterDomain = "GOERLI-MASTER-1";
+    bytes32 masterDomain = bytes32("GOERLI-MASTER-1") >> 4;
     WormholeJoinLike wormholeJoin = WormholeJoinLike(0x7954DA41E6D18e25Ad6365a146091c9D75E4b568);
     address vow = 0x23f78612769b9013b3145E43896Fa1578cAa2c2a;
     VatLike vat = VatLike(0xB966002DDAa2Baf48369f5015329750019736031);
     uint256 globalLine = 10000000000 * RAD;
     RouterLike router = RouterLike(0xac22Eea777cd98A357f2E2f26e7Acd37651DBA9c);
     OracleAuthLike oracleAuth = OracleAuthLike(0x70FEdb21fF40E8bAf9f1a631fA9c34F179f29442);
-    address[] memory oracles = new address[](5);
+    address[] memory oracles = new address[](6);
 
     oracles[0] = 0xC4756A9DaE297A046556261Fa3CD922DFC32Db78; // OCU
     oracles[1] = 0x23ce419DcE1De6b3647Ca2484A25F595132DfBd2; // OCU
     oracles[2] = 0x774D5AA0EeE4897a9a6e65Cbed845C13Ffbc6d16; // OCU
     oracles[3] = 0xb41E8d40b7aC4Eb34064E079C8Eca9d7570EBa1d; // OCU
     oracles[4] = 0xc65EF2D17B05ADbd8e4968bCB01b325ab799aBd8; // PECU
-    oracles[4] = 0xFc7D8Fc1dA7037A392031b763b8277CC7a789d57; // Starknet Oracle
-
-    /*
+    oracles[5] = 0xFc7D8Fc1dA7037A392031b763b8277CC7a789d57; // Starknet Oracle
+  
     wormholeJoin.file(bytes32("vow"), vow);
     router.file(bytes32("gateway"), masterDomain, address(wormholeJoin));
     vat.rely(address(wormholeJoin));
@@ -135,38 +141,28 @@ contract DssSpellAction is DssAction {
     vat.file(ilk, bytes32("line"), globalLine);
     oracleAuth.file(bytes32("threshold"), 1);
     oracleAuth.addSigners(oracles);
-    */
 
-    // configure optimism wormhole
-    bytes32 slaveDomain = "GOERLI-SLAVE-STARKNET-1";
-    emit Test2(slaveDomain);
-    uint256 optimismSlaveLine = 100 * RAD;
+    // configure starknet wormhole
+    bytes32 slaveDomain = bytes32("GOERLI-SLAVE-STARKNET-1") >> 4;
     address constantFees = 0xd40EA2981B350D38281402c058b1Ef1058dbac53;
-    address slaveDomainGateway = 0x449234620fF0Da619737d4338C69Fe59f688AaBD; // TODO @nulven
-    L1EscrowLike escrow = L1EscrowLike(0x08F94B7158b5090D115334387075c29feef378ec); // TODO @nulven
-    address dai = 0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844; // TODO @nulven
+    address dai = 0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844;
 
-    GovernanceRelayLike l1GovRelay = GovernanceRelayLike(0xF7Cf8DDAd9a67F6dF19De64ed773f65d733B901A);
-    uint256 l2ConfigureDomainSpell = 1344907330641148657484127454318567412115395973728901592029204261585535920845; // TODO @nulven
-    /*
-    address slaveDomainGateway = 0x43a035c6eF8A6c375caDddB8e640D34936883099; // TODO @nulven
-    L1EscrowLike escrow = L1EscrowLike(0x38c3DDF1eF3e045abDDEb94f4e7a1a0d5440EB44); // TODO @nulven
-    address dai = 0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844; // TODO @nulven
+    address slaveDomainGateway = 0x8Ea4eAb5876bCad5E594b723b0AfC04618721cCF;
+    L1EscrowLike escrow = L1EscrowLike(0x8907541CC2935e19BcF2a6Ea767395E39716ead2);
+    L1BridgeLike l1Bridge = L1BridgeLike(0x7C06B53418549c46d3ebEfE9036e9A0A9885b563);
+    GovernanceRelayLike l1GovRelay = GovernanceRelayLike(0x52fE5F9ACd7BE75B0e1C41e8c41766B5Bac2C000);
+    uint256 l2ConfigureDomainSpell = 0x0731c32f2558a306e1e7c6faa8850f8e9eafd85cecb945e25a12c24a119d1fc7;
 
-    GovernanceRelayLike l1GovRelay = GovernanceRelayLike(0x73c0049Dd6560E644984Fa3Af30A55a02a7D81fB);
-    uint256 l2ConfigureDomainSpell = 2268339011266102845958158462508552861565781197829927675999078456776821119821; // TODO @nulven
-    */
-
-    /*
     router.file(bytes32("gateway"), slaveDomain, slaveDomainGateway);
     wormholeJoin.file(bytes32("fees"), slaveDomain, constantFees);
-    wormholeJoin.file(bytes32("line"), slaveDomain, optimismSlaveLine);
-    */
+    wormholeJoin.file(bytes32("line"), slaveDomain, 100*RAD);
     escrow.approve(dai, slaveDomainGateway, type(uint256).max);
-    l1GovRelay.relay(l2ConfigureDomainSpell); // TODO
+    l1Bridge.setCeiling(100000*WAD);
+    l1GovRelay.relay(l2ConfigureDomainSpell);
   }
 }
 
 contract L1GoerliAddWormholeDomainSpell is DssExec {
   constructor() DssExec(block.timestamp + 30 days, address(new DssSpellAction())) {}
 }
+    

@@ -73,11 +73,6 @@ contract DssExec {
     return SpellAction(action).nextCastTime(eta);
   }
 
-  function execute() external {
-    (bool result, bytes memory res) = action.delegatecall(abi.encodeWithSignature("execute()"));
-    require(result, 'Exec');
-  }
-
   // @param _description  A string description of the spell
   // @param _expiration   The timestamp this spell will expire. (Ex. now + 30 days)
   // @param _spellAction  The address of the spell action

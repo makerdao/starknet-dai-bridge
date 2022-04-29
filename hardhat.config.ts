@@ -6,12 +6,12 @@ import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
 import "./scripts/interact";
 import "./scripts/deployDeployer";
-import "./scripts/deployProxy";
 import "./scripts/deploySpell";
 import "./scripts/deployBridge";
 import "./scripts/deployWormhole";
 import "./scripts/account";
 import "./scripts/fork";
+import "./scripts/starknet";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig, NetworkUserConfig } from "hardhat/types";

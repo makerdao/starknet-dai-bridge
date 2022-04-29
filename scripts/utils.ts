@@ -19,6 +19,7 @@ import { getContractAddress, Result } from "ethers/lib/utils";
 import fs from "fs";
 import { isEmpty } from "lodash";
 import { assert } from "ts-essentials";
+import dotenv from "dotenv";
 
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
@@ -30,8 +31,32 @@ export function getRequiredEnv(key: string): string {
   return value;
 }
 
+export function getRequiredEnvDeployments(key: string): string {
+  const env = dotenv.config({ path: ".env.deployments" });
+  assert(env.parsed, ".env.deployments file not found");
+  const value = env.parsed[key];
+  assert(value, `Please provide ${key} in .env file`);
+
+  return value;
+}
+
+export function getRequiredEnvDeployer(key: string): string {
+  const env = dotenv.config({ path: ".env.deployer" });
+  assert(env.parsed, ".env.deployer file not found");
+  const value = env.parsed[key];
+  assert(value, `Please provide ${key} in .env file`);
+
+  return value;
+}
+
 export function getOptionalEnv(key: string): string | undefined {
   return process.env[key];
+}
+
+export function getOptionalEnvDeployments(key: string): string | undefined {
+  const env = dotenv.config({ path: ".env.deployments" });
+  assert(env.parsed, ".env.deployer file not found");
+  return env.parsed[key];
 }
 
 interface TypedEventFilter<_EventArgsArray, _EventArgsObject>
@@ -149,6 +174,8 @@ export function parseCalldataL1(calldata: string, network: string) {
       return getAddress("L1Escrow", network);
     } else if (input === "DAI") {
       return getAddress("DAI", network);
+    } else if (input === "MAX") {
+      return "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     } else {
       return input;
     }
@@ -194,8 +221,16 @@ export function parseCalldataL2(
       res[inputName] = BigInt(getAddress("L1DAIBridge", network)).toString();
     } else if (input === "l2_dai_bridge") {
       res[inputName] = BigInt(getAddress("l2_dai_bridge", network)).toString();
+    } else if (input === "l2_dai_wormhole_gateway") {
+      res[inputName] = BigInt(getAddress("l2_dai_wormhole_gateway", network)).toString();
+    } else if (input === "GOERLI-MASTER-1") {
+      res[inputName] = `0x0${ethers.utils.formatBytes32String("GOERLI-MASTER-1").slice(2, 65)}`;
     } else if (inputType === "Uint256") {
-      res[inputName] = [input, _calldata[i + 1]];
+      const low = input === "MAX_HALF" ?
+        "0xffffffffffffffffffffffffffffffff" : input;
+      const high = _calldata[i + 1] === "MAX_HALF" ?
+        "0xffffffffffffffffffffffffffffffff" : _calldata[i + 1];
+      res[inputName] = { low, high };
       i++;
     } else {
       res[inputName] = input;
@@ -269,7 +304,7 @@ export function writeAddresses(hre: any, includeWormhole: boolean = false) {
 
   let variables = [
     ["L1_ESCROW_ADDRESS", "L1Escrow"],
-    ["L2_DAI_ADDRESS", "l2_dai_bridge"],
+    ["L2_DAI_ADDRESS", "dai"],
     ["L1_GOVERNANCE_RELAY_ADDRESS", "L1GovernanceRelay"],
     ["L2_GOVERNANCE_RELAY_ADDRESS", "l2_governance_relay"],
     ["L1_DAI_BRIDGE_ADDRESS", "L1DAIBridge"],

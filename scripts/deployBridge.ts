@@ -11,7 +11,9 @@ import {
   getAddressOfNextDeployedContract,
   getL2ContractAt,
   getOptionalEnv,
+  getOptionalEnvDeployments,
   getRequiredEnv,
+  getRequiredEnvDeployer,
   printAddresses,
   save,
   waitForTx,
@@ -47,7 +49,7 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
-  const DEPLOYER_KEY = getRequiredEnv(`DEPLOYER_ECDSA_PRIVATE_KEY`);
+  const DEPLOYER_KEY = getRequiredEnvDeployer(`DEPLOYER_ECDSA_PRIVATE_KEY`);
   const deployer = await hre.starknet.getAccountFromAddress(
     getAddress("account-deployer", NETWORK),
     DEPLOYER_KEY,
@@ -57,7 +59,7 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
     `Deploying from account: ${deployer.starknetContract.address.toString()}`
   );
 
-  const L2_DAI_ADDRESS = getOptionalEnv(
+  const L2_DAI_ADDRESS = getOptionalEnvDeployments(
     `${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS`
   );
   if (L2_DAI_ADDRESS) {
@@ -179,7 +181,7 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   if (DENY_DEPLOYER) {
     l1Wards = [L1_PAUSE_PROXY_ADDRESS, L1_ESM_ADDRESS];
   } else {
-    l1Wards = [L1_PAUSE_PROXY_ADDRESS, L1_ESM_ADDRESS, l1Signer.address];
+    l1Wards = [l1Signer.address, L1_PAUSE_PROXY_ADDRESS, L1_ESM_ADDRESS];
   }
   expect(await getActiveWards(l1Escrow as any)).to.deep.eq(l1Wards);
   expect(await getActiveWards(l1DAIBridge as any)).to.deep.eq(l1Wards);

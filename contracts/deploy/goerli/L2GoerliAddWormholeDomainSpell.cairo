@@ -1,3 +1,4 @@
+
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
@@ -15,13 +16,13 @@ func execute{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }():
-    let gateway = 0x03eb04547e41428efbcba7f694886698e41fb5aedcfcf5b4f02f722232f9ab3c
+    let gateway = 0x06f868433689bef2426268e9bd4c6c13ded0e82e294729fdc6d7cf7744726503
     let what = 'valid_domains'
-    # ethers.utils.formatBytes32String("GOERLI-SLAVE-STARKNET-1")
-    let domain = 0x474f45524c492d534c4156452d535441524b4e45542d31000000000000000000
-
+    # ethers.utils.formatBytes32String("GOERLI-MASTER-1") >> 4
+    let domain = 0x474f45524c492d4d41535445522d31000000000000000000000000000000000
     # file domain
     IGateway.file(gateway, what, domain, 1)
 
     return ()
 end
+    
