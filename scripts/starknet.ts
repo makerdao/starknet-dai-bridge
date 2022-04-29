@@ -7,7 +7,9 @@ task("load-messaging-contract", "Load messaging contract on devnet").setAction(
   async (_, hre) => {
     const ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
     const networkUrl: string = (hre.network.config as HttpNetworkConfig).url;
-    const STARKNET_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L1_STARKNET_ADDRESS`);
+    const STARKNET_ADDRESS = getRequiredEnv(
+      `${ADDRESS_NETWORK}_L1_STARKNET_ADDRESS`
+    );
     await hre.starknet.devnet.loadL1MessagingContract(
       networkUrl,
       STARKNET_ADDRESS

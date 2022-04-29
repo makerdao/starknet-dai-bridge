@@ -10,8 +10,8 @@ import {
   getAddressOfNextDeployedContract,
   getL2ContractAt,
   getRequiredEnv,
-  getRequiredEnvDeployments,
   getRequiredEnvDeployer,
+  getRequiredEnvDeployments,
   printAddresses,
   wards,
   writeAddresses,
@@ -39,7 +39,9 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
   const L1_ESCROW_ADDRESS = getRequiredEnvDeployments(
     `${ADDRESS_NETWORK}_L1_ESCROW_ADDRESS`
   );
-  const L2_DAI_ADDRESS = getRequiredEnvDeployments(`${ADDRESS_NETWORK}_L2_DAI_ADDRESS`);
+  const L2_DAI_ADDRESS = getRequiredEnvDeployments(
+    `${ADDRESS_NETWORK}_L2_DAI_ADDRESS`
+  );
   const L2_GOVERNANCE_RELAY_ADDRESS = getRequiredEnvDeployments(
     `${ADDRESS_NETWORK}_L2_GOVERNANCE_RELAY_ADDRESS`
   );
@@ -69,7 +71,9 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
   const futureL1DAIWormholeGatewayAddress =
     await getAddressOfNextDeployedContract(l1Signer);
 
-  const DOMAIN = `0x0${hre.ethers.utils.formatBytes32String("GOERLI-SLAVE-STARKNET-1").slice(2, 65)}`;
+  const DOMAIN = `0x0${hre.ethers.utils
+    .formatBytes32String("GOERLI-SLAVE-STARKNET-1")
+    .slice(2, 65)}`;
   const l2DAIWormholeGateway = await deployL2(
     hre,
     "l2_dai_wormhole_gateway",

@@ -1,19 +1,26 @@
-import { task } from "hardhat/config";
 import { getGoerliSdk } from "@dethcrypto/eth-sdk-client";
-import { ethers, Contract, Signer } from "ethers";
-import { Interface } from "ethers/lib/utils";
 import { sleep } from "@eth-optimism/core-utils";
+import { JsonRpcProvider } from "@ethersproject/providers";
+import { Contract, ethers, Signer } from "ethers";
+import { Interface } from "ethers/lib/utils";
 import fs from "fs";
+import { task } from "hardhat/config";
 
-import { JsonRpcProvider } from '@ethersproject/providers'
+import {
+  deployL1,
+  deployL2,
+  getAddress,
+  getL1ContractAt,
+  getRequiredEnv,
+  getRequiredEnvDeployments,
+} from "./utils";
 
-import { deployL1, deployL2, getL1ContractAt, getAddress, getRequiredEnv, getRequiredEnvDeployments } from "./utils";
+task("create-wormhole-spell-l2", "Create L2 spell").setAction(async () => {
+  const l2DAIWormholeGateway = getRequiredEnvDeployments(
+    "GOERLI_L2_DAI_WORMHOLE_GATEWAY_ADDRESS"
+  );
 
-task("create-wormhole-spell-l2", "Create L2 spell").setAction(
-  async () => {
-    const l2DAIWormholeGateway = getRequiredEnvDeployments("GOERLI_L2_DAI_WORMHOLE_GATEWAY_ADDRESS");
-
-    const spell = `
+  const spell = `
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
@@ -41,19 +48,24 @@ func execute{
     return ()
 end`;
 
-    fs.writeFileSync("./contracts/deploy/goerli/L2GoerliAddWormholeDomainSpell.cairo", spell);
-  }
-);
+  fs.writeFileSync(
+    "./contracts/deploy/goerli/L2GoerliAddWormholeDomainSpell.cairo",
+    spell
+  );
+});
 
-task("create-wormhole-spell-l1", "Create L1 spell").setAction(
-  async () => {
-    const l1DAIWormholeGateway = getRequiredEnvDeployments("GOERLI_L1_DAI_WORMHOLE_GATEWAY_ADDRESS");
-    const escrow = getRequiredEnvDeployments("GOERLI_L1_ESCROW_ADDRESS");
-    const l1Bridge = getRequiredEnvDeployments("GOERLI_L1_DAI_BRIDGE_ADDRESS");
-    const l1GovernanceRelay = getRequiredEnvDeployments("GOERLI_L1_GOVERNANCE_RELAY_ADDRESS");
-    const l2Spell = getAddress("L2GoerliAddWormholeDomainSpell", "fork");
+task("create-wormhole-spell-l1", "Create L1 spell").setAction(async () => {
+  const l1DAIWormholeGateway = getRequiredEnvDeployments(
+    "GOERLI_L1_DAI_WORMHOLE_GATEWAY_ADDRESS"
+  );
+  const escrow = getRequiredEnvDeployments("GOERLI_L1_ESCROW_ADDRESS");
+  const l1Bridge = getRequiredEnvDeployments("GOERLI_L1_DAI_BRIDGE_ADDRESS");
+  const l1GovernanceRelay = getRequiredEnvDeployments(
+    "GOERLI_L1_GOVERNANCE_RELAY_ADDRESS"
+  );
+  const l2Spell = getAddress("L2GoerliAddWormholeDomainSpell", "fork");
 
-    const spell = `
+  const spell = `
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2021 Dai Foundation
 //
@@ -220,9 +232,11 @@ contract DssSpellAction is DssAction {
 contract L1GoerliAddWormholeDomainSpell is DssExec {
   constructor() DssExec(block.timestamp + 30 days, address(new DssSpellAction())) {}
 }`;
-    fs.writeFileSync("./contracts/deploy/goerli/L1GoerliAddWormholeDomainSpell.sol", spell);
-  }
-);
+  fs.writeFileSync(
+    "./contracts/deploy/goerli/L1GoerliAddWormholeDomainSpell.sol",
+    spell
+  );
+});
 
 task("deploy-wormhole-spell-l2", "Deploy L2 spell").setAction(
   async (_, hre) => {
@@ -255,15 +269,15 @@ function toMyBigNumber(n: any) {
 }
 
 function encodeHex(_: any) {
-  return '0x' + toMyBigNumber(_).toString(16);
+  return "0x" + toMyBigNumber(_).toString(16);
 }
 
 export async function mintEther(
   address: string,
   provider: ethers.providers.JsonRpcProvider,
-  amt = toWad(1000000),
+  amt = toWad(1000000)
 ): Promise<void> {
-  await provider.send('hardhat_setBalance', [address, encodeHex(amt)]);
+  await provider.send("hardhat_setBalance", [address, encodeHex(amt)]);
 }
 
 export function toWad(n: any): BigNumber {
@@ -274,9 +288,9 @@ const WAD = new BigNumber(10).pow(18);
 
 export async function impersonateAccount(
   address: string,
-  provider: ethers.providers.JsonRpcProvider,
+  provider: ethers.providers.JsonRpcProvider
 ): Promise<ethers.Signer> {
-  await provider.send('hardhat_impersonateAccount', [address]);
+  await provider.send("hardhat_impersonateAccount", [address]);
 
   await mintEther(address, provider);
 
@@ -290,71 +304,86 @@ async function waitForTx(tx: Promise<any>) {
   return await _.wait();
 }
 
-
 async function executeDssSpell(
   l1Signer: Signer,
   pauseAddress: string,
   spell: Contract,
-  mkrWhaleAddress: string,
+  mkrWhaleAddress: string
 ) {
   // execute spell using standard DssSpell procedure
-  const mkrWhale = await impersonateAccount(mkrWhaleAddress, l1Signer.provider as JsonRpcProvider)
-  const pause = new Contract(pauseAddress, new Interface(['function authority() view returns (address)']), l1Signer)
+  const mkrWhale = await impersonateAccount(
+    mkrWhaleAddress,
+    l1Signer.provider as JsonRpcProvider
+  );
+  const pause = new Contract(
+    pauseAddress,
+    new Interface(["function authority() view returns (address)"]),
+    l1Signer
+  );
   const chief = new Contract(
     await pause.authority(),
-    new Interface(['function vote(address[])', 'function lift(address)', 'function approvals(address) view returns (uint256)', 'function hat() view returns (address)', 'function lock(uint)']),
-    mkrWhale,
-  )
+    new Interface([
+      "function vote(address[])",
+      "function lift(address)",
+      "function approvals(address) view returns (uint256)",
+      "function hat() view returns (address)",
+      "function lock(uint)",
+    ]),
+    mkrWhale
+  );
   await waitForTx(chief.lock(encodeHex(toWad(100001))));
-  console.log('Vote spell...')
-  await waitForTx(chief.vote([spell.address]))
-  console.log('Lift spell...')
-  await waitForTx(chief.lift(spell.address))
-  console.log('Scheduling spell...')
-  await waitForTx(spell.connect(l1Signer).schedule())
-  console.log('Waiting for pause delay...')
-  await sleep(60000)
-  console.log('Casting spell...')
-  return await waitForTx(spell.connect(l1Signer).cast())
+  console.log("Vote spell...");
+  await waitForTx(chief.vote([spell.address]));
+  console.log("Lift spell...");
+  await waitForTx(chief.lift(spell.address));
+  console.log("Scheduling spell...");
+  await waitForTx(spell.connect(l1Signer).schedule());
+  console.log("Waiting for pause delay...");
+  await sleep(60000);
+  console.log("Casting spell...");
+  return await waitForTx(spell.connect(l1Signer).cast());
 }
 
 const toBytes32 = (bn: ethers.BigNumber) => {
   return ethers.utils.hexlify(ethers.utils.zeroPad(bn.toHexString(), 32));
 };
 
-task("run-spell", "Deploy L1 spell").setAction(
-  async (_, hre) => {
-    const NETWORK = hre.network.name;
-    let ADDRESS_NETWORK;
-    if (NETWORK === "fork") {
-      ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
-    } else {
-      ADDRESS_NETWORK = NETWORK.toUpperCase();
-    }
-
-    const [signer] = await hre.ethers.getSigners();
-    const mkrWhaleAddress = "0x33Ed584fc655b08b2bca45E1C5b5f07c98053bC1";
-
-    const goerliSdk = getGoerliSdk(signer.provider! as any);
-
-    const l1SpellContract = await getL1ContractAt(
-      hre,
-      "L1GoerliAddWormholeDomainSpell",
-      getAddress("L1GoerliAddWormholeDomainSpell", NETWORK),
-    );
-    const balanceWei = hre.ethers.utils.parseEther("200000");
-    const L1_DAI_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L1_DAI_ADDRESS`);
-    await hre.network.provider.request({
-      method: "hardhat_setStorageAt",
-      params: [
-        L1_DAI_ADDRESS,
-        hre.ethers.utils
-          .solidityKeccak256(["uint256", "uint256"], [mkrWhaleAddress, 2])
-          .replace(/(?<=0x)0+/, ""),
-        toBytes32(balanceWei).toString(),
-      ],
-    });
-
-    await executeDssSpell(signer, await goerliSdk.maker.pause_proxy.owner(), l1SpellContract, mkrWhaleAddress)
+task("run-spell", "Deploy L1 spell").setAction(async (_, hre) => {
+  const NETWORK = hre.network.name;
+  let ADDRESS_NETWORK;
+  if (NETWORK === "fork") {
+    ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
+  } else {
+    ADDRESS_NETWORK = NETWORK.toUpperCase();
   }
-);
+
+  const [signer] = await hre.ethers.getSigners();
+  const mkrWhaleAddress = "0x33Ed584fc655b08b2bca45E1C5b5f07c98053bC1";
+
+  const goerliSdk = getGoerliSdk(signer.provider! as any);
+
+  const l1SpellContract = await getL1ContractAt(
+    hre,
+    "L1GoerliAddWormholeDomainSpell",
+    getAddress("L1GoerliAddWormholeDomainSpell", NETWORK)
+  );
+  const balanceWei = hre.ethers.utils.parseEther("200000");
+  const L1_DAI_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L1_DAI_ADDRESS`);
+  await hre.network.provider.request({
+    method: "hardhat_setStorageAt",
+    params: [
+      L1_DAI_ADDRESS,
+      hre.ethers.utils
+        .solidityKeccak256(["uint256", "uint256"], [mkrWhaleAddress, 2])
+        .replace(/(?<=0x)0+/, ""),
+      toBytes32(balanceWei).toString(),
+    ],
+  });
+
+  await executeDssSpell(
+    signer,
+    await goerliSdk.maker.pause_proxy.owner(),
+    l1SpellContract,
+    mkrWhaleAddress
+  );
+});

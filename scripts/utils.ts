@@ -3,6 +3,7 @@
  */
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
 import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
+import dotenv from "dotenv";
 import { ethers } from "ethers";
 import {
   BaseContract,
@@ -19,7 +20,6 @@ import { getContractAddress, Result } from "ethers/lib/utils";
 import fs from "fs";
 import { isEmpty } from "lodash";
 import { assert } from "ts-essentials";
-import dotenv from "dotenv";
 
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
@@ -222,14 +222,20 @@ export function parseCalldataL2(
     } else if (input === "l2_dai_bridge") {
       res[inputName] = BigInt(getAddress("l2_dai_bridge", network)).toString();
     } else if (input === "l2_dai_wormhole_gateway") {
-      res[inputName] = BigInt(getAddress("l2_dai_wormhole_gateway", network)).toString();
+      res[inputName] = BigInt(
+        getAddress("l2_dai_wormhole_gateway", network)
+      ).toString();
     } else if (input === "GOERLI-MASTER-1") {
-      res[inputName] = `0x0${ethers.utils.formatBytes32String("GOERLI-MASTER-1").slice(2, 65)}`;
+      res[inputName] = `0x0${ethers.utils
+        .formatBytes32String("GOERLI-MASTER-1")
+        .slice(2, 65)}`;
     } else if (inputType === "Uint256") {
-      const low = input === "MAX_HALF" ?
-        "0xffffffffffffffffffffffffffffffff" : input;
-      const high = _calldata[i + 1] === "MAX_HALF" ?
-        "0xffffffffffffffffffffffffffffffff" : _calldata[i + 1];
+      const low =
+        input === "MAX_HALF" ? "0xffffffffffffffffffffffffffffffff" : input;
+      const high =
+        _calldata[i + 1] === "MAX_HALF"
+          ? "0xffffffffffffffffffffffffffffffff"
+          : _calldata[i + 1];
       res[inputName] = { low, high };
       i++;
     } else {
