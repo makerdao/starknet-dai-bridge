@@ -52,4 +52,4 @@ jobs:
         run: cp .env.ci .env
 
       - name: Run Slither
-        run: slither . --filter-paths contracts/deploy/common\|node_modules/@openzeppelin/contracts\|eth-sdk/abis
+        run: slither . --filter-paths contracts/deploy\|node_modules/@openzeppelin/contracts\|eth-sdk/abis
