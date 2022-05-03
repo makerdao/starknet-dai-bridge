@@ -383,7 +383,10 @@ describe("e2e", async function () {
           .finalizeFlush(toBytes32(TARGET_DOMAIN), daiToFlush.toUint())
       )
         .to.emit(wormholeRouterFake, "Settle")
-        .withArgs(`0x${toBytes32(TARGET_DOMAIN).slice(3, 66)}0`, daiToFlush.toUint());
+        .withArgs(
+          `0x${toBytes32(TARGET_DOMAIN).slice(3, 66)}0`,
+          daiToFlush.toUint()
+        );
 
       expect(await dai.balanceOf(escrow.address)).to.be.eq(
         BigInt(escrowBalance) - daiToFlush.toUint()
