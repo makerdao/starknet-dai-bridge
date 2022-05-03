@@ -87,7 +87,7 @@ contract L1DAIWormholeGateway {
   {
     uint256[] memory payload = new uint256[](4);
     payload[0] = HANDLE_FLUSH;
-    payload[1] = uint256(targetDomain) >> 4;
+    payload[1] = uint256(targetDomain);
     (payload[2], payload[3]) = toSplitUint(daiToFlush);
 
     StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeGateway, payload);
@@ -95,7 +95,8 @@ contract L1DAIWormholeGateway {
     // Pull DAI from the escrow to this contract
     TokenLike(dai).transferFrom(escrow, address(this), daiToFlush);
     // The router will pull the DAI from this contract
-    wormholeRouter.settle(targetDomain, daiToFlush);
+    bytes32 targetDomainShifted = targetDomain << 4;
+    wormholeRouter.settle(targetDomainShifted, daiToFlush);
   }
 
   function finalizeRegisterWormhole(WormholeGUID calldata wormhole)
@@ -104,7 +105,7 @@ contract L1DAIWormholeGateway {
     uint256[] memory payload = new uint256[](8);
     payload[0] = HANDLE_REGISTER_WORMHOLE;
     payload[1] = uint256(wormhole.sourceDomain); // bytes32 -> uint256
-    payload[2] = uint256(wormhole.targetDomain) >> 4; // bytes32 -> uint256
+    payload[2] = uint256(wormhole.targetDomain); // bytes32 -> uint256
     payload[3] = uint256(wormhole.receiver); // bytes32 -> uint256
     payload[4] = uint256(wormhole.operator); // bytes32 -> uint256
     payload[5] = uint256(wormhole.amount); // uint128 -> uint256
@@ -113,6 +114,7 @@ contract L1DAIWormholeGateway {
 
     StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeGateway, payload);
     
+    payload[2] = uint256(wormhole.targetDomain) << 4; // bytes32 -> uint256
     wormholeRouter.requestMint(wormhole, 0, 0);
   }
 

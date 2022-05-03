@@ -174,6 +174,10 @@ export function parseCalldataL1(calldata: string, network: string) {
       return getAddress("L1Escrow", network);
     } else if (input === "DAI") {
       return getAddress("DAI", network);
+    } else if (input === "GOERLI-MASTER-1") {
+      return `0x0${ethers.utils
+        .formatBytes32String("GOERLI-MASTER-1")
+        .slice(2, 65)}`;
     } else if (input === "MAX") {
       return "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     } else {
