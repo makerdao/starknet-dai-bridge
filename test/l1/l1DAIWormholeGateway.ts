@@ -63,7 +63,7 @@ describe("l1:L1DAIWormholeGateway", () => {
         l2WormholeGatewayAddress,
         [
           HANDLE_FLUSH,
-          TARGET_DOMAIN,
+          `0x0${TARGET_DOMAIN.slice(2, 65)}`,
           AMOUNT, // uint256.low
           0, // uint256.high
         ]
@@ -110,11 +110,20 @@ describe("l1:L1DAIWormholeGateway", () => {
         0, // nonce
         0, // timestamp
       ];
+      const wormhole2 = [
+        SOURCE_DOMAIN, // sourceDomain
+        `0x0${TARGET_DOMAIN.slice(2, 65)}`, // targetDomain
+        `0x${l1Alice.address.slice(2).padStart(64, "0")}`, // receiver
+        `0x${l1Bob.address.slice(2).padStart(64, "0")}`, // operator
+        AMOUNT, // amount
+        0, // nonce
+        0, // timestamp
+      ];
       await l1WormholeGateway.finalizeRegisterWormhole(wormhole);
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2WormholeGatewayAddress,
-        [HANDLE_REGISTER_WORMHOLE, ...wormhole]
+        [HANDLE_REGISTER_WORMHOLE, ...wormhole2]
       );
 
       expect(wormholeRouterFake.requestMint).to.have.been.calledOnce;

@@ -21,3 +21,4 @@ deployer-key.json
 deployments
 yarn-error.log
 contracts/l2/dai_rescue_spell.cairo
+eth-sdk/abis

@@ -36,6 +36,8 @@ jobs:
 
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
+      - run: yarn eth-sdk
+
       - run: yarn test:l1
 
   test2:
@@ -87,6 +89,8 @@ jobs:
         run: cp .env.ci .env
 
       - run: yarn --no-progress --non-interactive --frozen-lockfile
+
+      - run: yarn eth-sdk
 
       - name: Install deps
         run: pip install -r requirements.txt
