@@ -95,8 +95,7 @@ contract L1DAIWormholeGateway {
     // Pull DAI from the escrow to this contract
     TokenLike(dai).transferFrom(escrow, address(this), daiToFlush);
     // The router will pull the DAI from this contract
-    bytes32 targetDomainShifted = targetDomain << 4;
-    wormholeRouter.settle(targetDomainShifted, daiToFlush);
+    wormholeRouter.settle(targetDomain, daiToFlush);
   }
 
   function finalizeRegisterWormhole(WormholeGUID calldata wormhole)
@@ -114,13 +113,12 @@ contract L1DAIWormholeGateway {
 
     StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeGateway, payload);
     
-    payload[2] = uint256(wormhole.targetDomain) << 4; // bytes32 -> uint256
     wormholeRouter.requestMint(wormhole, 0, 0);
   }
 
   function toL2String(bytes32 str) internal pure returns (uint256) {
-    while (str.length < 31) {
-      str = str << 8;
+    while (str[31] == '\x00') {
+      str = str >> 8;
     }
     return uint256(str);
   }
