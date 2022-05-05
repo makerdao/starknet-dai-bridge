@@ -71,9 +71,7 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
   const futureL1DAIWormholeGatewayAddress =
     await getAddressOfNextDeployedContract(l1Signer);
 
-  const DOMAIN = `0x0${hre.ethers.utils
-    .formatBytes32String("GOERLI-SLAVE-STARKNET-1")
-    .slice(2, 65)}`;
+  const L2_SOURCE_DOMAIN = `0x${Buffer.from(`${ADDRESS_NETWORK}-SLAVE-STARKNET-1`, "utf8").toString("hex")}`;
   const l2DAIWormholeGateway = await deployL2(
     hre,
     "l2_dai_wormhole_gateway",
@@ -82,7 +80,7 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
       ward: asDec(deployer.starknetContract.address),
       dai: asDec(L2_DAI_ADDRESS),
       wormhole_gateway: asDec(futureL1DAIWormholeGatewayAddress),
-      domain: DOMAIN,
+      domain: L2_SOURCE_DOMAIN,
     }
   );
 

@@ -170,7 +170,8 @@ func valid_domains{
     return (res)
 end
 
-@view func batched_dai_to_flush{
+@view
+func batched_dai_to_flush{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr

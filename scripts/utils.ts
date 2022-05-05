@@ -24,6 +24,18 @@ import { assert } from "ts-essentials";
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
 
+export function l1String(str: string): string {
+  return ethers.utils.formatBytes32String(str);
+}
+
+export function l2String(str: string): string {
+  return `0x${Buffer.from(str, "utf8").toString("hex")}`;
+}
+
+export function toBytes32(x: string): string {
+  return `0x${x.slice(2).padStart(64, '0')}`;
+}
+
 export function getRequiredEnv(key: string): string {
   const value = process.env[key];
   assert(value, `Please provide ${key} in .env file`);
@@ -175,9 +187,9 @@ export function parseCalldataL1(calldata: string, network: string) {
     } else if (input === "DAI") {
       return getAddress("DAI", network);
     } else if (input === "GOERLI-MASTER-1") {
-      return `0x0${ethers.utils
-        .formatBytes32String("GOERLI-MASTER-1")
-        .slice(2, 65)}`;
+      return l1String(input);
+    } else if (input === "GOERLI-SLAVE-STARKNET-1") {
+      return l1String(input);
     } else if (input === "MAX") {
       return "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     } else {
@@ -230,9 +242,7 @@ export function parseCalldataL2(
         getAddress("l2_dai_wormhole_gateway", network)
       ).toString();
     } else if (input === "GOERLI-MASTER-1") {
-      res[inputName] = `0x0${ethers.utils
-        .formatBytes32String("GOERLI-MASTER-1")
-        .slice(2, 65)}`;
+      res[inputName] = l2String(input);
     } else if (inputType === "Uint256") {
       const low =
         input === "MAX_HALF" ? "0xffffffffffffffffffffffffffffffff" : input;

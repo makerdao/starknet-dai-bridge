@@ -40,8 +40,7 @@ func execute{
   }():
     let gateway = ${l2DAIWormholeGateway}
     let what = 'valid_domains'
-    # ethers.utils.formatBytes32String("GOERLI-MASTER-1") >> 4
-    let domain = 0x474f45524c492d4d41535445522d31000000000000000000000000000000000
+    let domain = 'GOERLI-MASTER-1'
     # file domain
     IGateway.file(gateway, what, domain, 1)
 
@@ -210,7 +209,7 @@ contract DssSpellAction is DssAction {
     oracleAuth.addSigners(oracles);
 
     // configure starknet wormhole
-    bytes32 slaveDomain = bytes32("GOERLI-SLAVE-STARKNET-1") >> 4;
+    bytes32 slaveDomain = bytes32("GOERLI-SLAVE-STARKNET-1");
     address constantFees = 0xd40EA2981B350D38281402c058b1Ef1058dbac53;
     address dai = 0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844;
 

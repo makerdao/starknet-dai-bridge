@@ -7,6 +7,7 @@ import {
   getRequiredEnvDeployer,
   parseCalldataL1,
   parseCalldataL2,
+  toBytes32,
 } from "./utils";
 
 task("invoke:l2", "Invoke an L2 contract")
@@ -67,9 +68,20 @@ task("call:l1", "Call an L1 contract")
     )) as any;
     const contractInstance = await contractFactory.attach(address);
     const _calldata = parseCalldataL1(calldata, NETWORK);
-    // @ts-ignore
-    const res = await contractInstance[func](..._calldata);
-    console.log("Response:", res);
+    let res;
+    if (func === "finalizeRegisterWormhole") {
+      console.log(_calldata);
+      res = await contractInstance[func]([
+        toBytes32(_calldata[0]),
+        toBytes32(_calldata[1]),
+        toBytes32(_calldata[2]),
+        toBytes32(_calldata[3]),
+        ..._calldata.slice(4),
+      ]);
+    } else {
+      res = await contractInstance[func](..._calldata);
+    }
+    console.log(`Response: ${res}`);
   });
 
 task("call-oracle", "Call an L1 contract").setAction(async (_, hre) => {

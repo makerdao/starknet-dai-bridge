@@ -16,8 +16,10 @@ import {
   toBytes32,
 } from "../utils";
 
-const TARGET_DOMAIN = "1";
-const SOURCE_DOMAIN = "2";
+const L1_TARGET_DOMAIN = ethers.utils.formatBytes32String("1");
+const L2_TARGET_DOMAIN = `0x${Buffer.from("1", "utf8").toString("hex")}`;
+const L1_SOURCE_DOMAIN = ethers.utils.formatBytes32String("2");
+const L2_SOURCE_DOMAIN = `0x${Buffer.from("2", "utf8").toString("hex")}`;
 // Cairo encoding of "valid_domains"
 const VALID_DOMAINS = "9379074284324409537785911406195";
 
@@ -81,7 +83,7 @@ describe("e2e", async function () {
       ward: asDec(l2Auth.starknetContract.address),
       dai: asDec(l2Dai.address),
       wormhole_gateway: asDec(futureL1DAIWormholeGatewayAddress),
-      domain: SOURCE_DOMAIN,
+      domain: L2_SOURCE_DOMAIN,
     });
     l1WormholeGateway = await simpleDeploy("L1DAIWormholeGateway", [
       mockStarknetMessaging.address,
@@ -100,7 +102,7 @@ describe("e2e", async function () {
 
     await l2Auth.invoke(l2WormholeGateway, "file", {
       what: VALID_DOMAINS,
-      domain: TARGET_DOMAIN,
+      domain: L2_TARGET_DOMAIN,
       data: 1,
     });
     await l1Bridge.connect(admin).setCeiling(MAX);
@@ -305,7 +307,7 @@ describe("e2e", async function () {
       const wormholeAmountL1 = eth("100");
       const wormholeAmountL2 = l2Eth("100");
       await l2Auth.invoke(l2WormholeGateway, "initiate_wormhole", {
-        target_domain: TARGET_DOMAIN,
+        target_domain: L2_TARGET_DOMAIN,
         receiver: asDec(l1Alice.address),
         amount: wormholeAmountL2.toDec()[0],
         operator: asDec(l1Alice.address),
@@ -314,7 +316,7 @@ describe("e2e", async function () {
         await getEvent("WormholeInitialized", l2WormholeGateway.address)
       ).slice(-2);
       await l2Auth.invoke(l2WormholeGateway, "finalize_register_wormhole", {
-        target_domain: TARGET_DOMAIN,
+        target_domain: L2_TARGET_DOMAIN,
         receiver: asDec(l1Alice.address),
         amount: wormholeAmountL2.toDec()[0],
         operator: asDec(l1Alice.address),
@@ -324,8 +326,8 @@ describe("e2e", async function () {
       await starknet.devnet.flush();
 
       const wormholeGUID = {
-        sourceDomain: toBytes32(SOURCE_DOMAIN), // bytes32
-        targetDomain: toBytes32(TARGET_DOMAIN), // bytes32
+        sourceDomain: toBytes32(L1_SOURCE_DOMAIN), // bytes32
+        targetDomain: toBytes32(L1_TARGET_DOMAIN), // bytes32
         receiver: toBytes32(l1Alice.address), // bytes32
         operator: toBytes32(l1Alice.address), // bytes32
         amount: wormholeAmountL1, // uint128
@@ -349,7 +351,7 @@ describe("e2e", async function () {
       // check that can't withdraw twice
       try {
         await l2Auth.invoke(l2WormholeGateway, "finalize_register_wormhole", {
-          target_domain: TARGET_DOMAIN,
+          target_domain: L2_TARGET_DOMAIN,
           receiver: asDec(l1Alice.address),
           amount: wormholeAmountL2.toDec()[0],
           operator: asDec(l1Alice.address),
@@ -369,22 +371,22 @@ describe("e2e", async function () {
         .deposit(depositAmountL1, l2Auth.starknetContract.address);
       const escrowBalance = await dai.balanceOf(escrow.address);
       const { res } = await l2WormholeGateway.call("batched_dai_to_flush", {
-        domain: TARGET_DOMAIN,
+        domain: L2_TARGET_DOMAIN,
       });
       const daiToFlush = new SplitUint(res);
       await l2Auth.invoke(l2WormholeGateway, "flush", {
-        target_domain: TARGET_DOMAIN,
+        target_domain: L2_TARGET_DOMAIN,
       });
       await starknet.devnet.flush();
 
       await expect(
         l1WormholeGateway
           .connect(l1Alice)
-          .finalizeFlush(toBytes32(TARGET_DOMAIN), daiToFlush.toUint())
+          .finalizeFlush(L1_TARGET_DOMAIN, daiToFlush.toUint())
       )
         .to.emit(wormholeRouterFake, "Settle")
         .withArgs(
-          `0x${toBytes32(TARGET_DOMAIN).slice(3, 66)}0`,
+          L1_TARGET_DOMAIN,
           daiToFlush.toUint()
         );
 
@@ -393,7 +395,7 @@ describe("e2e", async function () {
       );
       expect(
         await l2WormholeGateway.call("batched_dai_to_flush", {
-          domain: TARGET_DOMAIN,
+          domain: L2_TARGET_DOMAIN,
         })
       ).to.deep.eq(l2Eth("0"));
     });
