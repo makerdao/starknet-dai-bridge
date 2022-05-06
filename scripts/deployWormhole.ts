@@ -71,7 +71,10 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
   const futureL1DAIWormholeGatewayAddress =
     await getAddressOfNextDeployedContract(l1Signer);
 
-  const L2_SOURCE_DOMAIN = `0x${Buffer.from(`${ADDRESS_NETWORK}-SLAVE-STARKNET-1`, "utf8").toString("hex")}`;
+  const L2_SOURCE_DOMAIN = `0x${Buffer.from(
+    `${ADDRESS_NETWORK}-SLAVE-STARKNET-1`,
+    "utf8"
+  ).toString("hex")}`;
   const l2DAIWormholeGateway = await deployL2(
     hre,
     "l2_dai_wormhole_gateway",

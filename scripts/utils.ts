@@ -33,7 +33,7 @@ export function l2String(str: string): string {
 }
 
 export function toBytes32(x: string): string {
-  return `0x${x.slice(2).padStart(64, '0')}`;
+  return `0x${x.slice(2).padStart(64, "0")}`;
 }
 
 export function getRequiredEnv(key: string): string {

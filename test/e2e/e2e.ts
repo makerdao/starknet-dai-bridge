@@ -385,10 +385,7 @@ describe("e2e", async function () {
           .finalizeFlush(L1_TARGET_DOMAIN, daiToFlush.toUint())
       )
         .to.emit(wormholeRouterFake, "Settle")
-        .withArgs(
-          L1_TARGET_DOMAIN,
-          daiToFlush.toUint()
-        );
+        .withArgs(L1_TARGET_DOMAIN, daiToFlush.toUint());
 
       expect(await dai.balanceOf(escrow.address)).to.be.eq(
         BigInt(escrowBalance) - daiToFlush.toUint()
