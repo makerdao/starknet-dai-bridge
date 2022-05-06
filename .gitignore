@@ -8,7 +8,7 @@ build
 
 node_modules
 .env
-.env.deployer
+.env.*.deployer
 
 #Hardhat files
 cache
