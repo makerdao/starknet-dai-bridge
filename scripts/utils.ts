@@ -1,8 +1,7 @@
 /**
  * Full goerli deploy including any permissions that need to be set.
  */
-import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
-import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
+
 import { ethers } from "ethers";
 import {
   BaseContract,
@@ -19,6 +18,8 @@ import { getContractAddress, Result } from "ethers/lib/utils";
 import fs from "fs";
 import { isEmpty } from "lodash";
 import { assert } from "ts-essentials";
+import {StarknetContract} from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
+import resolve from "resolve";
 
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
@@ -344,9 +345,12 @@ export async function deployL1(
   saveName?: string
 ) {
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
+
+  const {network} = getNetwork(hre)
+
   const contractFactory = await hre.ethers.getContractFactory(name);
   const contract = await contractFactory.deploy(...calldata);
-  save(saveName || name, contract, hre.network.name, blockNumber);
+  save(saveName || name, contract, network, blockNumber);
 
   console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
   console.log(
@@ -365,16 +369,25 @@ export async function deployL2(
   calldata: any = {},
   saveName?: string
 ) {
-  const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
+  const {network} = getNetwork(hre)
+
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
   const contractFactory = await hre.starknet.getContractFactory(name);
 
   const contract = await contractFactory.deploy(calldata);
-  save(saveName || name, contract, hre.network.name, blockNumber);
+  save(saveName || name, contract, network, blockNumber);
 
   console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
   console.log(
-    `To verify: npx hardhat starknet-verify --starknet-network ${STARKNET_NETWORK} --path contracts/l2/${name}.cairo --address ${contract.address}`
+    `To verify: npx hardhat starknet-verify --starknet-network ${network} --path contracts/l2/${name}.cairo --address ${contract.address}`
   );
   return contract;
+}
+
+export function getNetwork(hre: any) {
+  const network = hre.config.starknet.network!;
+  assert(network === 'alpha-mainnet' || network === 'alpha-goerli', 'Network not properly set!')
+  const NETWORK = network.toUpperCase().replace(/[-]/g, '_')!
+
+  return { network, NETWORK }
 }

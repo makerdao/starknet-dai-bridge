@@ -51,7 +51,7 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   };
 }
 
-const config: HardhatUserConfig = {
+const config: any = {
   defaultNetwork: "hardhat",
   networks: {
     goerli: getChainConfig("goerli"),

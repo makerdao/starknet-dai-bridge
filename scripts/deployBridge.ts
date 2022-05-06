@@ -1,4 +1,3 @@
-import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
 import { expect } from "chai";
 import { task } from "hardhat/config";
 
@@ -9,7 +8,7 @@ import {
   getActiveWards,
   getAddress,
   getAddressOfNextDeployedContract,
-  getL2ContractAt,
+  getL2ContractAt, getNetwork,
   getOptionalEnv,
   getRequiredEnv,
   printAddresses,
@@ -18,38 +17,33 @@ import {
   wards,
   writeAddresses,
 } from "./utils";
+import {white} from "ansi-colors";
 
 task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   const [l1Signer] = await hre.ethers.getSigners();
 
-  const NETWORK = hre.network.name;
-  let ADDRESS_NETWORK;
-  if (NETWORK === "fork") {
-    ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
-  } else {
-    ADDRESS_NETWORK = NETWORK.toUpperCase();
-  }
-  const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
-  console.log(`Deploying bridge on ${NETWORK}/${STARKNET_NETWORK}`);
+  const { network, NETWORK} = getNetwork(hre)
 
-  const L1_DAI_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L1_DAI_ADDRESS`);
-  save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
+  console.log(`Deploying bridge on ${network}`);
+
+  const L1_DAI_ADDRESS = getRequiredEnv(`${NETWORK}_L1_DAI_ADDRESS`);
+  save("DAI", { address: L1_DAI_ADDRESS }, network);
 
   const L1_STARKNET_ADDRESS = getRequiredEnv(
-    `${ADDRESS_NETWORK}_L1_STARKNET_ADDRESS`
+    `${NETWORK}_L1_STARKNET_ADDRESS`
   );
   const L1_PAUSE_PROXY_ADDRESS = getRequiredEnv(
-    `${ADDRESS_NETWORK}_L1_PAUSE_PROXY_ADDRESS`
+    `${NETWORK}_L1_PAUSE_PROXY_ADDRESS`
   );
-  const L1_ESM_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L1_ESM_ADDRESS`);
+  const L1_ESM_ADDRESS = getRequiredEnv(`${NETWORK}_L1_ESM_ADDRESS`);
   const DENY_DEPLOYER = getRequiredEnv("DENY_DEPLOYER") === "true";
 
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
-  const DEPLOYER_KEY = getRequiredEnv(`DEPLOYER_ECDSA_PRIVATE_KEY`);
+  const DEPLOYER_KEY = getRequiredEnv(`${NETWORK}_DEPLOYER_ECDSA_PRIVATE_KEY`);
   const deployer = await hre.starknet.getAccountFromAddress(
-    getAddress("account-deployer", NETWORK),
+    getAddress("account-deployer", network),
     DEPLOYER_KEY,
     "OpenZeppelin"
   );
@@ -57,11 +51,9 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
     `Deploying from account: ${deployer.starknetContract.address.toString()}`
   );
 
-  const L2_DAI_ADDRESS = getOptionalEnv(
-    `${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS`
-  );
+  const L2_DAI_ADDRESS = getOptionalEnv(`${NETWORK}_L2_DAI_ADDRESS`);
   if (L2_DAI_ADDRESS) {
-    save("dai", { address: L2_DAI_ADDRESS }, NETWORK);
+    save("dai", { address: L2_DAI_ADDRESS }, network);
   }
 
   const l2DAI = L2_DAI_ADDRESS
@@ -94,11 +86,12 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   );
 
   const REGISTRY_ADDRESS = getOptionalEnv(
-    `${NETWORK.toUpperCase()}_REGISTRY_ADDRESS`
+    `${NETWORK}_REGISTRY_ADDRESS`
   );
   if (REGISTRY_ADDRESS) {
-    save("registry", { address: REGISTRY_ADDRESS }, NETWORK);
+    save("registry", { address: REGISTRY_ADDRESS }, network);
   }
+
   const registry = REGISTRY_ADDRESS
     ? await getL2ContractAt(hre, "registry", REGISTRY_ADDRESS)
     : await deployL2(hre, "registry", BLOCK_NUMBER);
