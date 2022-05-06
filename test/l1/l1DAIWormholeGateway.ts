@@ -58,10 +58,7 @@ describe("l1:L1DAIWormholeGateway", () => {
         l2WormholeGatewayAddress,
       } = await setupTest();
 
-      await l1WormholeGateway.finalizeFlush(
-        L1_TARGET_DOMAIN,
-        AMOUNT
-      );
+      await l1WormholeGateway.finalizeFlush(L1_TARGET_DOMAIN, AMOUNT);
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
