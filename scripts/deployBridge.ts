@@ -18,7 +18,6 @@ import {
   wards,
   writeAddresses,
 } from "./utils";
-import { white } from "ansi-colors";
 
 task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   const [l1Signer] = await hre.ethers.getSigners();

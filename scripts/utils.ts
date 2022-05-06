@@ -2,6 +2,7 @@
  * Full goerli deploy including any permissions that need to be set.
  */
 
+import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
 import { ethers } from "ethers";
 import {
   BaseContract,
@@ -18,8 +19,6 @@ import { getContractAddress, Result } from "ethers/lib/utils";
 import fs from "fs";
 import { isEmpty } from "lodash";
 import { assert } from "ts-essentials";
-import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
-import resolve from "resolve";
 
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
