@@ -14,7 +14,7 @@
     "compile:l2": "hardhat starknet-compile",
     "compile": "yarn compile",
     "chain:l1": "hardhat node",
-    "chain:l2": "starknet-devnet --load-path ~/devnet --dump-on exit --dump-path ~/devnet",
+    "chain:l2": "starknet-devnet",
     "chain:l2:ci": "starknet-devnet",
     "chain": "concurrently 'yarn chain:l1' 'yarn chain:l2'",
     "chain:ci": "concurrently 'NODE_ENV=test yarn chain:l1' 'yarn chain:l2:ci'",
