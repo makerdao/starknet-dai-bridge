@@ -1,11 +1,10 @@
 import fs from "fs";
 import { task } from "hardhat/config";
 
-import {getNetwork, save} from "./utils";
+import { getNetwork, save } from "./utils";
 
 task("deploy-deployer", "Deploy deployer").setAction(async (_, hre) => {
-
-  const { network, NETWORK } = getNetwork(hre)
+  const { network, NETWORK } = getNetwork(hre);
 
   console.log(`Deploying deployer on ${network}`);
 

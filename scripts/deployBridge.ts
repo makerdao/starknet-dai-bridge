@@ -8,7 +8,8 @@ import {
   getActiveWards,
   getAddress,
   getAddressOfNextDeployedContract,
-  getL2ContractAt, getNetwork,
+  getL2ContractAt,
+  getNetwork,
   getOptionalEnv,
   getRequiredEnv,
   printAddresses,
@@ -17,21 +18,19 @@ import {
   wards,
   writeAddresses,
 } from "./utils";
-import {white} from "ansi-colors";
+import { white } from "ansi-colors";
 
 task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   const [l1Signer] = await hre.ethers.getSigners();
 
-  const { network, NETWORK} = getNetwork(hre)
+  const { network, NETWORK } = getNetwork(hre);
 
   console.log(`Deploying bridge on ${network}`);
 
   const L1_DAI_ADDRESS = getRequiredEnv(`${NETWORK}_L1_DAI_ADDRESS`);
   save("DAI", { address: L1_DAI_ADDRESS }, network);
 
-  const L1_STARKNET_ADDRESS = getRequiredEnv(
-    `${NETWORK}_L1_STARKNET_ADDRESS`
-  );
+  const L1_STARKNET_ADDRESS = getRequiredEnv(`${NETWORK}_L1_STARKNET_ADDRESS`);
   const L1_PAUSE_PROXY_ADDRESS = getRequiredEnv(
     `${NETWORK}_L1_PAUSE_PROXY_ADDRESS`
   );
@@ -85,9 +84,7 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
     "futureL1GovRelayAddress != l1GovernanceRelay.address"
   );
 
-  const REGISTRY_ADDRESS = getOptionalEnv(
-    `${NETWORK}_REGISTRY_ADDRESS`
-  );
+  const REGISTRY_ADDRESS = getOptionalEnv(`${NETWORK}_REGISTRY_ADDRESS`);
   if (REGISTRY_ADDRESS) {
     save("registry", { address: REGISTRY_ADDRESS }, network);
   }

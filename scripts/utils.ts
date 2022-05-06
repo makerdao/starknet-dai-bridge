@@ -18,7 +18,7 @@ import { getContractAddress, Result } from "ethers/lib/utils";
 import fs from "fs";
 import { isEmpty } from "lodash";
 import { assert } from "ts-essentials";
-import {StarknetContract} from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
+import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
 import resolve from "resolve";
 
 const DEPLOYMENTS_DIR = `deployments`;
@@ -346,7 +346,7 @@ export async function deployL1(
 ) {
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
 
-  const {network} = getNetwork(hre)
+  const { network } = getNetwork(hre);
 
   const contractFactory = await hre.ethers.getContractFactory(name);
   const contract = await contractFactory.deploy(...calldata);
@@ -369,7 +369,7 @@ export async function deployL2(
   calldata: any = {},
   saveName?: string
 ) {
-  const {network} = getNetwork(hre)
+  const { network } = getNetwork(hre);
 
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
   const contractFactory = await hre.starknet.getContractFactory(name);
@@ -386,8 +386,11 @@ export async function deployL2(
 
 export function getNetwork(hre: any) {
   const network = hre.config.starknet.network!;
-  assert(network === 'alpha-mainnet' || network === 'alpha-goerli', 'Network not properly set!')
-  const NETWORK = network.toUpperCase().replace(/[-]/g, '_')!
+  assert(
+    network === "alpha-mainnet" || network === "alpha-goerli",
+    "Network not properly set!"
+  );
+  const NETWORK = network.toUpperCase().replace(/[-]/g, "_")!;
 
-  return { network, NETWORK }
+  return { network, NETWORK };
 }
