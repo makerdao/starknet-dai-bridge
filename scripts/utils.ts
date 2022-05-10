@@ -2,7 +2,10 @@
  * Full goerli deploy including any permissions that need to be set.
  */
 
-import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
+import {
+  DeployOptions,
+  StarknetContract,
+} from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
 import { ethers } from "ethers";
 import {
   BaseContract,
@@ -104,18 +107,21 @@ export async function getAddressOfNextDeployedContract(
 export async function waitForTx(
   tx: Promise<any>
 ): Promise<providers.TransactionReceipt> {
+  console.log(`Sending transaction...`);
   const resolvedTx = await tx;
+  console.log(`Waiting for tx: ${resolvedTx.hash}`);
   return await resolvedTx.wait();
 }
 
 export function getAddress(contract: string, network: string) {
+  console.log(`reading: ./deployments/${network}/${contract}.json`);
   try {
     return JSON.parse(
       fs.readFileSync(`./deployments/${network}/${contract}.json`).toString()
     ).address;
   } catch (err) {
-    if (process.env[`${network.toUpperCase()}_${contract}`]) {
-      return process.env[`${network.toUpperCase()}_${contract}`];
+    if (process.env[`${getNetworkUpperCase(network)}_${contract}`]) {
+      return process.env[`${getNetworkUpperCase(network)}_${contract}`];
     } else {
       throw Error(
         `${contract} deployment on ${network} not found, run 'yarn deploy:${network}'`
@@ -244,9 +250,10 @@ export function getSelectorFromName(name: string) {
   ).toString();
 }
 
-export function printAddresses(hre: any, includeWormhole: boolean = false) {
-  const NETWORK = hre.network.name;
-
+export function printAddresses(
+  network: string,
+  includeWormhole: boolean = false
+) {
   let contracts = [
     "account-deployer",
     "dai",
@@ -267,13 +274,14 @@ export function printAddresses(hre: any, includeWormhole: boolean = false) {
   }
 
   const addresses = contracts.reduce(
-    (a, c) => Object.assign(a, { [c]: getAddress(c, NETWORK) }),
+    (a, c) => Object.assign(a, { [c]: getAddress(c, network) }),
     {}
   );
 
   console.log(addresses);
 }
 
+//TODO: handle addresses here
 export function writeAddresses(hre: any, includeWormhole: boolean = false) {
   const NETWORK = hre.network.name;
   let ADDRESS_NETWORK: string;
@@ -351,13 +359,18 @@ export async function deployL1(
   const contract = await contractFactory.deploy(...calldata);
   save(saveName || name, contract, network, blockNumber);
 
-  console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
   console.log(
     `To verify: npx hardhat verify ${contract.address} ${calldata
       .filter((a: any) => !isEmpty(a))
       .join(" ")}`
   );
   await contract.deployed();
+  console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
+  console.log(
+    `To verify: npx hardhat verify ${contract.address} ${calldata
+      .filter((a: any) => !isEmpty(a))
+      .join(" ")}`
+  );
   return contract;
 }
 
@@ -366,6 +379,7 @@ export async function deployL2(
   name: string,
   blockNumber: number,
   calldata: any = {},
+  options: DeployOptions = {},
   saveName?: string
 ) {
   const { network } = getNetwork(hre);
@@ -373,7 +387,7 @@ export async function deployL2(
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
   const contractFactory = await hre.starknet.getContractFactory(name);
 
-  const contract = await contractFactory.deploy(calldata);
+  const contract = await contractFactory.deploy(calldata, options);
   save(saveName || name, contract, network, blockNumber);
 
   console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
@@ -389,7 +403,10 @@ export function getNetwork(hre: any) {
     network === "alpha-mainnet" || network === "alpha-goerli",
     "Network not properly set!"
   );
-  const NETWORK = network.toUpperCase().replace(/[-]/g, "_")!;
-
+  const NETWORK = getNetworkUpperCase(network);
   return { network, NETWORK };
+}
+
+function getNetworkUpperCase(network: string) {
+  return network.toUpperCase().replace(/[-]/g, "_")!;
 }

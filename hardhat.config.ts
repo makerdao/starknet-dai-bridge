@@ -39,15 +39,31 @@ if (!infuraApiKey) {
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;
+
+  const common = {
+    chainId: chainIds[network],
+    url,
+    gasMultiplier: 1.5,
+  };
+  if (
+    network === "mainnet" &&
+    process.env.STARKNET_NETWORK === "alpha-mainnet" &&
+    process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"]
+  ) {
+    return {
+      ...common,
+      accounts: [process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"]],
+      gasMultiplier: 3,
+    };
+  }
+
   return {
+    ...common,
     accounts: {
       count: 10,
       mnemonic,
       path: "m/44'/60'/0'/0",
     },
-    chainId: chainIds[network],
-    url,
-    gasMultiplier: 1.5,
   };
 }
 
