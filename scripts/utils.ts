@@ -349,6 +349,7 @@ export async function deployL1(
   name: string,
   blockNumber: number,
   calldata: any = [],
+  overrides: any = {},
   saveName?: string
 ) {
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
@@ -356,15 +357,11 @@ export async function deployL1(
   const { network } = getNetwork(hre);
 
   const contractFactory = await hre.ethers.getContractFactory(name);
-  const contract = await contractFactory.deploy(...calldata);
+  const contract = await contractFactory.deploy(...calldata, overrides);
   save(saveName || name, contract, network, blockNumber);
 
-  console.log(
-    `To verify: npx hardhat verify ${contract.address} ${calldata
-      .filter((a: any) => !isEmpty(a))
-      .join(" ")}`
-  );
   await contract.deployed();
+
   console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
   console.log(
     `To verify: npx hardhat verify ${contract.address} ${calldata

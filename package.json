@@ -21,6 +21,7 @@
     "deploy-bridge:goerli": "STARKNET_NETWORK=alpha-goerli hardhat deploy-bridge --network goerli",
     "deploy-deployer:mainnet": "STARKNET_NETWORK=alpha-mainnet hardhat deploy-deployer --network mainnet",
     "deploy-bridge:mainnet": "STARKNET_NETWORK=alpha-mainnet hardhat deploy-bridge --network mainnet",
+    "deploy-bridge-upgrade:mainnet": "STARKNET_NETWORK=alpha-mainnet hardhat deploy-bridge-upgrade --network mainnet",
     "account:create": "hardhat account:create --network goerli",
     "account:get": "hardhat account:get --network goerli",
     "call:l1": "hardhat call:l1 --network goerli",

@@ -161,10 +161,10 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   }
 
   console.log("Finalizing permissions for L1DAIBridge...");
-  await waitForTx(l1DAIBridge.rely(L1_PAUSE_PROXY_ADDRESS));
-  await waitForTx(l1DAIBridge.rely(L1_ESM_ADDRESS));
+  await waitForTx(l1DAIBridge.rely(L1_PAUSE_PROXY_ADDRESS, overrides));
+  await waitForTx(l1DAIBridge.rely(L1_ESM_ADDRESS, overrides));
   if (DENY_DEPLOYER) {
-    await waitForTx(l1DAIBridge.deny(await l1Signer.getAddress()));
+    await waitForTx(l1DAIBridge.deny(await l1Signer.getAddress(), overrides));
   }
 
   console.log("Finalizing permissions for L1GovernanceRelay...");
