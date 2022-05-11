@@ -8,6 +8,7 @@ import "./scripts/interact";
 import "./scripts/deployDeployer";
 import "./scripts/deployBridge";
 import "./scripts/deployBridgeUpgrade";
+import "./scripts/deployEscrowMom";
 import "./scripts/account";
 import "./scripts/fork";
 
