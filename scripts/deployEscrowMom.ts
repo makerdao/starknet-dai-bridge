@@ -4,7 +4,8 @@ import { utils } from "ethers";
 import { task } from "hardhat/config";
 
 import {
-  deployL1, getL1ContractAt,
+  deployL1,
+  getL1ContractAt,
   getNetwork,
   getOptionalEnv,
   getRequiredEnv,
@@ -20,7 +21,7 @@ task("deploy-escrow-mom", "Deploy L1EscrowMom").setAction(async (_, hre) => {
 
   const L1_DAI_ADDRESS = getRequiredEnv(`${NETWORK}_L1_DAI_ADDRESS`);
   const L1_ESCROW_ADDRESS = getRequiredEnv(`${NETWORK}_L1_ESCROW_ADDRESS`);
-  const L1_CHIEF_ADDRESS = getRequiredEnv(`${NETWORK}_L1_CHIEF_ADDRESS`);
+  // const L1_CHIEF_ADDRESS = getRequiredEnv(`${NETWORK}_L1_CHIEF_ADDRESS`);
 
   const L1_PAUSE_PROXY_ADDRESS = getRequiredEnv(
     `${NETWORK}_L1_PAUSE_PROXY_ADDRESS`
