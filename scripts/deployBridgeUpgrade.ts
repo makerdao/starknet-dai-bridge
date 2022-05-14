@@ -157,14 +157,6 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     // await deployer.invoke(l2DAI, "rely", {
     //   user: asDec(l2DAIBridge.address),
     // });
-    // await deployer.invoke(l2DAI, "rely", {
-    //   user: asDec(l2GovernanceRelay.address),
-    // });
-    // if (DENY_DEPLOYER) {
-    //   await deployer.invoke(l2DAI, "deny", {
-    //     user: asDec(deployer.starknetContract.address),
-    //   });
-    // }
 
     console.log("Finalizing permissions for l2_dai_bridge...");
     await deployer.invoke(l2DAIBridge, "rely", {
