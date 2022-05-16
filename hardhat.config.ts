@@ -11,6 +11,7 @@ import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
 import "./scripts/account";
 import "./scripts/fork";
+import "./scripts/wards";
 
 import { config as dotenvConfig } from "dotenv";
 // import { HardhatUserConfig } from "hardhat/config";
