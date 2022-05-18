@@ -273,7 +273,7 @@ function encodeHex(_: any) {
 
 export async function mintEther(
   address: string,
-  provider: ethers.providers.JsonRpcProvider,
+  provider: JsonRpcProvider,
   amt = toWad(1000000)
 ): Promise<void> {
   await provider.send("hardhat_setBalance", [address, encodeHex(amt)]);
@@ -287,8 +287,8 @@ const WAD = new BigNumber(10).pow(18);
 
 export async function impersonateAccount(
   address: string,
-  provider: ethers.providers.JsonRpcProvider
-): Promise<ethers.Signer> {
+  provider: JsonRpcProvider
+): Promise<Signer> {
   await provider.send("hardhat_impersonateAccount", [address]);
 
   await mintEther(address, provider);
