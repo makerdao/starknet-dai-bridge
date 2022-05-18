@@ -32,7 +32,7 @@ interface VatLike {
   ) external;
 }
 
-interface WormholeJoinLike {
+interface TeleportJoinLike {
   function file(bytes32 what, address val) external;
 
   function file(
@@ -87,7 +87,7 @@ contract DssSpellAction is DssAction {
   uint256 public constant RAY = 10**27;
   uint256 public constant RAD = 10**45;
 
-  string public constant override description = "Gorli Starknet Wormhole deployment spell";
+  string public constant override description = "Gorli Starknet Teleport deployment spell";
 
   function officeHours() public pure override returns (bool) {
     return false;
@@ -105,9 +105,9 @@ contract DssSpellAction is DssAction {
   //      L1GovernanceRelay: '0x73c0049Dd6560E644984Fa3Af30A55a02a7D81fB'
   //    }
 
-  // And basic dss-wormhole deployment
-  // deployed with: https://github.com/makerdao/wormhole-integration-tests/pull/42
-  // Wormhole:  {
+  // And basic dss-teleport deployment
+  // deployed with: https://github.com/makerdao/teleport-integration-tests/pull/42
+  // Teleport:  {
   //  "join": "0x7954DA41E6D18e25Ad6365a146091c9D75E4b568",
   //  "oracleAuth": "0x70FEdb21fF40E8bAf9f1a631fA9c34F179f29442",
   //  "router": "0xac22Eea777cd98A357f2E2f26e7Acd37651DBA9c",
@@ -117,7 +117,7 @@ contract DssSpellAction is DssAction {
 
   function actions() public override {
     bytes32 masterDomain = bytes32("GOERLI-MASTER-1") >> 4;
-    WormholeJoinLike wormholeJoin = WormholeJoinLike(0x7954DA41E6D18e25Ad6365a146091c9D75E4b568);
+    TeleportJoinLike teleportJoin = TeleportJoinLike(0x7954DA41E6D18e25Ad6365a146091c9D75E4b568);
     address vow = 0x23f78612769b9013b3145E43896Fa1578cAa2c2a;
     VatLike vat = VatLike(0xB966002DDAa2Baf48369f5015329750019736031);
     uint256 globalLine = 10000000000 * RAD;
@@ -132,17 +132,17 @@ contract DssSpellAction is DssAction {
     oracles[4] = 0xc65EF2D17B05ADbd8e4968bCB01b325ab799aBd8; // PECU
     oracles[5] = 0xFc7D8Fc1dA7037A392031b763b8277CC7a789d57; // Starknet Oracle
   
-    wormholeJoin.file(bytes32("vow"), vow);
-    router.file(bytes32("gateway"), masterDomain, address(wormholeJoin));
-    vat.rely(address(wormholeJoin));
-    bytes32 ilk = wormholeJoin.ilk();
+    teleportJoin.file(bytes32("vow"), vow);
+    router.file(bytes32("gateway"), masterDomain, address(teleportJoin));
+    vat.rely(address(teleportJoin));
+    bytes32 ilk = teleportJoin.ilk();
     vat.init(ilk);
     vat.file(ilk, bytes32("spot"), RAY);
     vat.file(ilk, bytes32("line"), globalLine);
     oracleAuth.file(bytes32("threshold"), 1);
     oracleAuth.addSigners(oracles);
 
-    // configure starknet wormhole
+    // configure starknet teleport
     bytes32 slaveDomain = bytes32("GOERLI-SLAVE-STARKNET-1") >> 4;
     address constantFees = 0xd40EA2981B350D38281402c058b1Ef1058dbac53;
     address dai = 0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844;
@@ -154,15 +154,15 @@ contract DssSpellAction is DssAction {
     uint256 l2ConfigureDomainSpell = 0x0731c32f2558a306e1e7c6faa8850f8e9eafd85cecb945e25a12c24a119d1fc7;
 
     router.file(bytes32("gateway"), slaveDomain, slaveDomainGateway);
-    wormholeJoin.file(bytes32("fees"), slaveDomain, constantFees);
-    wormholeJoin.file(bytes32("line"), slaveDomain, 100*RAD);
+    teleportJoin.file(bytes32("fees"), slaveDomain, constantFees);
+    teleportJoin.file(bytes32("line"), slaveDomain, 100*RAD);
     escrow.approve(dai, slaveDomainGateway, type(uint256).max);
     l1Bridge.setCeiling(100000*WAD);
     l1GovRelay.relay(l2ConfigureDomainSpell);
   }
 }
 
-contract L1GoerliAddWormholeDomainSpell is DssExec {
+contract L1GoerliAddTeleportDomainSpell is DssExec {
   constructor() DssExec(block.timestamp + 30 days, address(new DssSpellAction())) {}
 }
     

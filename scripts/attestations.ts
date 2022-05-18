@@ -2,7 +2,7 @@ import assert from "assert";
 import { BigNumber, Wallet } from "ethers";
 import { arrayify, hashMessage, keccak256 } from "ethers/lib/utils";
 
-interface WormholeGUID {
+interface TeleportGUID {
   sourceDomain: string;
   targetDomain: string;
   receiver: string;
@@ -19,8 +19,8 @@ function getRequiredEnv(key: string): string {
   return value;
 }
 
-async function signWormholeData(
-  wormholeData: string,
+async function signTeleportData(
+  teleportData: string,
   signers: any
 ): Promise<{ signHash: string; signatures: string }> {
   signers = signers.sort((s1: any, s2: any) => {
@@ -31,7 +31,7 @@ async function signWormholeData(
     return 0;
   });
 
-  const guidHash = keccak256(wormholeData);
+  const guidHash = keccak256(teleportData);
   const sigs = await Promise.all(
     signers.map((signer: any) => signer.signMessage(arrayify(guidHash)))
   );
@@ -42,7 +42,7 @@ async function signWormholeData(
 
 export async function generateAttestation(
   eventData: any[]
-): Promise<{ signatures: string; wormholeGUID: WormholeGUID }> {
+): Promise<{ signatures: string; teleportGUID: TeleportGUID }> {
   const sourceDomain = `0x${BigInt(eventData[0])
     .toString(16)
     .padStart(64, "0")}`;
@@ -66,10 +66,10 @@ export async function generateAttestation(
 
   const oracleMnemonic = getRequiredEnv("ORACLE_MNEMONIC");
   const oracleWallet = Wallet.fromMnemonic(oracleMnemonic);
-  const { signatures } = await signWormholeData(message, [oracleWallet]);
+  const { signatures } = await signTeleportData(message, [oracleWallet]);
   return {
     signatures,
-    wormholeGUID: {
+    teleportGUID: {
       sourceDomain,
       targetDomain,
       receiver,

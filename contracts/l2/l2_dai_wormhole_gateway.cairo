@@ -52,7 +52,7 @@ func File(what : felt, domain : felt, data : felt):
 end
 
 @event
-func WormholeInitialized(
+func TeleportInitialized(
   source_domain : felt,
   target_domain : felt,
   receiver : felt,
@@ -79,7 +79,7 @@ func _dai() -> (res : felt):
 end
 
 @storage_var
-func _wormhole_gateway() -> (res : felt):
+func _teleport_gateway() -> (res : felt):
 end
 
 @storage_var
@@ -98,7 +98,7 @@ end
 func _wards(user : felt) -> (res : felt):
 end
 
-struct WormholeData:
+struct TeleportData:
   member target_domain: felt
   member receiver: felt
   member operator: felt
@@ -107,7 +107,7 @@ struct WormholeData:
 end
 
 @storage_var
-func _wormholes(nonce : felt) -> (res : WormholeData):
+func _teleports(nonce : felt) -> (res : TeleportData):
 end
 
 @view
@@ -141,12 +141,12 @@ func dai{
 end
 
 @view
-func wormhole_gateway{
+func teleport_gateway{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }() -> (res : felt):
-    let (res) = _wormhole_gateway.read()
+    let (res) = _teleport_gateway.read()
     return (res)
 end
 
@@ -197,7 +197,7 @@ func auth{
   }():
     let (caller) = get_caller_address()
     let (ward) = _wards.read(caller)
-    with_attr error_message("l2_dai_wormhole_gateway/not-authorized"):
+    with_attr error_message("l2_dai_teleport_gateway/not-authorized"):
       assert ward = 1
     end
     return ()
@@ -209,7 +209,7 @@ func read_and_update_nonce{
     range_check_ptr
   }() -> (res : felt):
     let (nonce) = _nonce.read()
-    with_attr error_message("l2_dai_wormhole_gateway/nonce-overflow"):
+    with_attr error_message("l2_dai_teleport_gateway/nonce-overflow"):
       assert_lt(nonce, MAX_NONCE)
     end
     _nonce.write(nonce+1)
@@ -266,7 +266,7 @@ func constructor{
   }(
     ward : felt,
     dai : felt,
-    wormhole_gateway: felt,
+    teleport_gateway: felt,
     domain : felt,
   ):
     _wards.write(ward, 1)
@@ -275,7 +275,7 @@ func constructor{
 
     _is_open.write(1)
     _dai.write(dai)
-    _wormhole_gateway.write(wormhole_gateway)
+    _teleport_gateway.write(teleport_gateway)
     _domain.write(domain)
 
     return ()
@@ -291,11 +291,11 @@ func file{
     domain : felt,
     data : felt,
   ):
-    with_attr error_message("l2_dai_wormhole_gateway/invalid-file"):
+    with_attr error_message("l2_dai_teleport_gateway/invalid-file"):
       assert what = valid_domains_file
     end
 
-    with_attr error_message("l2_dai_wormhole_gateway/invalid-data"):
+    with_attr error_message("l2_dai_teleport_gateway/invalid-data"):
       assert (1 - data)*data = 0
     end
 
@@ -307,7 +307,7 @@ func file{
 end
 
 @external
-func initiate_wormhole{
+func initiate_teleport{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
@@ -318,19 +318,19 @@ func initiate_wormhole{
     operator : felt
   ):
     let (is_open) = _is_open.read()
-    with_attr error_message("l2_dai_wormhole_gateway/gateway-closed"):
+    with_attr error_message("l2_dai_teleport_gateway/gateway-closed"):
       assert is_open = 1
     end
 
     # valid domain check
     let (valid_domain) = _valid_domains.read(target_domain)
-    with_attr error_message("l2_dai_wormhole_gateway/invalid-domain"):
+    with_attr error_message("l2_dai_teleport_gateway/invalid-domain"):
       assert valid_domain = 1
     end
 
     # amount should be uint128
     let amount_uint256 = Uint256(low=amount, high=0)
-    with_attr error_message("l2_dai_wormhole_gateway/invalid-amount"):
+    with_attr error_message("l2_dai_teleport_gateway/invalid-amount"):
       uint256_check(amount_uint256)
     end
 
@@ -356,7 +356,7 @@ func initiate_wormhole{
     let (timestamp) = get_block_timestamp()
     assert payload[7] = timestamp
 
-    WormholeInitialized.emit(
+    TeleportInitialized.emit(
       source_domain=domain,
       target_domain=target_domain,
       receiver=receiver,
@@ -365,16 +365,16 @@ func initiate_wormhole{
       nonce=nonce,
       timestamp=timestamp)
 
-    _wormholes.write(
+    _teleports.write(
       nonce,
-      WormholeData(target_domain, receiver, operator, amount, timestamp)
+      TeleportData(target_domain, receiver, operator, amount, timestamp)
     )
 
     return ()
 end
 
 @external
-func finalize_register_wormhole{
+func finalize_register_teleport{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
@@ -387,7 +387,7 @@ func finalize_register_wormhole{
     timestamp : felt
   ):
     let (is_open) = _is_open.read()
-    with_attr error_message("l2_dai_wormhole_gateway/gateway-closed"):
+    with_attr error_message("l2_dai_teleport_gateway/gateway-closed"):
       assert is_open = 1
     end
     let (domain) = _domain.read()
@@ -402,17 +402,17 @@ func finalize_register_wormhole{
     assert payload[6] = nonce
     assert payload[7] = timestamp
 
-    let (wormhole) = _wormholes.read(nonce)
-    with_attr error_message("l2_dai_wormhole_gateway/wormhole-does-not-exist"):
-      assert target_domain = wormhole.target_domain
-      assert receiver = wormhole.receiver
-      assert operator = wormhole.operator
-      assert amount = wormhole.amount
-      assert timestamp = wormhole.timestamp
+    let (teleport) = _teleports.read(nonce)
+    with_attr error_message("l2_dai_teleport_gateway/teleport-does-not-exist"):
+      assert target_domain = teleport.target_domain
+      assert receiver = teleport.receiver
+      assert operator = teleport.operator
+      assert amount = teleport.amount
+      assert timestamp = teleport.timestamp
     end
 
-    let (wormhole_gateway) = _wormhole_gateway.read()
-    send_message_to_l1(wormhole_gateway, 8, payload)
+    let (teleport_gateway) = _teleport_gateway.read()
+    send_message_to_l1(teleport_gateway, 8, payload)
 
     return ()
 end
@@ -422,7 +422,7 @@ func uint256_assert_not_zero{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(a : Uint256):
-    with_attr error_message("l2_dai_wormhole_gateway/value-is-zero"):
+    with_attr error_message("l2_dai_teleport_gateway/value-is-zero"):
       assert_not_zero(a.low + a.high)
     end
 
@@ -448,9 +448,9 @@ func flush{
     assert payload[2] = dai_to_flush.low
     assert payload[3] = dai_to_flush.high
 
-    let (wormhole_gateway) = _wormhole_gateway.read()
+    let (teleport_gateway) = _teleport_gateway.read()
 
-    send_message_to_l1(wormhole_gateway, 4, payload)
+    send_message_to_l1(teleport_gateway, 4, payload)
 
     Flushed.emit(target_domain=target_domain, dai=dai_to_flush)
 
@@ -463,7 +463,7 @@ func uint256_add_safe{
     range_check_ptr
   }(a : Uint256, b : Uint256) -> (sum : Uint256):
     let (sum, carry) = uint256_add(a, b)
-    with_attr error_message("l2_dai_wormhole_gateway/uint256-overflow"):
+    with_attr error_message("l2_dai_teleport_gateway/uint256-overflow"):
       assert carry = 0
     end
     return (sum)

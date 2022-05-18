@@ -15,8 +15,8 @@ import {
   getRequiredEnvDeployments,
 } from "./utils";
 
-task("create-wormhole-spell-l2", "Create L2 spell").setAction(async () => {
-  const l2DAIWormholeGateway = getRequiredEnvDeployments(
+task("create-teleport-spell-l2", "Create L2 spell").setAction(async () => {
+  const l2DAITeleportGateway = getRequiredEnvDeployments(
     "GOERLI_L2_DAI_WORMHOLE_GATEWAY_ADDRESS"
   );
 
@@ -38,7 +38,7 @@ func execute{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }():
-    let gateway = ${l2DAIWormholeGateway}
+    let gateway = ${l2DAITeleportGateway}
     let what = 'valid_domains'
     let domain = 'GOERLI-MASTER-1'
     # file domain
@@ -48,13 +48,13 @@ func execute{
 end`;
 
   fs.writeFileSync(
-    "./contracts/deploy/goerli/L2GoerliAddWormholeDomainSpell.cairo",
+    "./contracts/deploy/goerli/L2GoerliAddTeleportDomainSpell.cairo",
     spell
   );
 });
 
-task("create-wormhole-spell-l1", "Create L1 spell").setAction(async () => {
-  const l1DAIWormholeGateway = getRequiredEnvDeployments(
+task("create-teleport-spell-l1", "Create L1 spell").setAction(async () => {
+  const l1DAITeleportGateway = getRequiredEnvDeployments(
     "GOERLI_L1_DAI_WORMHOLE_GATEWAY_ADDRESS"
   );
   const escrow = getRequiredEnvDeployments("GOERLI_L1_ESCROW_ADDRESS");
@@ -62,7 +62,7 @@ task("create-wormhole-spell-l1", "Create L1 spell").setAction(async () => {
   const l1GovernanceRelay = getRequiredEnvDeployments(
     "GOERLI_L1_GOVERNANCE_RELAY_ADDRESS"
   );
-  const l2Spell = getAddress("L2GoerliAddWormholeDomainSpell", "fork");
+  const l2Spell = getAddress("L2GoerliAddTeleportDomainSpell", "fork");
 
   const spell = `
 // SPDX-License-Identifier: AGPL-3.0-or-later
@@ -98,7 +98,7 @@ interface VatLike {
   ) external;
 }
 
-interface WormholeJoinLike {
+interface TeleportJoinLike {
   function file(bytes32 what, address val) external;
 
   function file(
@@ -153,7 +153,7 @@ contract DssSpellAction is DssAction {
   uint256 public constant RAY = 10**27;
   uint256 public constant RAD = 10**45;
 
-  string public constant override description = "Goerli Starknet Wormhole deployment spell";
+  string public constant override description = "Goerli Starknet Teleport deployment spell";
 
   function officeHours() public pure override returns (bool) {
     return false;
@@ -171,9 +171,9 @@ contract DssSpellAction is DssAction {
   //      L1GovernanceRelay: '0x73c0049Dd6560E644984Fa3Af30A55a02a7D81fB'
   //    }
 
-  // And basic dss-wormhole deployment
-  // deployed with: https://github.com/makerdao/wormhole-integration-tests/pull/42
-  // Wormhole:  {
+  // And basic dss-teleport deployment
+  // deployed with: https://github.com/makerdao/teleport-integration-tests/pull/42
+  // Teleport:  {
   //  "join": "0x7954DA41E6D18e25Ad6365a146091c9D75E4b568",
   //  "oracleAuth": "0x70FEdb21fF40E8bAf9f1a631fA9c34F179f29442",
   //  "router": "0xac22Eea777cd98A357f2E2f26e7Acd37651DBA9c",
@@ -183,7 +183,7 @@ contract DssSpellAction is DssAction {
 
   function actions() public override {
     bytes32 masterDomain = bytes32("GOERLI-MASTER-1");
-    WormholeJoinLike wormholeJoin = WormholeJoinLike(0x7954DA41E6D18e25Ad6365a146091c9D75E4b568);
+    TeleportJoinLike teleportJoin = TeleportJoinLike(0x7954DA41E6D18e25Ad6365a146091c9D75E4b568);
     address vow = 0x23f78612769b9013b3145E43896Fa1578cAa2c2a;
     VatLike vat = VatLike(0xB966002DDAa2Baf48369f5015329750019736031);
     uint256 globalLine = 10000000000 * RAD;
@@ -198,53 +198,53 @@ contract DssSpellAction is DssAction {
     oracles[4] = 0xc65EF2D17B05ADbd8e4968bCB01b325ab799aBd8; // PECU
     oracles[5] = 0xFc7D8Fc1dA7037A392031b763b8277CC7a789d57; // Starknet Oracle
 
-    wormholeJoin.file(bytes32("vow"), vow);
-    router.file(bytes32("gateway"), masterDomain, address(wormholeJoin));
-    vat.rely(address(wormholeJoin));
-    bytes32 ilk = wormholeJoin.ilk();
+    teleportJoin.file(bytes32("vow"), vow);
+    router.file(bytes32("gateway"), masterDomain, address(teleportJoin));
+    vat.rely(address(teleportJoin));
+    bytes32 ilk = teleportJoin.ilk();
     vat.init(ilk);
     vat.file(ilk, bytes32("spot"), RAY);
     vat.file(ilk, bytes32("line"), globalLine);
     oracleAuth.file(bytes32("threshold"), 1);
     oracleAuth.addSigners(oracles);
 
-    // configure starknet wormhole
+    // configure starknet teleport
     bytes32 slaveDomain = bytes32("GOERLI-SLAVE-STARKNET-1");
     address constantFees = 0xd40EA2981B350D38281402c058b1Ef1058dbac53;
     address dai = 0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844;
 
-    address slaveDomainGateway = ${l1DAIWormholeGateway};
+    address slaveDomainGateway = ${l1DAITeleportGateway};
     L1EscrowLike escrow = L1EscrowLike(${escrow});
     L1BridgeLike l1Bridge = L1BridgeLike(${l1Bridge});
     GovernanceRelayLike l1GovRelay = GovernanceRelayLike(${l1GovernanceRelay});
     uint256 l2ConfigureDomainSpell = ${l2Spell};
 
     router.file(bytes32("gateway"), slaveDomain, slaveDomainGateway);
-    wormholeJoin.file(bytes32("fees"), slaveDomain, constantFees);
-    wormholeJoin.file(bytes32("line"), slaveDomain, 100*RAD);
+    teleportJoin.file(bytes32("fees"), slaveDomain, constantFees);
+    teleportJoin.file(bytes32("line"), slaveDomain, 100*RAD);
     escrow.approve(dai, slaveDomainGateway, type(uint256).max);
     l1Bridge.setCeiling(100000*WAD);
     l1GovRelay.relay(l2ConfigureDomainSpell);
   }
 }
 
-contract L1GoerliAddWormholeDomainSpell is DssExec {
+contract L1GoerliAddTeleportDomainSpell is DssExec {
   constructor() DssExec(block.timestamp + 30 days, address(new DssSpellAction())) {}
 }`;
   fs.writeFileSync(
-    "./contracts/deploy/goerli/L1GoerliAddWormholeDomainSpell.sol",
+    "./contracts/deploy/goerli/L1GoerliAddTeleportDomainSpell.sol",
     spell
   );
 });
 
-task("deploy-wormhole-spell-l2", "Deploy L2 spell").setAction(
+task("deploy-teleport-spell-l2", "Deploy L2 spell").setAction(
   async (_, hre) => {
-    const spell = await deployL2(hre, "L2GoerliAddWormholeDomainSpell", 0, {});
+    const spell = await deployL2(hre, "L2GoerliAddTeleportDomainSpell", 0, {});
     console.log(`Spell deployed at ${spell.address}`);
   }
 );
 
-task("deploy-wormhole-spell-l1", "Deploy L1 spell").setAction(
+task("deploy-teleport-spell-l1", "Deploy L1 spell").setAction(
   async (_, hre) => {
     const [l1Signer] = await hre.ethers.getSigners();
 
@@ -253,7 +253,7 @@ task("deploy-wormhole-spell-l1", "Deploy L1 spell").setAction(
 
     const spell = await deployL1(
       hre,
-      "L1GoerliAddWormholeDomainSpell",
+      "L1GoerliAddTeleportDomainSpell",
       BLOCK_NUMBER,
       []
     );
@@ -363,8 +363,8 @@ task("run-spell", "Deploy L1 spell").setAction(async (_, hre) => {
 
   const l1SpellContract = await getL1ContractAt(
     hre,
-    "L1GoerliAddWormholeDomainSpell",
-    getAddress("L1GoerliAddWormholeDomainSpell", NETWORK)
+    "L1GoerliAddTeleportDomainSpell",
+    getAddress("L1GoerliAddTeleportDomainSpell", NETWORK)
   );
   const balanceWei = hre.ethers.utils.parseEther("200000");
   const L1_DAI_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L1_DAI_ADDRESS`);

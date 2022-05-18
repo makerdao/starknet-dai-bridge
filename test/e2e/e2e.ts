@@ -32,11 +32,11 @@ describe("e2e", async function () {
   let dai: any;
   let escrow: any;
   let l1Bridge: any;
-  let l1WormholeGateway: any;
+  let l1TeleportGateway: any;
   let l2Bridge: any;
-  let l2WormholeGateway: any;
+  let l2TeleportGateway: any;
   let l2Dai: any;
-  let wormholeRouterFake: any;
+  let teleportRouterFake: any;
 
   before(async function () {
     const networkUrl: string = (network.config as HttpNetworkConfig).url;
@@ -46,7 +46,7 @@ describe("e2e", async function () {
     const mockStarknetMessaging = await starknet.devnet.loadL1MessagingContract(
       networkUrl
     );
-    wormholeRouterFake = await simpleDeploy("WormholeRouterMock", []);
+    teleportRouterFake = await simpleDeploy("TeleportRouterMock", []);
 
     dai = await simpleDeploy("DAIMock", []);
 
@@ -77,20 +77,20 @@ describe("e2e", async function () {
       l2Bridge.address,
     ]);
 
-    const futureL1DAIWormholeGatewayAddress =
+    const futureL1DAITeleportGatewayAddress =
       await getAddressOfNextDeployedContract(admin);
-    l2WormholeGateway = await simpleDeployL2("l2_dai_wormhole_gateway", {
+    l2TeleportGateway = await simpleDeployL2("l2_dai_teleport_gateway", {
       ward: asDec(l2Auth.starknetContract.address),
       dai: asDec(l2Dai.address),
-      wormhole_gateway: asDec(futureL1DAIWormholeGatewayAddress),
+      teleport_gateway: asDec(futureL1DAITeleportGatewayAddress),
       domain: L2_SOURCE_DOMAIN,
     });
-    l1WormholeGateway = await simpleDeploy("L1DAIWormholeGateway", [
+    l1TeleportGateway = await simpleDeploy("L1DAITeleportGateway", [
       mockStarknetMessaging.address,
       dai.address,
-      l2WormholeGateway.address,
+      l2TeleportGateway.address,
       escrow.address,
-      wormholeRouterFake.address,
+      teleportRouterFake.address,
     ]);
 
     const MAX = BigInt(2 ** 256) - BigInt(1);
@@ -98,9 +98,9 @@ describe("e2e", async function () {
     await escrow.connect(admin).approve(dai.address, l1Bridge.address, MAX);
     await escrow
       .connect(admin)
-      .approve(dai.address, l1WormholeGateway.address, MAX);
+      .approve(dai.address, l1TeleportGateway.address, MAX);
 
-    await l2Auth.invoke(l2WormholeGateway, "file", {
+    await l2Auth.invoke(l2TeleportGateway, "file", {
       what: VALID_DOMAINS,
       domain: L2_TARGET_DOMAIN,
       data: 1,
@@ -127,7 +127,7 @@ describe("e2e", async function () {
       },
     });
     await l2Auth.invoke(l2Dai, "approve", {
-      spender: asDec(l2WormholeGateway.address),
+      spender: asDec(l2TeleportGateway.address),
       amount: {
         low: MAX_HALF,
         high: MAX_HALF,
@@ -298,62 +298,62 @@ describe("e2e", async function () {
     });
   });
 
-  describe("wormhole", async () => {
+  describe("teleport", async () => {
     it("slow path", async () => {
       const { res } = await l2Dai.call("balanceOf", {
         user: asDec(l2Auth.starknetContract.address),
       });
       const l2AuthBalance = new SplitUint(res);
-      const wormholeAmountL1 = eth("100");
-      const wormholeAmountL2 = l2Eth("100");
-      await l2Auth.invoke(l2WormholeGateway, "initiate_wormhole", {
+      const teleportAmountL1 = eth("100");
+      const teleportAmountL2 = l2Eth("100");
+      await l2Auth.invoke(l2TeleportGateway, "initiate_teleport", {
         target_domain: L2_TARGET_DOMAIN,
         receiver: asDec(l1Alice.address),
-        amount: wormholeAmountL2.toDec()[0],
+        amount: teleportAmountL2.toDec()[0],
         operator: asDec(l1Alice.address),
       });
       const [nonce, timestamp] = (
-        await getEvent("WormholeInitialized", l2WormholeGateway.address)
+        await getEvent("TeleportInitialized", l2TeleportGateway.address)
       ).slice(-2);
-      await l2Auth.invoke(l2WormholeGateway, "finalize_register_wormhole", {
+      await l2Auth.invoke(l2TeleportGateway, "finalize_register_teleport", {
         target_domain: L2_TARGET_DOMAIN,
         receiver: asDec(l1Alice.address),
-        amount: wormholeAmountL2.toDec()[0],
+        amount: teleportAmountL2.toDec()[0],
         operator: asDec(l1Alice.address),
         nonce: parseInt(nonce),
         timestamp: parseInt(timestamp),
       });
       await starknet.devnet.flush();
 
-      const wormholeGUID = {
+      const teleportGUID = {
         sourceDomain: toBytes32(L1_SOURCE_DOMAIN), // bytes32
         targetDomain: toBytes32(L1_TARGET_DOMAIN), // bytes32
         receiver: toBytes32(l1Alice.address), // bytes32
         operator: toBytes32(l1Alice.address), // bytes32
-        amount: wormholeAmountL1, // uint128
+        amount: teleportAmountL1, // uint128
         nonce: parseInt(nonce), // uint80
         timestamp: parseInt(timestamp), // uint48
       };
       await expect(
-        l1WormholeGateway
+        l1TeleportGateway
           .connect(l1Alice)
-          .finalizeRegisterWormhole(wormholeGUID)
+          .finalizeRegisterTeleport(teleportGUID)
       )
-        .to.emit(wormholeRouterFake, "RequestMint")
-        .withArgs(Object.values(wormholeGUID), eth("0"), eth("0"));
+        .to.emit(teleportRouterFake, "RequestMint")
+        .withArgs(Object.values(teleportGUID), eth("0"), eth("0"));
 
       expect(
         await l2Dai.call("balanceOf", {
           user: asDec(l2Auth.starknetContract.address),
         })
-      ).to.deep.equal(l2AuthBalance.sub(wormholeAmountL2));
+      ).to.deep.equal(l2AuthBalance.sub(teleportAmountL2));
 
       // check that can't withdraw twice
       try {
-        await l2Auth.invoke(l2WormholeGateway, "finalize_register_wormhole", {
+        await l2Auth.invoke(l2TeleportGateway, "finalize_register_teleport", {
           target_domain: L2_TARGET_DOMAIN,
           receiver: asDec(l1Alice.address),
-          amount: wormholeAmountL2.toDec()[0],
+          amount: teleportAmountL2.toDec()[0],
           operator: asDec(l1Alice.address),
           nonce,
           timestamp,
@@ -370,28 +370,28 @@ describe("e2e", async function () {
         .connect(l1Alice)
         .deposit(depositAmountL1, l2Auth.starknetContract.address);
       const escrowBalance = await dai.balanceOf(escrow.address);
-      const { res } = await l2WormholeGateway.call("batched_dai_to_flush", {
+      const { res } = await l2TeleportGateway.call("batched_dai_to_flush", {
         domain: L2_TARGET_DOMAIN,
       });
       const daiToFlush = new SplitUint(res);
-      await l2Auth.invoke(l2WormholeGateway, "flush", {
+      await l2Auth.invoke(l2TeleportGateway, "flush", {
         target_domain: L2_TARGET_DOMAIN,
       });
       await starknet.devnet.flush();
 
       await expect(
-        l1WormholeGateway
+        l1TeleportGateway
           .connect(l1Alice)
           .finalizeFlush(L1_TARGET_DOMAIN, daiToFlush.toUint())
       )
-        .to.emit(wormholeRouterFake, "Settle")
+        .to.emit(teleportRouterFake, "Settle")
         .withArgs(L1_TARGET_DOMAIN, daiToFlush.toUint());
 
       expect(await dai.balanceOf(escrow.address)).to.be.eq(
         BigInt(escrowBalance) - daiToFlush.toUint()
       );
       expect(
-        await l2WormholeGateway.call("batched_dai_to_flush", {
+        await l2TeleportGateway.call("batched_dai_to_flush", {
           domain: L2_TARGET_DOMAIN,
         })
       ).to.deep.eq(l2Eth("0"));

@@ -95,12 +95,12 @@
       "link": null,
       "fontSize": 20,
       "fontFamily": 1,
-      "text": "L2DAIWormholeGateway",
+      "text": "L2DAITeleportGateway",
       "baseline": 17,
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "inTgZNKjztCiQfwGezBzk",
-      "originalText": "L2DAIWormholeGateway"
+      "originalText": "L2DAITeleportGateway"
     },
     {
       "type": "rectangle",
@@ -194,12 +194,12 @@
       "link": null,
       "fontSize": 20,
       "fontFamily": 1,
-      "text": "L1DAIWormholeGateway",
+      "text": "L1DAITeleportGateway",
       "baseline": 17,
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "iL0zKUB-Pq17ziy-VXt-x",
-      "originalText": "L1DAIWormholeGateway"
+      "originalText": "L1DAITeleportGateway"
     },
     {
       "type": "text",
@@ -2371,12 +2371,12 @@
       "link": null,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "initiate_wormhole",
+      "text": "initiate_teleport",
       "baseline": 14,
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "initiate_wormhole"
+      "originalText": "initiate_teleport"
     },
     {
       "type": "text",
@@ -2404,12 +2404,12 @@
       "link": null,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "finalize_register_wormhole",
+      "text": "finalize_register_teleport",
       "baseline": 14,
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "finalize_register_wormhole"
+      "originalText": "finalize_register_teleport"
     },
     {
       "type": "text",
@@ -2503,12 +2503,12 @@
       "link": null,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "finalizeRegisterWormhole",
+      "text": "finalizeRegisterTeleport",
       "baseline": 14,
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "finalizeRegisterWormhole"
+      "originalText": "finalizeRegisterTeleport"
     },
     {
       "type": "text",
@@ -2536,12 +2536,12 @@
       "link": null,
       "fontSize": 16,
       "fontFamily": 1,
-      "text": "WormholeInitialized\nevent",
+      "text": "TeleportInitialized\nevent",
       "baseline": 34,
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "WormholeInitialized\nevent"
+      "originalText": "TeleportInitialized\nevent"
     },
     {
       "type": "arrow",
@@ -2843,12 +2843,12 @@
       "link": null,
       "fontSize": 20,
       "fontFamily": 1,
-      "text": "WormholeRouter",
+      "text": "TeleportRouter",
       "baseline": 17,
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "Ujyey6_xH8uH9mhxF_lMf",
-      "originalText": "WormholeRouter"
+      "originalText": "TeleportRouter"
     },
     {
       "type": "text",
@@ -2876,12 +2876,12 @@
       "link": null,
       "fontSize": 20,
       "fontFamily": 1,
-      "text": "WormholeOracleAuth",
+      "text": "TeleportOracleAuth",
       "baseline": 17,
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "qvoqnkc9rcVsf5H2W4mVA",
-      "originalText": "WormholeOracleAuth"
+      "originalText": "TeleportOracleAuth"
     },
     {
       "type": "text",
@@ -2975,12 +2975,12 @@
       "link": null,
       "fontSize": 20,
       "fontFamily": 1,
-      "text": "+ other calls to other contract in dss-wormhole and MCD",
+      "text": "+ other calls to other contract in dss-teleport and MCD",
       "baseline": 17,
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "+ other calls to other contract in dss-wormhole and MCD"
+      "originalText": "+ other calls to other contract in dss-teleport and MCD"
     },
     {
       "type": "text",
