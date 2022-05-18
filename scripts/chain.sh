@@ -1,4 +1,4 @@
 #!/bin/bash
 
-yarn chain
+yarn chain:ci
 exit 0

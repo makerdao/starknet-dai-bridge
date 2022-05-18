@@ -6,10 +6,12 @@ import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
 import "./scripts/interact";
 import "./scripts/deployDeployer";
+import "./scripts/deploySpell";
 import "./scripts/deployBridge";
 import "./scripts/deployWormhole";
 import "./scripts/account";
 import "./scripts/fork";
+import "./scripts/starknet";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig, NetworkUserConfig } from "hardhat/types";
@@ -65,6 +67,10 @@ const config: HardhatUserConfig = {
       url: "http://127.0.0.1:5000",
     },
     hardhat: {
+      forking: {
+        url: `https://${process.env.FORK_NETWORK}.infura.io/v3/${infuraApiKey}`,
+        enabled: process.env.NODE_ENV !== "test",
+      },
       accounts: {
         count: 10,
         mnemonic,

@@ -87,7 +87,7 @@ contract L1DAIWormholeGateway {
   {
     uint256[] memory payload = new uint256[](4);
     payload[0] = HANDLE_FLUSH;
-    payload[1] = uint256(targetDomain);
+    payload[1] = toL2String(targetDomain);
     (payload[2], payload[3]) = toSplitUint(daiToFlush);
 
     StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeGateway, payload);
@@ -103,8 +103,8 @@ contract L1DAIWormholeGateway {
   {
     uint256[] memory payload = new uint256[](8);
     payload[0] = HANDLE_REGISTER_WORMHOLE;
-    payload[1] = uint256(wormhole.sourceDomain); // bytes32 -> uint256
-    payload[2] = uint256(wormhole.targetDomain); // bytes32 -> uint256
+    payload[1] = toL2String(wormhole.sourceDomain); // bytes32 -> uint256
+    payload[2] = toL2String(wormhole.targetDomain); // bytes32 -> uint256
     payload[3] = uint256(wormhole.receiver); // bytes32 -> uint256
     payload[4] = uint256(wormhole.operator); // bytes32 -> uint256
     payload[5] = uint256(wormhole.amount); // uint128 -> uint256
@@ -114,6 +114,13 @@ contract L1DAIWormholeGateway {
     StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeGateway, payload);
     
     wormholeRouter.requestMint(wormhole, 0, 0);
+  }
+
+  function toL2String(bytes32 str) internal pure returns (uint256) {
+    while (str[31] == '\x00') {
+      str = str >> 8;
+    }
+    return uint256(str);
   }
 
   function toSplitUint(uint256 value) internal pure returns (uint256, uint256) {
