@@ -67,7 +67,8 @@
         }
       ],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "text",
@@ -93,6 +94,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "L2DAITeleportGateway",
@@ -166,7 +168,8 @@
         }
       ],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "text",
@@ -192,6 +195,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "L1DAITeleportGateway",
@@ -225,6 +229,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "L2",
@@ -258,6 +263,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "L1",
@@ -291,6 +297,7 @@
       "boundElements": [],
       "updated": 1649063713534,
       "link": null,
+      "locked": false,
       "startBinding": null,
       "endBinding": {
         "elementId": "inTgZNKjztCiQfwGezBzk",
@@ -339,6 +346,7 @@
       "boundElements": [],
       "updated": 1649063713535,
       "link": null,
+      "locked": false,
       "startBinding": null,
       "endBinding": {
         "elementId": "inTgZNKjztCiQfwGezBzk",
@@ -387,6 +395,7 @@
       "boundElements": [],
       "updated": 1649063713536,
       "link": null,
+      "locked": false,
       "startBinding": null,
       "endBinding": {
         "elementId": "inTgZNKjztCiQfwGezBzk",
@@ -436,7 +445,8 @@
       "strokeSharpness": "sharp",
       "boundElements": [],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "line",
@@ -464,6 +474,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -504,6 +515,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -544,6 +556,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -584,6 +597,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -624,6 +638,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -664,6 +679,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -708,7 +724,8 @@
         }
       ],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "text",
@@ -734,6 +751,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "fast path",
@@ -767,6 +785,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "user",
@@ -801,7 +820,8 @@
       "strokeSharpness": "sharp",
       "boundElements": [],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "line",
@@ -829,6 +849,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -869,6 +890,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -909,6 +931,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -949,6 +972,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -989,6 +1013,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -1029,6 +1054,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -1073,7 +1099,8 @@
         }
       ],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "text",
@@ -1099,6 +1126,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "slow path",
@@ -1132,6 +1160,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "user",
@@ -1166,7 +1195,8 @@
       "strokeSharpness": "sharp",
       "boundElements": [],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "line",
@@ -1194,6 +1224,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -1234,6 +1265,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -1274,6 +1306,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -1314,6 +1347,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -1354,6 +1388,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -1394,6 +1429,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -1433,7 +1469,8 @@
       "strokeSharpness": "sharp",
       "boundElements": [],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "line",
@@ -1461,6 +1498,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -1536,7 +1574,8 @@
       "strokeSharpness": "sharp",
       "boundElements": [],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "ellipse",
@@ -1563,7 +1602,8 @@
       "strokeSharpness": "sharp",
       "boundElements": [],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "ellipse",
@@ -1590,7 +1630,8 @@
       "strokeSharpness": "sharp",
       "boundElements": [],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "text",
@@ -1616,6 +1657,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "settlement",
@@ -1649,6 +1691,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "keeper",
@@ -1682,6 +1725,7 @@
       "boundElements": [],
       "updated": 1649063856537,
       "link": null,
+      "locked": false,
       "startBinding": null,
       "endBinding": null,
       "lastCommittedPoint": null,
@@ -1722,6 +1766,7 @@
       "boundElements": [],
       "updated": 1649063713539,
       "link": null,
+      "locked": false,
       "startBinding": {
         "elementId": "inTgZNKjztCiQfwGezBzk",
         "focus": -0.22697433324015567,
@@ -1774,6 +1819,7 @@
       "boundElements": [],
       "updated": 1649063713540,
       "link": null,
+      "locked": false,
       "startBinding": {
         "elementId": "inTgZNKjztCiQfwGezBzk",
         "focus": 0.3081783627546717,
@@ -1826,6 +1872,7 @@
       "boundElements": [],
       "updated": 1649063713540,
       "link": null,
+      "locked": false,
       "startBinding": {
         "elementId": "inTgZNKjztCiQfwGezBzk",
         "focus": -0.6566232601109955,
@@ -1884,7 +1931,8 @@
         }
       ],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "line",
@@ -1912,6 +1960,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -1952,6 +2001,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -1992,6 +2042,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -2032,6 +2083,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -2072,6 +2124,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -2112,6 +2165,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "lastCommittedPoint": null,
       "startArrowhead": null,
       "endArrowhead": null,
@@ -2164,7 +2218,8 @@
         }
       ],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "arrow",
@@ -2190,6 +2245,7 @@
       "boundElements": [],
       "updated": 1649063713541,
       "link": null,
+      "locked": false,
       "startBinding": {
         "elementId": "Ab-6tggcxbtpTu8_tg6B5",
         "focus": 0.06766639463199274,
@@ -2238,6 +2294,7 @@
       "boundElements": [],
       "updated": 1649063713541,
       "link": null,
+      "locked": false,
       "startBinding": {
         "elementId": "Ab-6tggcxbtpTu8_tg6B5",
         "focus": 0.0676663946319892,
@@ -2310,7 +2367,8 @@
         }
       ],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "text",
@@ -2336,6 +2394,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "Attestation Oracle\n(offchain)",
@@ -2369,6 +2428,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
       "text": "initiate_teleport",
@@ -2402,6 +2462,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
       "text": "finalize_register_teleport",
@@ -2435,6 +2496,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
       "text": "flush",
@@ -2468,6 +2530,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
       "text": "finalizeFlush",
@@ -2501,6 +2564,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
       "text": "finalizeRegisterTeleport",
@@ -2534,6 +2598,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
       "text": "TeleportInitialized\nevent",
@@ -2567,6 +2632,7 @@
       "boundElements": [],
       "updated": 1649063713543,
       "link": null,
+      "locked": false,
       "startBinding": {
         "elementId": "Ab-6tggcxbtpTu8_tg6B5",
         "focus": -0.06766639463199135,
@@ -2615,6 +2681,7 @@
       "boundElements": [],
       "updated": 1649063713544,
       "link": null,
+      "locked": false,
       "startBinding": {
         "elementId": "iL0zKUB-Pq17ziy-VXt-x",
         "focus": 0.7647058823529411,
@@ -2663,6 +2730,7 @@
       "boundElements": [],
       "updated": 1649063713544,
       "link": null,
+      "locked": false,
       "startBinding": {
         "elementId": "iL0zKUB-Pq17ziy-VXt-x",
         "focus": -0.4117647058823529,
@@ -2711,6 +2779,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
       "text": "requestMint",
@@ -2743,7 +2812,8 @@
       "strokeSharpness": "sharp",
       "boundElements": [],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "rectangle",
@@ -2777,7 +2847,8 @@
         }
       ],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "rectangle",
@@ -2815,7 +2886,8 @@
         }
       ],
       "updated": 1649063712579,
-      "link": null
+      "link": null,
+      "locked": false
     },
     {
       "type": "text",
@@ -2841,6 +2913,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "TeleportRouter",
@@ -2874,6 +2947,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "TeleportOracleAuth",
@@ -2907,6 +2981,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
       "text": "requestMint",
@@ -2940,6 +3015,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
       "text": "settle",
@@ -2951,8 +3027,8 @@
     },
     {
       "type": "text",
-      "version": 332,
-      "versionNonce": 1111077563,
+      "version": 338,
+      "versionNonce": 1519659273,
       "isDeleted": false,
       "id": "EuLSbcL72gUd0gRE-VQzT",
       "fillStyle": "solid",
@@ -2961,26 +3037,27 @@
       "roughness": 1,
       "opacity": 100,
       "angle": 0,
-      "x": 1529,
+      "x": 1504,
       "y": -9,
       "strokeColor": "#888888",
       "backgroundColor": "transparent",
-      "width": 574,
+      "width": 624,
       "height": 25,
       "seed": 1650852189,
       "groupIds": [],
       "strokeSharpness": "sharp",
       "boundElements": [],
-      "updated": 1649063712579,
+      "updated": 1652961337393,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
-      "text": "+ other calls to other contract in dss-teleport and MCD",
+      "text": "+ other calls to other contracts in the dss-teleport and MCD",
       "baseline": 17,
       "textAlign": "center",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "+ other calls to other contract in dss-teleport and MCD"
+      "originalText": "+ other calls to other contracts in the dss-teleport and MCD"
     },
     {
       "type": "text",
@@ -3006,6 +3083,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 16,
       "fontFamily": 1,
       "text": "getAttestation",
@@ -3039,6 +3117,7 @@
       "boundElements": [],
       "updated": 1649063712579,
       "link": null,
+      "locked": false,
       "fontSize": 20,
       "fontFamily": 1,
       "text": "user",
