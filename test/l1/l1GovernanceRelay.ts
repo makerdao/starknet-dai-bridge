@@ -14,7 +14,7 @@ const RELAY_SELECTOR = parseFixed(
   "300224956480472355485152391090755024345070441743081995053718200325371913697"
 );
 
-describe("L1GovernanceRelay", function () {
+describe("l1:L1GovernanceRelay", function () {
   it("initializes properly", async () => {
     const { starkNetFake, l1GovernanceRelay, l2GovernanceRelayAddress } =
       await setupTest();
@@ -63,7 +63,9 @@ describe("L1GovernanceRelay", function () {
 async function setupTest() {
   const [admin, l1Alice, l1Bob] = await hre.ethers.getSigners();
 
-  const starkNetFake = await smock.fake("StarkNetLike");
+  const starkNetFake = await smock.fake(
+    "./contracts/l1/L1DAIBridge.sol:StarkNetLike"
+  );
 
   const L2_GOVERNANCE_RELAY_ADDRESS = 31415;
   const SPELL_ADDRESS = 31416;

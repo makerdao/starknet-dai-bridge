@@ -9,6 +9,9 @@ import time
 from starkware.starknet.compiler.compile import compile_starknet_files
 from starkware.starknet.testing.starknet import Starknet, StarknetContract
 from starkware.starknet.business_logic.state import BlockInfo
+from starkware.starknet.business_logic.transaction_execution_objects import Event
+from starkware.starknet.public.abi import get_selector_from_name
+from itertools import chain
 
 from Signer import Signer
 
@@ -18,6 +21,34 @@ sys.stdout = sys.stderr
 SUPER_ADJUDICATOR_L1_ADDRESS = 0
 CONTRACT_SRC = [os.path.dirname(__file__), "..", "..", "contracts", "starknet"]
 
+VALID_DOMAINS = int.from_bytes("valid_domains".encode(), byteorder="big")
+TARGET_DOMAIN = get_selector_from_name("optimism")
+
+###########
+# HELPERS #
+###########
+def check_event(contract, event_name, tx, values):
+    expected_event = Event(
+        from_address=contract.contract_address,
+        keys=[get_selector_from_name(event_name)],
+        data=list(chain(*[e if isinstance(e, tuple) else [e] for e in values]))
+    )
+    assert expected_event in ( tx.raw_events if hasattr(tx, 'raw_events') else tx.get_sorted_events())
+
+
+def to_split_uint(a):
+    return (a & ((1 << 128) - 1), a >> 128)
+
+
+def to_uint(a):
+    return a[0] + (a[1] << 128)
+
+
+async def deploy_account(starknet, signer, source):
+    return await starknet.deploy(
+        source=source,
+        constructor_calldata=[signer.public_key],
+    )
 
 def compile(path):
     return compile_starknet_files(
@@ -34,17 +65,6 @@ def get_block_timestamp(starknet_state):
 def set_block_timestamp(starknet_state, timestamp):
     starknet_state.state.block_info = BlockInfo(
         starknet_state.state.block_info.block_number, timestamp
-    )
-
-
-def to_split_uint(a):
-    return (a & ((1 << 128) - 1), a >> 128)
-
-
-async def deploy_account(starknet, signer, source):
-    return await starknet.deploy(
-        source=source,
-        constructor_calldata=[signer.public_key],
     )
 
 
@@ -79,6 +99,7 @@ L2_CONTRACTS_DIR = os.path.join(os.getcwd(), "contracts/l2")
 ACCOUNT_FILE = os.path.join(L2_CONTRACTS_DIR, "account.cairo")
 DAI_FILE = os.path.join(L2_CONTRACTS_DIR, "dai.cairo")
 BRIDGE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_bridge.cairo")
+WORMHOLE_GATEWAY_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_teleport_gateway.cairo")
 SPELL_FILE = os.path.join(L2_CONTRACTS_DIR, "sample_spell.cairo")
 REGISTRY_FILE = os.path.join(L2_CONTRACTS_DIR, "registry.cairo")
 GOVERNANCE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_governance_relay.cairo")
@@ -128,6 +149,19 @@ async def build_copyable_deployment():
         ],
     )
 
+    l2_teleport_gateway = await starknet.deploy(
+        source=WORMHOLE_GATEWAY_FILE,
+        constructor_calldata=[
+            accounts.auth_user.contract_address,
+            dai.contract_address,
+            L1_ADDRESS,
+            get_selector_from_name("starknet"),
+        ],
+    )
+    await l2_teleport_gateway.file(
+        VALID_DOMAINS, TARGET_DOMAIN, 1,
+    ).invoke(accounts.auth_user.contract_address)
+
     contract = '''%%lang starknet
         %%builtins pedersen range_check
 
@@ -168,10 +202,6 @@ async def build_copyable_deployment():
     await registry.set_L1_address(
             int(L1_ADDRESS)).invoke(accounts.user3.contract_address)
 
-    print("-------------------------------------------")
-    print(l2_bridge.contract_address)
-    print("-------------------------------------------")
-
     await dai.rely(
             l2_bridge.contract_address,
         ).invoke(accounts.auth_user.contract_address)
@@ -186,6 +216,7 @@ async def build_copyable_deployment():
         account=compile(ACCOUNT_FILE),
         dai=compile(DAI_FILE),
         l2_bridge=compile(BRIDGE_FILE),
+        l2_teleport_gateway=compile(WORMHOLE_GATEWAY_FILE),
         sample_spell=compile(SPELL_FILE),
         registry=compile(REGISTRY_FILE),
         l2_governance_relay=compile(GOVERNANCE_FILE),
@@ -219,6 +250,7 @@ async def build_copyable_deployment():
             dai=serialize_contract(dai, defs.dai.abi),
             sample_spell=serialize_contract(sample_spell, defs.sample_spell.abi),
             l2_bridge=serialize_contract(l2_bridge, defs.l2_bridge.abi),
+            l2_teleport_gateway=serialize_contract(l2_teleport_gateway, defs.l2_teleport_gateway.abi),
             registry=serialize_contract(registry, defs.registry.abi),
             l2_governance_relay=serialize_contract(l2_governance_relay, defs.l2_governance_relay.abi),
         ),
@@ -281,6 +313,10 @@ async def starknet(ctx) -> Starknet:
     return ctx.starknet
 
 @pytest.fixture(scope="function")
+async def block_timestamp(starknet):
+    return lambda: get_block_timestamp(starknet.state)
+
+@pytest.fixture(scope="function")
 async def user1(ctx) -> StarknetContract:
     return ctx.user1
 
@@ -311,6 +347,10 @@ async def l2_governance_relay(ctx) -> StarknetContract:
 @pytest.fixture(scope="function")
 async def l2_bridge(ctx) -> StarknetContract:
     return ctx.l2_bridge
+
+@pytest.fixture(scope="function")
+async def l2_teleport_gateway(ctx) -> StarknetContract:
+    return ctx.l2_teleport_gateway
 
 @pytest.fixture(scope="function")
 async def dai(ctx) -> StarknetContract:

@@ -3,13 +3,16 @@
 [![Check](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/check.yml/badge.svg)](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/check.yml)
 [![Tests](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/tests.yml/badge.svg)](https://github.com/makerdao/starknet-dai-bridge/actions/workflows/tests.yml)
 
-StarkNet interpretation of DAI token and basic DAI bridge.
-
 ## :warning: :skull_and_crossbones: :warning:️ WARNING! :warning: :skull_and_crossbones:️ :warning:
 This codebase is still in an experimental phase, has not been audited, might contain bugs and should not be used in production.
 
+
+StarkNet interpretation of DAI token, basic DAI bridge, DAI teleport gateway.
+
 ## Additional Documentation
 [Development documentation](./docs/development.md)
+
+# Basic Bridge
 
 ## Overview
 
@@ -17,7 +20,7 @@ Bridge provides two main functions: `deposit` and `withdraw`. On L1 `deposit`, b
 
 ![Architecture](./docs/architecture.png?raw=true)
 
-### Contracts
+## Contracts
 * `L1DAIBridge` - L1 side of the bridge
 * `L1Escrow` - holds bridge funds on L1
 * `L1GovernanceRelay` - relays governance action to L2
@@ -26,13 +29,13 @@ Bridge provides two main functions: `deposit` and `withdraw`. On L1 `deposit`, b
 * `l2_governance_delay` - executes governance action relayed from L1
 * `registry` - provides L2 to L1 address mapping
 
-### Bridge Ceiling
+## Bridge Ceiling
 The amount of bridged DAI can be restricted by setting a ceiling property(`setCeiling`) on the L1DAIBridge. Setting it to Uint256.max will make it effectively unlimited, setting it to anything lower than the amount currently bridged will temporarily disable deposits.
 
-### Deposit Limit
+## Deposit Limit
 To make DAI bridge compatible with generic StarkNet token bridges a single deposit limit(`setMaxDeposit`) was added. Setting it to a value above the ceiling will make deposits unlimited, setting it to 0 will temporarily disable the bridge.
 
-### Starknet DAI
+## Starknet DAI
 Since StarkNet execution environment is significantly different than EVM, Starknet DAI is not a one to one copy of L1 DAI. Here are the diferences:
 * [`uint256`](https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/uint256.cairo) to represent balances, for compatibility with L1
 * no permit function - StarkNet account abstraction should be used for UX optimizations
@@ -53,7 +56,7 @@ It is expected that admin rights to the bridge contracts will be given to the [M
 ## Governance relay
 `L1GovernanceRelay` allows to relay L1 governance actions to a spell contract on the StarkNet via `l2_governance_relay`.
 
-### Initial configuration
+## Initial configuration
 Maker [PauseProxy](https://docs.makerdao.com/smart-contract-modules/governance-module/pause-detailed-documentation) should be relied on: `L1DAIBridge`, `L1Escrow`, `l2_dai_bridge`, `dai`, `L1GovernanceRelay`. Unlimited allowance on `L1Escrow` should be given to `L1DAIBridge`.
 In order to withdraw allowance needs to be given to the `l2_dai_bridge` individually by each L2 DAI user.
 
@@ -97,3 +100,67 @@ Bridge consists of several interacting contracts and it is possible to misconfig
 ## Emergency Circuit Breaker
 Since StarkNet is expected to finalize its state on L1 at most every several hours, there is very little time to organize any preventive action in case of uncollateralized DAI is minted on L2. Maker Governance with its 2 day delay won't be able to respond in time. `L1EscrowMom` provides `refuse` method that sets L1Escrow allowance to 0. It can be used to freeze withdrawals immediately.
 As soon as problem is fixed Governance could increase allowance. `Refuse` access is controlled by `AuthorityLike` contract. It is expected to be set to: [DSChief](https://docs.makerdao.com/smart-contract-modules/governance-module/chief-detailed-documentation) to bypass the governance delay.
+
+# Teleport Gateway
+
+## Overview
+Starknet DAI Teleport is part of general teleport infrastructure spread over several repos:
+* [dss-teleport](https://github.com/makerdao/dss-teleport) - L1 relayer, L1 domain
+implemenetation
+* TODO: a link to AttestationOracle
+
+There are parallel implementations for optimistic L2s:
+* [optimism-dai-bridge](https://github.com/makerdao/optimism-dai-bridge) - Optimism implementation
+* [arbitrum-dai-bridge](https://github.com/makerdao/arbitrum-dai-bridge) - Arbitrum
+
+StarkNet teleport implementation allows to open teleport on StarkNet and finalize it on L1. In the future, when full MCD system is deployed to L2s it will be possible to finalize StarkNet originating teleports on other L2 and finalize teleports originating from other L2 on StarkNet.
+
+Following documentation describes special case of L2 to L1 teleports also called _fast withdrawals_.
+
+## Architecture
+![Teleport L2/L1 usecase](./docs/teleport.png?raw=true)
+
+There are several components that provide _fast withdrawals_ functionality on StarkNet:
+* `l2_dai_teleport_gateway` - a StarkNet smart contract that allows to open the teleport, initiate teleport debt settlement, and initiate emergency teleport finalization in case for some reason Attestions Oracle does not work
+* `L1DAITeleportGateway` - a L1 smart contract that is the counterpart to `l2_dai_teleport_gateway` and forwards calls to internal components of dss-teleport
+* _AttestationOracle_ - a service that watches for `TeleportInitialized` events on StarkNet and based on those serves attestions that can be used to finalize the teleport by calling `requestMint` on `TeleportOracleAuth`
+* `TeleportOracleAuth` - part of [dss-teleport](https://github.com/makerdao/dss-teleport), allows to finalized the teleport in a fast way by providing attestation
+
+#### Fast path
+Aka 'fast withdrawal':
+1. The user calls `l2_dai_teleport_gateway.initiate_teleport` - this burns DAI on L2 and stores teleport data in `l2_dai_teleport_gateway.teleports` storage variable. It also emmits `TeleportInitialized` event.
+2. Attestation Oracle observes `TeleportInitialized` event and creates an attestation
+3. As soon as enough attestations are available user calls `TeleportOracleAuth.requestMint` which will finnalize the teleport
+
+#### Settlement through L1
+Settlement process moves DAI from L1 Bridge to TeleportJoin to clear the debt that accumulates there. It is triggered by keepers.
+1. On StarkNet keeper calls `l2_dai_teleport_gateway.flush`
+2. L2 -> L1 message `finalizeFlush` is sent to `L1DAITeleportGateway` and relayed by a keeper
+3. `L1DAITeleportGateway` upon receiving `finalizeFlush` calls `TeleportRouter.settle()` which will:
+    1. Transfer DAI from bridges' escrow to `TeleportJoin`
+    2. Call `TeleportJoin.settle` which will use transfered DAI to clear any outstanding debt
+
+#### Slow path
+If attestations cannot be obtained (Oracles down or censoring), `l2_dai_teleport_gateway` provides a way to finalize teleport through L2->L1 messages:
+1. Initiate slow path on L2 by calling `l2_dai_teleport_gateway.finalize_register_teleport`. After checking in `l2_dai_teleport_gateway.teleports` that teleport was opened, `FINALIZE_REGISTER_WORMHOLE` L2->L1 message will sent to `L1DAITeleportGateway`
+2. Receive `FINALIZE_REGISTER_WORMHOLE` message by calling `L1DAITeleportGateway.finalizeRegisterTeleport`, which in turn will call `TeleportJoin.requestMint` which will finalize teleport if it was not finalized already.
+
+## Risks
+In addition to general teleport risks described [here](https://github.com/makerdao/dss-teleport#risks) there are a few  StarkNet specific risks that are worth mentioning.
+
+### Attestations finality
+At the current stage of StarkNet development there is no middle ground between L1 finality reached after state update on L1 and no finality at all. Any system trying to build functionality that will result in non reversible consequences based on non final rollup state will need take the risk of L2 state rollback. There are a few reasons why L2 state might be rolled back:
+* deep L1 rollback
+* malicious sequncer
+* bugs in the sequncer
+
+Teleport attestations are sensitive to L2 state rollback as attestations are nonreversible and teleport reopening with the same funds might result in double withdrawals on L1 and bad debt that eventually will need to be healed with system surplus. This peculiar nature of withdrawal attestations will need to be taken under consideration when setting StarkNet teleport join risk parameters.
+
+### Data availability
+In case of the following two failures:
+* rollup becomes unavailable after the consequences of the `l2_dai_teleport_gateway.initiate_teleport` call become finalized on L1
+* user is not able to use the teleport attestation because the Attestation Oracle becomes unavailable
+
+the full teleport data is stored in `l2_dai_teleport_gateway.teleports`.
+
+This should allow to execute teleport evacuation procedure in case of catastrophic rollup failure.

@@ -5,12 +5,16 @@ import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
 import "./scripts/interact";
+import "./scripts/deployDeployer";
+import "./scripts/deploySpell";
+import "./scripts/deployBridge";
+import "./scripts/deployTeleport";
 import "./scripts/account";
 import "./scripts/fork";
+import "./scripts/starknet";
 
 import { config as dotenvConfig } from "dotenv";
-import { HardhatUserConfig } from "hardhat/config";
-import { NetworkUserConfig } from "hardhat/types";
+import { HardhatUserConfig, NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
@@ -53,6 +57,9 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     goerli: getChainConfig("goerli"),
+    localhost: {
+      url: "http://127.0.0.1:8545",
+    },
     fork: {
       url: "http://127.0.0.1:8545",
     },
@@ -61,7 +68,7 @@ const config: HardhatUserConfig = {
     },
     hardhat: {
       forking: {
-        url: `https://mainnet.infura.io/v3/${infuraApiKey}`,
+        url: `https://${process.env.FORK_NETWORK}.infura.io/v3/${infuraApiKey}`,
         enabled: process.env.NODE_ENV !== "test",
       },
       accounts: {
@@ -91,6 +98,9 @@ const config: HardhatUserConfig = {
     tests: "./test",
     starknetSources: "./contracts",
     starknetArtifacts: "./starknet-artifacts",
+  },
+  mocha: {
+    grep: process.env.TEST_ENV === "e2e" ? "e2e" : "l1:*",
   },
   solidity: {
     compilers: [

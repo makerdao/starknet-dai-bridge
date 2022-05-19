@@ -7,8 +7,9 @@ import {
 } from "@makerdao/hardhat-utils";
 import chai, { expect } from "chai";
 import { ethers } from "ethers";
-import { parseEther } from "ethers/lib/utils";
 import hre from "hardhat";
+
+import { eth, split } from "../utils";
 
 chai.use(smock.matchers);
 
@@ -27,7 +28,7 @@ function toSplitUint(value: any) {
   return [BigInt(`0x${bits.slice(32)}`), BigInt(`0x${bits.slice(0, 32)}`)];
 }
 
-describe("L1DAIBridge", function () {
+describe("l1:L1DAIBridge", function () {
   it("initializes properly", async () => {
     const { admin, dai, starkNetFake, escrow, l1Bridge, l2BridgeAddress } =
       await setupTest();
@@ -313,7 +314,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, ...toSplitUint(withdrawalAmount)]
+        [WITHDRAW, l1Alice.address, ...split(withdrawalAmount)]
       );
     });
     it("sends funds from the escrow to the 3rd party", async () => {
@@ -349,7 +350,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, ...toSplitUint(withdrawalAmount)]
+        [WITHDRAW, l1Alice.address, ...split(withdrawalAmount)]
       );
     });
     it("sends funds from the escrow, even when closed", async () => {
@@ -385,7 +386,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, ...toSplitUint(withdrawalAmount)]
+        [WITHDRAW, l1Alice.address, ...split(withdrawalAmount)]
       );
     });
     it("reverts when called by not a withdrawal recipient", async () => {
@@ -414,7 +415,7 @@ describe("L1DAIBridge", function () {
         .whenCalledWith(l2BridgeAddress, [
           WITHDRAW,
           l1Bob.address,
-          ...toSplitUint(withdrawalAmount),
+          ...split(withdrawalAmount),
         ])
         .reverts();
 
@@ -424,7 +425,7 @@ describe("L1DAIBridge", function () {
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Bob.address, ...toSplitUint(withdrawalAmount)]
+        [WITHDRAW, l1Bob.address, ...split(withdrawalAmount)]
       );
     });
     it("reverts when called with wrong amount", async () => {
@@ -453,7 +454,7 @@ describe("L1DAIBridge", function () {
         .whenCalledWith(l2BridgeAddress, [
           WITHDRAW,
           l1Alice.address,
-          ...toSplitUint(wrongAmount),
+          ...split(wrongAmount),
         ])
         .reverts();
 
@@ -463,7 +464,7 @@ describe("L1DAIBridge", function () {
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, ...toSplitUint(wrongAmount)]
+        [WITHDRAW, l1Alice.address, ...split(wrongAmount)]
       );
     });
     it("reverts when escrow access was revoked", async () => {
@@ -560,7 +561,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
         l2BridgeAddress,
         FORCE_WITHDRAW,
-        [l2User, l1Alice.address, ...toSplitUint(amount)]
+        [l2User, l1Alice.address, ...split(amount)]
       );
     });
     it("reverts when bridge is closed", async () => {
@@ -596,7 +597,9 @@ describe("L1DAIBridge", function () {
 async function setupTest() {
   const [admin, l1Alice, l1Bob] = await hre.ethers.getSigners();
 
-  const starkNetFake = await smock.fake("StarkNetLike");
+  const starkNetFake = await smock.fake(
+    "./contracts/l1/L1DAIBridge.sol:StarkNetLike"
+  );
 
   const dai = await simpleDeploy("DAIMock", []);
 
@@ -624,9 +627,4 @@ async function setupTest() {
     l2BridgeAddress: L2_DAI_BRIDGE_ADDRESS,
     l2DaiAddress: L2_DAI_ADDRESS,
   };
-}
-
-// units
-export function eth(amount: string) {
-  return parseEther(amount);
 }

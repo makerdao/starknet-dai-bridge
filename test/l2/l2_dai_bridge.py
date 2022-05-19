@@ -3,6 +3,9 @@ import pytest
 from starkware.starknet.testing.starknet import Starknet
 from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
+from starkware.starknet.definitions.error_codes import StarknetErrorCode
+from conftest import to_split_uint, to_uint
+
 from starkware.starknet.business_logic.transaction_execution_objects import Event
 from starkware.starknet.public.abi import get_selector_from_name
 from itertools import chain
@@ -22,11 +25,6 @@ starknet_contract_address = 0x0
 ###########
 # HELPERS #
 ###########
-def to_split_uint(a):
-    return (a & ((1 << 128) - 1), a >> 128)
-
-def to_uint(a):
-    return a[0] + (a[1] << 128)
 
 def check_event(contract, event_name, tx, values):
     expected_event = Event(
@@ -58,9 +56,12 @@ async def test_initiate_withdraw(
 
     check_event(
         l2_bridge,
-        'withdraw_initiated',
-        tx,
-        (L1_ADDRESS, to_split_uint(10), user1.contract_address)
+        "withdraw_initiated",
+        tx, (
+            L1_ADDRESS,
+            to_split_uint(10),
+            user1.contract_address
+        )
     )
 
     payload = [FINALIZE_WITHDRAW, L1_ADDRESS, *to_split_uint(10)]
