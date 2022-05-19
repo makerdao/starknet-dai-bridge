@@ -180,8 +180,8 @@ export function parseCalldataL1(calldata: string, network: string) {
       return getAddress("l2_dai_bridge", network);
     } else if (input === "L1DAIBridge") {
       return getAddress("L1DAIBridge", network);
-    } else if (input === "L1DAIWormholeGateway") {
-      return getAddress("L1DAIWormholeGateway", network);
+    } else if (input === "L1DAITeleportGateway") {
+      return getAddress("L1DAITeleportGateway", network);
     } else if (input === "L1Escrow") {
       return getAddress("L1Escrow", network);
     } else if (input === "DAI") {
@@ -237,9 +237,9 @@ export function parseCalldataL2(
       res[inputName] = BigInt(getAddress("L1DAIBridge", network)).toString();
     } else if (input === "l2_dai_bridge") {
       res[inputName] = BigInt(getAddress("l2_dai_bridge", network)).toString();
-    } else if (input === "l2_dai_wormhole_gateway") {
+    } else if (input === "l2_dai_teleport_gateway") {
       res[inputName] = BigInt(
-        getAddress("l2_dai_wormhole_gateway", network)
+        getAddress("l2_dai_teleport_gateway", network)
       ).toString();
     } else if (input === "GOERLI-MASTER-1") {
       res[inputName] = l2String(input);
@@ -283,7 +283,7 @@ export function getSelectorFromName(name: string) {
   ).toString();
 }
 
-export function printAddresses(hre: any, includeWormhole: boolean = false) {
+export function printAddresses(hre: any, includeTeleport: boolean = false) {
   const NETWORK = hre.network.name;
 
   let contracts = [
@@ -297,11 +297,11 @@ export function printAddresses(hre: any, includeWormhole: boolean = false) {
     "l2_governance_relay",
   ];
 
-  if (includeWormhole) {
+  if (includeTeleport) {
     contracts = [
       ...contracts,
-      "L1DAIWormholeGateway",
-      "l2_dai_wormhole_gateway",
+      "L1DAITeleportGateway",
+      "l2_dai_teleport_gateway",
     ];
   }
 
@@ -313,7 +313,7 @@ export function printAddresses(hre: any, includeWormhole: boolean = false) {
   console.log(addresses);
 }
 
-export function writeAddresses(hre: any, includeWormhole: boolean = false) {
+export function writeAddresses(hre: any, includeTeleport: boolean = false) {
   const NETWORK = hre.network.name;
   let ADDRESS_NETWORK: string;
   if (NETWORK === "fork") {
@@ -332,11 +332,11 @@ export function writeAddresses(hre: any, includeWormhole: boolean = false) {
     ["REGISTRY_ADDRESS", "registry"],
   ];
 
-  if (includeWormhole) {
+  if (includeTeleport) {
     variables = [
       ...variables,
-      ["L1_DAI_WORMHOLE_GATEWAY_ADDRESS", "L1DAIWormholeGateway"],
-      ["L2_DAI_WORMHOLE_GATEWAY_ADDRESS", "l2_dai_wormhole_gateway"],
+      ["L1_DAI_WORMHOLE_GATEWAY_ADDRESS", "L1DAITeleportGateway"],
+      ["L2_DAI_WORMHOLE_GATEWAY_ADDRESS", "l2_dai_teleport_gateway"],
     ];
   }
 

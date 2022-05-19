@@ -17,7 +17,7 @@ pragma solidity ^0.7.6;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./WormholeGUID.sol";
+import "./TeleportGUID.sol";
 
 contract DAIMock is ERC20 {
     constructor () ERC20('DAI', 'DAI') {
@@ -26,17 +26,17 @@ contract DAIMock is ERC20 {
 }
 
 // slither-disable-next-line missing-inheritance
-contract WormholeRouterMock {
+contract TeleportRouterMock {
 
-  event RequestMint(WormholeGUID wormholeGUID, uint256 maxFeePercentage, uint256 operatorFee);
+  event RequestMint(TeleportGUID teleportGUID, uint256 maxFeePercentage, uint256 operatorFee);
   event Settle(bytes32 targetDomain, uint256 batchedDaiToFlush);
 
   function requestMint(
-    WormholeGUID calldata wormholeGUID,
+    TeleportGUID calldata teleportGUID,
     uint256 maxFeePercentage,
     uint256 operatorFee
   ) external returns (uint256 postFeeAmount, uint256 totalFee) {
-    emit RequestMint(wormholeGUID, maxFeePercentage, operatorFee);
+    emit RequestMint(teleportGUID, maxFeePercentage, operatorFee);
     postFeeAmount = maxFeePercentage;
     totalFee = operatorFee;
   }

@@ -16,7 +16,7 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-import "./WormholeGUID.sol";
+import "./TeleportGUID.sol";
 
 interface ApproveLike {
   function approve(address, uint256) external returns (bool success);
@@ -45,9 +45,9 @@ interface StarkNetLike {
     ) external;
 }
 
-interface WormholeRouter {
+interface TeleportRouter {
   function requestMint(
-      WormholeGUID calldata wormholeGUID,
+      TeleportGUID calldata teleportGUID,
       uint256 maxFeePercentage,
       uint256 operatorFee
   ) external;
@@ -55,12 +55,12 @@ interface WormholeRouter {
   function settle(bytes32 targetDomain, uint256 batchedDaiToFlush) external;
 }
 
-contract L1DAIWormholeGateway {
+contract L1DAITeleportGateway {
   address public immutable starkNet;
   address public immutable dai;
-  uint256 public immutable l2DaiWormholeGateway;
+  uint256 public immutable l2DaiTeleportGateway;
   address public immutable escrow;
-  WormholeRouter public immutable wormholeRouter;
+  TeleportRouter public immutable teleportRouter;
 
   uint256 constant HANDLE_REGISTER_WORMHOLE = 0;
   uint256 constant HANDLE_FLUSH = 1;
@@ -68,18 +68,18 @@ contract L1DAIWormholeGateway {
   constructor(
     address _starkNet,
     address _dai,
-    uint256 _l2DaiWormholeGateway,
+    uint256 _l2DaiTeleportGateway,
     address _escrow,
-    address _wormholeRouter
+    address _teleportRouter
   ) {
 
     starkNet = _starkNet;
     dai = _dai;
-    l2DaiWormholeGateway = _l2DaiWormholeGateway;
+    l2DaiTeleportGateway = _l2DaiTeleportGateway;
     escrow = _escrow;
-    wormholeRouter = WormholeRouter(_wormholeRouter);
+    teleportRouter = TeleportRouter(_teleportRouter);
     // Approve the router to pull DAI from this contract during settle() (after the DAI has been pulled by this contract from the escrow)
-    ApproveLike(_dai).approve(_wormholeRouter, type(uint256).max);
+    ApproveLike(_dai).approve(_teleportRouter, type(uint256).max);
   }
 
   function finalizeFlush(bytes32 targetDomain, uint256 daiToFlush)
@@ -90,30 +90,30 @@ contract L1DAIWormholeGateway {
     payload[1] = toL2String(targetDomain);
     (payload[2], payload[3]) = toSplitUint(daiToFlush);
 
-    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeGateway, payload);
+    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiTeleportGateway, payload);
 
     // Pull DAI from the escrow to this contract
     TokenLike(dai).transferFrom(escrow, address(this), daiToFlush);
     // The router will pull the DAI from this contract
-    wormholeRouter.settle(targetDomain, daiToFlush);
+    teleportRouter.settle(targetDomain, daiToFlush);
   }
 
-  function finalizeRegisterWormhole(WormholeGUID calldata wormhole)
+  function finalizeRegisterTeleport(TeleportGUID calldata teleport)
     external
   {
     uint256[] memory payload = new uint256[](8);
     payload[0] = HANDLE_REGISTER_WORMHOLE;
-    payload[1] = toL2String(wormhole.sourceDomain); // bytes32 -> uint256
-    payload[2] = toL2String(wormhole.targetDomain); // bytes32 -> uint256
-    payload[3] = uint256(wormhole.receiver); // bytes32 -> uint256
-    payload[4] = uint256(wormhole.operator); // bytes32 -> uint256
-    payload[5] = uint256(wormhole.amount); // uint128 -> uint256
-    payload[6] = uint256(wormhole.nonce); // uint80 -> uint256
-    payload[7] = uint256(wormhole.timestamp); // uint48 -> uint256
+    payload[1] = toL2String(teleport.sourceDomain); // bytes32 -> uint256
+    payload[2] = toL2String(teleport.targetDomain); // bytes32 -> uint256
+    payload[3] = uint256(teleport.receiver); // bytes32 -> uint256
+    payload[4] = uint256(teleport.operator); // bytes32 -> uint256
+    payload[5] = uint256(teleport.amount); // uint128 -> uint256
+    payload[6] = uint256(teleport.nonce); // uint80 -> uint256
+    payload[7] = uint256(teleport.timestamp); // uint48 -> uint256
 
-    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiWormholeGateway, payload);
+    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiTeleportGateway, payload);
     
-    wormholeRouter.requestMint(wormhole, 0, 0);
+    teleportRouter.requestMint(teleport, 0, 0);
   }
 
   function toL2String(bytes32 str) internal pure returns (uint256) {

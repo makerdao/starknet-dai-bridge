@@ -8,7 +8,7 @@ import "./scripts/interact";
 import "./scripts/deployDeployer";
 import "./scripts/deploySpell";
 import "./scripts/deployBridge";
-import "./scripts/deployWormhole";
+import "./scripts/deployTeleport";
 import "./scripts/account";
 import "./scripts/fork";
 import "./scripts/starknet";

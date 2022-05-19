@@ -17,7 +17,7 @@ import {
   writeAddresses,
 } from "./utils";
 
-task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
+task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   const [l1Signer] = await hre.ethers.getSigners();
 
   const NETWORK = hre.network.name;
@@ -68,58 +68,58 @@ task("deploy-wormhole", "Deploy wormhole").setAction(async (_, hre) => {
     L2_GOVERNANCE_RELAY_ADDRESS
   );
 
-  const futureL1DAIWormholeGatewayAddress =
+  const futureL1DAITeleportGatewayAddress =
     await getAddressOfNextDeployedContract(l1Signer);
 
   const L2_SOURCE_DOMAIN = `0x${Buffer.from(
     `${ADDRESS_NETWORK}-SLAVE-STARKNET-1`,
     "utf8"
   ).toString("hex")}`;
-  const l2DAIWormholeGateway = await deployL2(
+  const l2DAITeleportGateway = await deployL2(
     hre,
-    "l2_dai_wormhole_gateway",
+    "l2_dai_teleport_gateway",
     BLOCK_NUMBER,
     {
       ward: asDec(deployer.starknetContract.address),
       dai: asDec(L2_DAI_ADDRESS),
-      wormhole_gateway: asDec(futureL1DAIWormholeGatewayAddress),
+      teleport_gateway: asDec(futureL1DAITeleportGatewayAddress),
       domain: L2_SOURCE_DOMAIN,
     }
   );
 
-  const l1DAIWormholeGateway = await deployL1(
+  const l1DAITeleportGateway = await deployL1(
     hre,
-    "L1DAIWormholeGateway",
+    "L1DAITeleportGateway",
     BLOCK_NUMBER,
     [
       L1_STARKNET_ADDRESS,
       L1_DAI_ADDRESS,
-      l2DAIWormholeGateway.address,
+      l2DAITeleportGateway.address,
       L1_ESCROW_ADDRESS,
       L1_WORMHOLE_ROUTER_ADDRESS,
     ]
   );
   expect(
-    futureL1DAIWormholeGatewayAddress === l1DAIWormholeGateway.address,
-    "futureL1DAIWormholeGatewayAddress != l1DAIWormholeGateway.address"
+    futureL1DAITeleportGatewayAddress === l1DAITeleportGateway.address,
+    "futureL1DAITeleportGatewayAddress != l1DAITeleportGateway.address"
   );
 
-  console.log("Finalizing permissions for l2_dai_wormhole_gateway...");
-  await deployer.invoke(l2DAIWormholeGateway, "rely", {
+  console.log("Finalizing permissions for l2_dai_teleport_gateway...");
+  await deployer.invoke(l2DAITeleportGateway, "rely", {
     user: asDec(L2_GOVERNANCE_RELAY_ADDRESS),
   });
   if (DENY_DEPLOYER) {
-    await deployer.invoke(l2DAIWormholeGateway, "deny", {
+    await deployer.invoke(l2DAITeleportGateway, "deny", {
       user: asDec(deployer.starknetContract.address),
     });
   }
 
-  console.log("L2 wormhole gateway permission sanity checks...");
-  expect(await wards(l2DAIWormholeGateway, l2GovernanceRelay)).to.deep.eq(
+  console.log("L2 teleport gateway permission sanity checks...");
+  expect(await wards(l2DAITeleportGateway, l2GovernanceRelay)).to.deep.eq(
     BigInt(1)
   );
   expect(
-    await wards(l2DAIWormholeGateway, deployer.starknetContract)
+    await wards(l2DAITeleportGateway, deployer.starknetContract)
   ).to.deep.eq(BigInt(!DENY_DEPLOYER));
 
   printAddresses(hre, true);

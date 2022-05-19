@@ -69,7 +69,7 @@ task("call:l1", "Call an L1 contract")
     const contractInstance = await contractFactory.attach(address);
     const _calldata = parseCalldataL1(calldata, NETWORK);
     let res;
-    if (func === "finalizeRegisterWormhole") {
+    if (func === "finalizeRegisterTeleport") {
       console.log(_calldata);
       res = await contractInstance[func]([
         toBytes32(_calldata[0]),
