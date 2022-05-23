@@ -105,14 +105,6 @@ const config: HardhatUserConfig = {
     dockerizedVersion: "0.8.1",
     network:
       process.env.NODE_ENV !== "test" ? process.env.STARKNET_NETWORK : "devnet",
-    wallets: {
-      user: {
-        accountName: "OpenZeppelin",
-        modulePath:
-          "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
-        accountPath: "~/.starknet_accounts",
-      },
-    },
   },
   paths: {
     artifacts: "./artifacts",

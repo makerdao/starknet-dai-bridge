@@ -9,7 +9,7 @@ import hre from "hardhat";
 
 const allowanceLimit = 100;
 const INITIAL_ESCROW_BALANCE = BigInt(eth("100").toString());
-const HANDLE_REGISTER_WORMHOLE = 0;
+const HANDLE_REGISTER_TELEPORT = 0;
 const HANDLE_FLUSH = 1;
 const AMOUNT = BigInt(10);
 const L1_TARGET_DOMAIN = hre.ethers.utils.formatBytes32String("1");
@@ -125,7 +125,7 @@ describe("l1:L1DAITeleportGateway", () => {
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2TeleportGatewayAddress,
-        [HANDLE_REGISTER_WORMHOLE, ...l2Teleport]
+        [HANDLE_REGISTER_TELEPORT, ...l2Teleport]
       );
 
       expect(teleportRouterFake.requestMint).to.have.been.calledOnce;
@@ -158,12 +158,12 @@ async function setupTest() {
 
   const escrow: any = await simpleDeploy("L1Escrow", []);
 
-  const L2_DAI_WORMHOLE_GATEWAY_ADDRESS = 31414;
+  const L2_DAI_TELEPORT_GATEWAY_ADDRESS = 31414;
 
   const l1TeleportGateway = await simpleDeploy("L1DAITeleportGateway", [
     starkNetFake.address,
     dai.address,
-    L2_DAI_WORMHOLE_GATEWAY_ADDRESS,
+    L2_DAI_TELEPORT_GATEWAY_ADDRESS,
     escrow.address,
     teleportRouterFake.address,
   ]);
@@ -183,7 +183,7 @@ async function setupTest() {
     starkNetFake: starkNetFake as any,
     teleportRouterFake: teleportRouterFake as any,
     l1TeleportGateway: l1TeleportGateway as any,
-    l2TeleportGatewayAddress: L2_DAI_WORMHOLE_GATEWAY_ADDRESS,
+    l2TeleportGatewayAddress: L2_DAI_TELEPORT_GATEWAY_ADDRESS,
   };
 }
 

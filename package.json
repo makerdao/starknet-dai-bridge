@@ -50,6 +50,7 @@
     "deploy-escrow-mom:goerli": "STARKNET_NETWORK=alpha-goerli hardhat deploy-escrow-mom --network goerli",
     "deploy-escrow-mom:mainnet": "STARKNET_NETWORK=alpha-mainnet hardhat deploy-escrow-mom --network mainnet",
     "account:create": "hardhat account:create --network goerli",
+    "account:create:fork": "STARKNET_NETWORK=devnet hardhat account:create --network goerli",
     "account:get": "hardhat account:get --network goerli",
     "load-messaging-contract": "FORK_NETWORK=goerli hardhat load-messaging-contract --network fork",
     "flush": "hardhat flush --network fork",

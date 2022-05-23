@@ -4,8 +4,8 @@ import {
   StarknetContract,
 } from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
 import dotenv from "dotenv";
-import { ethers } from "ethers";
 import {
+  ethers,
   BaseContract,
   BigNumber,
   CallOverrides,
@@ -16,6 +16,7 @@ import {
   providers,
   Signer,
 } from "ethers";
+import { starknet } from "hardhat";
 import { getContractAddress, Result } from "ethers/lib/utils";
 import fs from "fs";
 import { isEmpty } from "lodash";
