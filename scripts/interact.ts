@@ -71,12 +71,7 @@ task("call:l1", "Call an L1 contract")
     const contractInstance = await contractFactory.attach(address);
     const _calldata = parseCalldataL1(calldata, NETWORK);
     let res;
-<<<<<<< HEAD
     if (func === "finalizeRegisterTeleport") {
-      console.log(_calldata);
-=======
-    if (func === "finalizeRegisterWormhole") {
->>>>>>> Cleanup
       res = await contractInstance[func]([
         toBytes32(_calldata[0]),
         toBytes32(_calldata[1]),

@@ -35,7 +35,12 @@ The amount of bridged DAI can be restricted by setting a ceiling property(`setCe
 ## Deposit Limit
 To make DAI bridge compatible with generic StarkNet token bridges a single deposit limit(`setMaxDeposit`) was added. Setting it to a value above the ceiling will make deposits unlimited, setting it to 0 will temporarily disable the bridge.
 
-## Starknet DAI
+### Deposit cancellation
+In case for some reason deposit transactions can't be included in L2 state users can cancel deposits on L1. It is a two step process:
+* first call `startDepositCancellation` on L1DAIBridge
+* second, after `messageCancellationDelay` (l1ToL2MessageNonce StarkNet core contract) finalize cancellation with `cancelDeposit`
+
+### Starknet DAI
 Since StarkNet execution environment is significantly different than EVM, Starknet DAI is not a one to one copy of L1 DAI. Here are the diferences:
 * [`uint256`](https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/uint256.cairo) to represent balances, for compatibility with L1
 * no permit function - StarkNet account abstraction should be used for UX optimizations
@@ -43,7 +48,7 @@ Since StarkNet execution environment is significantly different than EVM, Starkn
 
 ## Authorization
 Several contracts here use a very simple multi-owner authentication system, that restricts access to certain functions of the contract interface:
-* L1DAIBridge: `rely`, `deny`, `setCeiling`, `close`
+* L1DAIBridge: `rely`, `deny`, `setCeiling`, `setMaxDeposit`, `close`
 * L1Escrow: `relay`, `deny`, `approve`
 * L1GovernanceRelay: `rely`, `deny`, `approve`
 * dai: `rely`, `deny`, `mint`
@@ -90,12 +95,12 @@ In the case that a user believes they are censored, there is a `forceWithdraw` h
 To reimburse L2 DAI users on L1, the last valid L2 state of DAI balances needs to be calculated. Since at that moment rollup data might be unavailable, L2 state needs to be reconstructed from state diffs available on L1. It is important to note that there is no general way to map StarkNet addresses to Ethereum addresses and that only L2 addresses that registered an L1 reimburse address in the L2 registry contract will be included in the evacuation procedure. What is more there might be pending deposits that have not reached L2. Those should also be included in evacuation and returned based on state of L1toL2 message queue.
 
 #### Deposit censorship
-If `DEPOSIT` message for some reason is not processed by the sequencer, user funds will be stucked in the L1 escrow. Since this situation is detectable from data available on L1(L1 to L2 message queue is in the L1 StarkNet contract) Governance Assisted Escape Hatch described above will work. Yet there is another solution to this very problem that is fully permissionless. If [L1 to L2 message cancelation](https://community.starknet.io/t/l1-to-l2-message-cancellation/212) mechanism is implemented L1DAIBridge might provide a deposit cancelation functionality, that would cancel deposit message and return funds to the user.
+If `DEPOSIT` message for some reason is not processed by the sequencer, user funds will be stucked in the L1 escrow. Since this situation is detectable from data available on L1(L1 to L2 message queue is in the L1 StarkNet contract) Governance Assisted Escape Hatch described above will work. Another, simpler solution is to use [deposit cancelation](#deposit-cancellation).
 
 ### Configuration mistake
 Bridge consists of several interacting contracts and it is possible to misconfigure the construction which will render bridge non functional. There are at least two ways to do that:
 * remove allowance from `L1DAIBridge` to `L1Escrow` - withdrawals won't be finalized on L1, easy to fix by resetting the allowance and repeating `finalizeWithdrawal` operation
-* remove authorization to mint L2 DAI from `l2_dai_bridge` - deposits won't be finalized on L2, probably possible to fix either with planned [L1 to L2 message cancelation](https://community.starknet.io/t/l1-to-l2-message-cancellation/212) or with the help from the sequencer: first reauthorize bridge to mint, then ask sequencer to retry `finalize_deposit` method. Retrying of `finalize_deposit` should be possible as reverted transactions are not included in the state update.
+* remove authorization to mint L2 DAI from `l2_dai_bridge` - deposits won't be finalized on L2, probably possible to fix [deposit cancelation](#deposit-cancellation): cancel the deposit, reauthorize bridge to mint, then retry the deposit operation.
 
 ## Emergency Circuit Breaker
 Since StarkNet is expected to finalize its state on L1 at most every several hours, there is very little time to organize any preventive action in case of uncollateralized DAI is minted on L2. Maker Governance with its 2 day delay won't be able to respond in time. `L1EscrowMom` provides `refuse` method that sets L1Escrow allowance to 0. It can be used to freeze withdrawals immediately.

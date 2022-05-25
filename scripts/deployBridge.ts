@@ -18,6 +18,7 @@ import {
   getRequiredEnvDeployer,
   printAddresses,
   save,
+  getNetwork,
   waitForTx,
   wards,
   writeAddresses,
@@ -26,26 +27,26 @@ import {
 task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   const [l1Signer] = await hre.ethers.getSigners();
 
-  const NETWORK = hre.network.name;
-  let ADDRESS_NETWORK;
-  if (NETWORK === "fork") {
-    ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
-  } else {
-    ADDRESS_NETWORK = NETWORK.toUpperCase();
+  const { network, NETWORK } = getNetwork(hre);
+
+  console.log(`Deploying bridge on: ${network}`);
+
+  const TOKEN = getOptionalEnv(`${NETWORK}_TOKEN`);
+
+  const deploymentOptions = TOKEN ? { token: TOKEN } : {};
+
+  if (TOKEN) {
+    console.log(`Using token: ${TOKEN}`);
   }
-  const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
-  console.log(`Deploying bridge on ${NETWORK}/${STARKNET_NETWORK}`);
 
-  const L1_DAI_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L1_DAI_ADDRESS`);
-  save("DAI", { address: L1_DAI_ADDRESS }, NETWORK);
+  const L1_DAI_ADDRESS = getRequiredEnv(`${NETWORK}_L1_DAI_ADDRESS`);
+  save("DAI", { address: L1_DAI_ADDRESS }, network);
 
-  const L1_STARKNET_ADDRESS = getRequiredEnv(
-    `${ADDRESS_NETWORK}_L1_STARKNET_ADDRESS`
-  );
+  const L1_STARKNET_ADDRESS = getRequiredEnv(`${NETWORK}_L1_STARKNET_ADDRESS`);
   const L1_PAUSE_PROXY_ADDRESS = getRequiredEnv(
-    `${ADDRESS_NETWORK}_L1_PAUSE_PROXY_ADDRESS`
+    `${NETWORK}_L1_PAUSE_PROXY_ADDRESS`
   );
-  const L1_ESM_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L1_ESM_ADDRESS`);
+  const L1_ESM_ADDRESS = getRequiredEnv(`${NETWORK}_L1_ESM_ADDRESS`);
   const DENY_DEPLOYER = getRequiredEnv("DENY_DEPLOYER") === "true";
 
   // @ts-ignore
@@ -56,18 +57,30 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
     `Deploying from account: ${deployer.starknetContract.address.toString()}`
   );
 
-  const L2_DAI_ADDRESS = getOptionalEnvDeployments(
-    `${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS`
+  console.log("From");
+  console.log(`\tl2 account: ${deployer.starknetContract.address.toString()}`);
+  console.log(
+    `\tl1 account: ${(await hre.ethers.getSigners())[0].address.toString()}`
   );
+
+  console.log("Deny deployer:", DENY_DEPLOYER);
+
+  const L2_DAI_ADDRESS = getOptionalEnv(`${NETWORK}_L2_DAI_ADDRESS`);
   if (L2_DAI_ADDRESS) {
-    save("dai", { address: L2_DAI_ADDRESS }, NETWORK);
+    save("dai", { address: L2_DAI_ADDRESS }, network);
   }
 
   const l2DAI = L2_DAI_ADDRESS
     ? await getL2ContractAt(hre, "dai", L2_DAI_ADDRESS)
-    : await deployL2(hre, "dai", BLOCK_NUMBER, {
-        ward: asDec(deployer.starknetContract.address),
-      });
+    : await deployL2(
+        hre,
+        "dai",
+        BLOCK_NUMBER,
+        {
+          ward: asDec(deployer.starknetContract.address),
+        },
+        deploymentOptions
+      );
 
   const futureL1GovRelayAddress = await getAddressOfNextDeployedContract(
     l1Signer
@@ -78,7 +91,8 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
     BLOCK_NUMBER,
     {
       l1_governance_relay: BigInt(futureL1GovRelayAddress).toString(),
-    }
+    },
+    deploymentOptions
   );
 
   const l1GovernanceRelay = await deployL1(
@@ -92,27 +106,32 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
     "futureL1GovRelayAddress != l1GovernanceRelay.address"
   );
 
-  const REGISTRY_ADDRESS = getOptionalEnv(
-    `${NETWORK.toUpperCase()}_REGISTRY_ADDRESS`
-  );
+  const REGISTRY_ADDRESS = getOptionalEnv(`${NETWORK}_REGISTRY_ADDRESS`);
   if (REGISTRY_ADDRESS) {
-    save("registry", { address: REGISTRY_ADDRESS }, NETWORK);
+    save("registry", { address: REGISTRY_ADDRESS }, network);
   }
+
   const registry = REGISTRY_ADDRESS
     ? await getL2ContractAt(hre, "registry", REGISTRY_ADDRESS)
-    : await deployL2(hre, "registry", BLOCK_NUMBER);
+    : await deployL2(hre, "registry", BLOCK_NUMBER, {}, deploymentOptions);
 
   const l1Escrow = await deployL1(hre, "L1Escrow", BLOCK_NUMBER);
 
   const futureL1DAIBridgeAddress = await getAddressOfNextDeployedContract(
     l1Signer
   );
-  const l2DAIBridge = await deployL2(hre, "l2_dai_bridge", BLOCK_NUMBER, {
-    ward: asDec(deployer.starknetContract.address),
-    dai: asDec(l2DAI.address),
-    bridge: asDec(futureL1DAIBridgeAddress),
-    registry: asDec(registry.address),
-  });
+  const l2DAIBridge = await deployL2(
+    hre,
+    "l2_dai_bridge",
+    BLOCK_NUMBER,
+    {
+      ward: asDec(deployer.starknetContract.address),
+      dai: asDec(l2DAI.address),
+      bridge: asDec(futureL1DAIBridgeAddress),
+      registry: asDec(registry.address),
+    },
+    deploymentOptions
+  );
 
   const l1DAIBridge = await deployL1(hre, "L1DAIBridge", BLOCK_NUMBER, [
     L1_STARKNET_ADDRESS,
@@ -126,28 +145,38 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
     "futureL1DAIBridgeAddress != l1DAIBridge.address"
   );
 
+  const gasPrice = getOptionalEnv(`${NETWORK}_GAS_PRICE`);
+  const overrides = gasPrice
+    ? { gasPrice: utils.parseUnits(gasPrice, "gwei") }
+    : {};
+
+  console.log("L1Escrow approving L1DAIBridge...");
   const MAX = BigInt(2 ** 256) - BigInt(1);
-  await l1Escrow.approve(L1_DAI_ADDRESS, l1DAIBridge.address, MAX);
+  await waitForTx(
+    l1Escrow.approve(L1_DAI_ADDRESS, l1DAIBridge.address, MAX, overrides)
+  );
 
   console.log("Finalizing permissions for L1Escrow...");
-  await waitForTx(l1Escrow.rely(L1_PAUSE_PROXY_ADDRESS));
-  await waitForTx(l1Escrow.rely(L1_ESM_ADDRESS));
+  await waitForTx(l1Escrow.rely(L1_PAUSE_PROXY_ADDRESS, overrides));
+  await waitForTx(l1Escrow.rely(L1_ESM_ADDRESS, overrides));
   if (DENY_DEPLOYER) {
-    await waitForTx(l1Escrow.deny(await l1Signer.getAddress()));
+    await waitForTx(l1Escrow.deny(await l1Signer.getAddress(), overrides));
   }
 
   console.log("Finalizing permissions for L1DAIBridge...");
-  await waitForTx(l1DAIBridge.rely(L1_PAUSE_PROXY_ADDRESS));
-  await waitForTx(l1DAIBridge.rely(L1_ESM_ADDRESS));
+  await waitForTx(l1DAIBridge.rely(L1_PAUSE_PROXY_ADDRESS, overrides));
+  await waitForTx(l1DAIBridge.rely(L1_ESM_ADDRESS, overrides));
   if (DENY_DEPLOYER) {
-    await waitForTx(l1DAIBridge.deny(await l1Signer.getAddress()));
+    await waitForTx(l1DAIBridge.deny(await l1Signer.getAddress(), overrides));
   }
 
   console.log("Finalizing permissions for L1GovernanceRelay...");
-  await waitForTx(l1GovernanceRelay.rely(L1_PAUSE_PROXY_ADDRESS));
-  await waitForTx(l1GovernanceRelay.rely(L1_ESM_ADDRESS));
+  await waitForTx(l1GovernanceRelay.rely(L1_PAUSE_PROXY_ADDRESS, overrides));
+  await waitForTx(l1GovernanceRelay.rely(L1_ESM_ADDRESS, overrides));
   if (DENY_DEPLOYER) {
-    await waitForTx(l1GovernanceRelay.deny(await l1Signer.getAddress()));
+    await waitForTx(
+      l1GovernanceRelay.deny(await l1Signer.getAddress(), overrides)
+    );
   }
 
   console.log("Finalizing permissions for l2_dai...");
