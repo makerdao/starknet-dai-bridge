@@ -10,6 +10,8 @@ import argparse
 import datetime
 import sys
 
+from starkware.crypto.signature.signature import FIELD_PRIME
+
 def build_salt_to_address(contract, calldata, caller):
     return lambda salt: calculate_contract_address(
         salt, contract, calldata, caller
@@ -42,7 +44,7 @@ def main():
     started = datetime.datetime.now()
 
     for i in range(start_from ):
-        random.getrandbits(251)
+        random.getrandbits(252)
 
     i = i + 1
 
@@ -54,9 +56,12 @@ def main():
     prefixes = set()
 
     while True:
-        salt = random.getrandbits(251)
-        address = salt_to_address(salt)
-        prefix = hex(address)[2:5]
+        while True:
+            salt = random.getrandbits(252)
+            if salt < FIELD_PRIME:
+                break
+        address = f"{salt_to_address(salt):x}"
+        prefix = address[0:3]
         prefixes.add(prefix)
         print( f'{i}:{prefix}({"{:.2%}".format(len(prefixes)/4096)})\033[K', flush=True, end='\r')
         if (prefix == 'da1'):
@@ -68,7 +73,7 @@ def main():
             print('\twhich took:', datetime.datetime.now() - started)
             print('\tsalt:', hex(salt))
             print('\tcalldata', calldata)
-            print('\tdai address:', hex(address))
+            print('\tdai address:', address)
             return
         i += 1
 

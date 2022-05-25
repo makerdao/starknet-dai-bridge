@@ -1,27 +1,136 @@
+/**
+ * Full goerli deploy including any permissions that need to be set.
+ */
+
+import {
+  DeployOptions,
+  StarknetContract,
+} from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
 import { ethers } from "ethers";
+import {
+  BaseContract,
+  BigNumber,
+  CallOverrides,
+  ContractTransaction,
+  Event,
+  EventFilter,
+  Overrides,
+  providers,
+  Signer,
+} from "ethers";
+import { getContractAddress, Result } from "ethers/lib/utils";
 import fs from "fs";
-import { StarknetContract } from "hardhat/types/runtime";
-import { ec, hash } from "starknet";
-const { getKeyPair, getStarkKey, sign, verify } = ec;
-const { hashMessage } = hash;
-import type { KeyPair, Signature } from "starknet";
+import { isEmpty } from "lodash";
+import { assert } from "ts-essentials";
 
 const DEPLOYMENTS_DIR = `deployments`;
 const MASK_250 = BigInt(2 ** 250 - 1);
 
+export function getRequiredEnv(key: string): string {
+  const value = process.env[key];
+  assert(value, `Please provide ${key} in .env file`);
+
+  return value;
+}
+
+export function getOptionalEnv(key: string): string | undefined {
+  return process.env[key];
+}
+
+interface TypedEventFilter<_EventArgsArray, _EventArgsObject>
+  extends EventFilter {}
+
+interface TypedEvent<EventArgs extends Result> extends Event {
+  args: EventArgs;
+}
+
+interface AuthableLike {
+  deny: any;
+  rely: any;
+}
+
+interface AuthableContract extends BaseContract {
+  queryFilter<EventArgsArray extends Array<any>, EventArgsObject>(
+    event: TypedEventFilter<EventArgsArray, EventArgsObject>,
+    fromBlockOrBlockhash?: string | number | undefined,
+    toBlock?: string | number | undefined
+  ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
+  deny(
+    usr: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+  rely(
+    usr: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+  wards(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+  filters: {
+    Deny(usr?: string | null): TypedEventFilter<[string], { usr: string }>;
+    Rely(usr?: string | null): TypedEventFilter<[string], { usr: string }>;
+  };
+}
+
+export async function getActiveWards(
+  _authContract: AuthableLike,
+  fromBlockOrBlockhash?: string | number
+): Promise<string[]> {
+  const authContract = _authContract as AuthableContract;
+  const relyEvents = await authContract.queryFilter(
+    authContract.filters.Rely(),
+    fromBlockOrBlockhash
+  );
+
+  const relies = relyEvents.map((r) => r.args.usr);
+
+  const statusOfRelies = await Promise.all(
+    relies.map(async (usr) => ({ usr, active: await authContract.wards(usr) }))
+  );
+
+  const activeRelies = statusOfRelies
+    .filter((s) => s.active.toNumber() === 1)
+    .map((s) => s.usr);
+
+  return activeRelies;
+}
+
+export async function getAddressOfNextDeployedContract(
+  signer: Signer,
+  offset: number = 0
+): Promise<string> {
+  return getContractAddress({
+    from: await signer.getAddress(),
+    nonce: (await signer.getTransactionCount()) + offset,
+  });
+}
+
+export async function waitForTx(
+  tx: Promise<any>
+): Promise<providers.TransactionReceipt> {
+  console.log(`Sending transaction...`);
+  const resolvedTx = await tx;
+  console.log(`Waiting for tx: ${resolvedTx.hash}`);
+  return await resolvedTx.wait();
+}
+
 export function getAddress(contract: string, network: string) {
+  console.log(`reading: ./deployments/${network}/${contract}.json`);
   try {
     return JSON.parse(
       fs.readFileSync(`./deployments/${network}/${contract}.json`).toString()
     ).address;
   } catch (err) {
-    throw Error(
-      `${contract} deployment on ${network} not found, run 'yarn deploy:${network}'`
-    );
+    if (process.env[`${getNetworkUpperCase(network)}_${contract}`]) {
+      return process.env[`${getNetworkUpperCase(network)}_${contract}`];
+    } else {
+      throw Error(
+        `${contract} deployment on ${network} not found, run 'yarn deploy:${network}'`
+      );
+    }
   }
 }
 
-export function getAccounts(network: string) {
+function getAccounts(network: string) {
   const files = fs.readdirSync(`./deployments/${network}`);
   return files
     .filter((file) => file.slice(0, 7) === "account")
@@ -40,6 +149,14 @@ export function parseCalldataL1(calldata: string, network: string) {
       return getAddress("l2_dai_bridge", network);
     } else if (input === "L1DAIBridge") {
       return getAddress("L1DAIBridge", network);
+    } else if (input === "L1DAIWormholeGateway") {
+      return getAddress("L1DAIWormholeGateway", network);
+    } else if (input === "L1Escrow") {
+      return getAddress("L1Escrow", network);
+    } else if (input === "DAI") {
+      return getAddress("DAI", network);
+    } else if (input === "MAX") {
+      return "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     } else {
       return input;
     }
@@ -81,12 +198,26 @@ export function parseCalldataL2(
       res[inputName] = BigInt(
         getAddress(`account-${input}`, network)
       ).toString();
-    } else if (input === "l2_dai_bridge") {
-      res[inputName] = BigInt(getAddress("l2_dai_bridge", network)).toString();
     } else if (input === "L1DAIBridge") {
       res[inputName] = BigInt(getAddress("L1DAIBridge", network)).toString();
+    } else if (input === "l2_dai_bridge") {
+      res[inputName] = BigInt(getAddress("l2_dai_bridge", network)).toString();
+    } else if (input === "l2_dai_wormhole_gateway") {
+      res[inputName] = BigInt(
+        getAddress("l2_dai_wormhole_gateway", network)
+      ).toString();
+    } else if (input === "GOERLI-MASTER-1") {
+      res[inputName] = `0x0${ethers.utils
+        .formatBytes32String("GOERLI-MASTER-1")
+        .slice(2, 65)}`;
     } else if (inputType === "Uint256") {
-      res[inputName] = [input, _calldata[i + 1]];
+      const low =
+        input === "MAX_HALF" ? "0xffffffffffffffffffffffffffffffff" : input;
+      const high =
+        _calldata[i + 1] === "MAX_HALF"
+          ? "0xffffffffffffffffffffffffffffffff"
+          : _calldata[i + 1];
+      res[inputName] = { low, high };
       i++;
     } else {
       res[inputName] = input;
@@ -119,88 +250,160 @@ export function getSelectorFromName(name: string) {
   ).toString();
 }
 
-export async function callFrom(
-  caller: StarknetContract,
-  contract: StarknetContract,
-  call: string,
-  calldata: any[] | any
+export function printAddresses(
+  network: string,
+  includeWormhole: boolean = false
 ) {
-  const selector = getSelectorFromName(call);
-  const _calldata = flatten(calldata);
-  return caller.invoke("execute", {
-    to: BigInt(contract.address).toString(),
-    selector,
-    calldata: _calldata,
-  });
+  let contracts = [
+    "account-deployer",
+    "dai",
+    "registry",
+    "L1Escrow",
+    "L1DAIBridge",
+    "l2_dai_bridge",
+    "L1GovernanceRelay",
+    "l2_governance_relay",
+  ];
+
+  if (includeWormhole) {
+    contracts = [
+      ...contracts,
+      "L1DAIWormholeGateway",
+      "l2_dai_wormhole_gateway",
+    ];
+  }
+
+  const addresses = contracts.reduce(
+    (a, c) => Object.assign(a, { [c]: getAddress(c, network) }),
+    {}
+  );
+
+  console.log(addresses);
 }
 
-function flatten(calldata: any): any[] {
-  const res: any = [];
-  Object.values(calldata).forEach((data: any) => {
-    if (typeof data === "object") {
-      res.push(...data);
+//TODO: handle addresses here
+export function writeAddresses(hre: any, includeWormhole: boolean = false) {
+  const NETWORK = hre.network.name;
+  let ADDRESS_NETWORK: string;
+  if (NETWORK === "fork") {
+    ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
+  } else {
+    ADDRESS_NETWORK = NETWORK.toUpperCase();
+  }
+
+  let variables = [
+    ["L1_ESCROW_ADDRESS", "L1Escrow"],
+    ["L2_DAI_ADDRESS", "dai"],
+    ["L1_GOVERNANCE_RELAY_ADDRESS", "L1GovernanceRelay"],
+    ["L2_GOVERNANCE_RELAY_ADDRESS", "l2_governance_relay"],
+    ["L1_DAI_BRIDGE_ADDRESS", "L1DAIBridge"],
+    ["L2_DAI_BRIDGE_ADDRESS", "l2_dai_bridge"],
+    ["REGISTRY_ADDRESS", "registry"],
+  ];
+
+  if (includeWormhole) {
+    variables = [
+      ...variables,
+      ["L1_DAI_WORMHOLE_GATEWAY_ADDRESS", "L1DAIWormholeGateway"],
+      ["L2_DAI_WORMHOLE_GATEWAY_ADDRESS", "l2_dai_wormhole_gateway"],
+    ];
+  }
+
+  const addresses = variables.reduce((a, c) => {
+    const address = getAddress(c[1], NETWORK);
+    if (address) {
+      return `${a}${ADDRESS_NETWORK}_${c[0]}=${address}\n`;
     } else {
-      res.push(data);
+      return a;
     }
-  });
-  return res;
+  }, "");
+
+  fs.writeFileSync(".env.deployments", addresses);
 }
 
-export class Signer {
-  privateKey;
-  keyPair: KeyPair;
-  publicKey;
+export async function wards(
+  authable: StarknetContract,
+  ward: StarknetContract
+) {
+  return (await authable.call("wards", { user: asDec(ward.address) })).res;
+}
 
-  constructor(privateKey: string) {
-    this.privateKey = privateKey;
-    this.keyPair = getKeyPair(this.privateKey);
-    this.publicKey = getStarkKey(this.keyPair);
-  }
+export function asDec(address: string): string {
+  return BigInt(address).toString();
+}
 
-  sign(msgHash: string): Signature {
-    return sign(this.keyPair, msgHash);
-  }
+export async function getL1ContractAt(hre: any, name: string, address: string) {
+  console.log(`Using existing contract: ${name} at: ${address}`);
+  const contractFactory = await hre.ethers.getContractFactory(name);
+  return contractFactory.attach(address);
+}
 
-  verify(msgHash: string, sig: Signature): boolean {
-    return verify(this.keyPair, msgHash, sig);
-  }
+export async function getL2ContractAt(hre: any, name: string, address: string) {
+  console.log(`Using existing contract: ${name} at: ${address}`);
+  const contractFactory = await hre.starknet.getContractFactory(name);
+  return contractFactory.getContractAt(address);
+}
 
-  async sendTransaction(
-    caller: StarknetContract,
-    contract: StarknetContract,
-    selectorName: string,
-    calldata: any[] | any,
-    nonce: number = 0
-  ) {
-    if (nonce === 0) {
-      const executionInfo = await caller.call("get_nonce");
-      nonce = executionInfo.res;
-    }
+export async function deployL1(
+  hre: any,
+  name: string,
+  blockNumber: number,
+  calldata: any = [],
+  overrides: any = {},
+  saveName?: string
+) {
+  console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
 
-    const selector = getSelectorFromName(selectorName);
-    const contractAddress = BigInt(contract.address).toString();
-    const _calldata = flatten(calldata);
-    const msgHash = hashMessage(
-      caller.address,
-      contract.address,
-      selector,
-      _calldata,
-      nonce.toString()
-    );
+  const { network } = getNetwork(hre);
 
-    const sig = this.sign(msgHash);
-    // const verified = this.verify(msgHash, sig);
+  const contractFactory = await hre.ethers.getContractFactory(name);
+  const contract = await contractFactory.deploy(...calldata, overrides);
+  save(saveName || name, contract, network, blockNumber);
 
-    return caller.invoke(
-      "execute",
-      {
-        to: contractAddress,
-        selector,
-        calldata: _calldata,
-      },
-      {
-        signature: [sig.r, sig.s],
-      }
-    );
-  }
+  await contract.deployed();
+
+  console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
+  console.log(
+    `To verify: npx hardhat verify ${contract.address} ${calldata
+      .filter((a: any) => !isEmpty(a))
+      .join(" ")}`
+  );
+  return contract;
+}
+
+export async function deployL2(
+  hre: any,
+  name: string,
+  blockNumber: number,
+  calldata: any = {},
+  options: DeployOptions = {},
+  saveName?: string
+) {
+  const { network } = getNetwork(hre);
+
+  console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
+  const contractFactory = await hre.starknet.getContractFactory(name);
+
+  const contract = await contractFactory.deploy(calldata, options);
+  save(saveName || name, contract, network, blockNumber);
+
+  console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
+  console.log(
+    `To verify: npx hardhat starknet-verify --starknet-network ${network} --path contracts/l2/${name}.cairo --address ${contract.address}`
+  );
+  return contract;
+}
+
+export function getNetwork(hre: any) {
+  const network = hre.config.starknet.network!;
+  assert(
+    network === "alpha-mainnet" || network === "alpha-goerli",
+    "Network not properly set!"
+  );
+  const NETWORK = getNetworkUpperCase(network);
+  return { network, NETWORK };
+}
+
+function getNetworkUpperCase(network: string) {
+  return network.toUpperCase().replace(/[-]/g, "_")!;
 }

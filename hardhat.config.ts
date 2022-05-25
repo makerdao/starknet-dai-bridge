@@ -5,11 +5,16 @@ import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
 import "./scripts/interact";
+import "./scripts/deployDeployer";
+import "./scripts/deployBridge";
+import "./scripts/deployBridgeUpgrade";
+import "./scripts/deployEscrowMom";
 import "./scripts/account";
 import "./scripts/fork";
+import "./scripts/wards";
 
 import { config as dotenvConfig } from "dotenv";
-import { HardhatUserConfig } from "hardhat/config";
+// import { HardhatUserConfig } from "hardhat/config";
 import { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
@@ -37,22 +42,39 @@ if (!infuraApiKey) {
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;
+
+  const common = {
+    chainId: chainIds[network],
+    url,
+    gasMultiplier: 1.5,
+  };
+  if (
+    network === "mainnet" &&
+    process.env.STARKNET_NETWORK === "alpha-mainnet" &&
+    process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"]
+  ) {
+    return {
+      ...common,
+      accounts: [process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"]],
+      gasMultiplier: 3,
+    };
+  }
+
   return {
+    ...common,
     accounts: {
       count: 10,
       mnemonic,
       path: "m/44'/60'/0'/0",
     },
-    chainId: chainIds[network],
-    url,
-    gasMultiplier: 1.5,
   };
 }
 
-const config: HardhatUserConfig = {
+const config: any = {
   defaultNetwork: "hardhat",
   networks: {
     goerli: getChainConfig("goerli"),
+    mainnet: getChainConfig("mainnet"),
     fork: {
       url: "http://127.0.0.1:8545",
     },
@@ -72,7 +94,7 @@ const config: HardhatUserConfig = {
     },
   },
   starknet: {
-    dockerizedVersion: "0.8.0",
+    dockerizedVersion: "0.8.1",
     network:
       process.env.NODE_ENV !== "test" ? process.env.STARKNET_NETWORK : "devnet",
     wallets: {
