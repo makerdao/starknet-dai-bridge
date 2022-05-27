@@ -3,14 +3,22 @@ import { BigNumberish, constants, Contract, utils } from "ethers";
 import { task } from "hardhat/config";
 
 import { getRequiredEnv } from "./utils";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 const YELLOW = "\x1b[33m";
 const RESET = "\x1b[0m";
 
+function chainId(network: string) {
+  return network.indexOf("MAINNET") >= 0 ? "mainnet" : "testnet";
+}
+
 async function inspectL2Wards(key: string) {
+  const network = getRequiredEnv("NETWORK");
   const address = `0x${BigInt(getRequiredEnv(key)).toString(16)}`;
 
-  const url = `http://starknet.events/api/v1/get_events?chain_id=mainnet&contract=${address}&from_block=0&name=Rely&name=Deny`;
+  const url = `http://starknet.events/api/v1/get_events?chain_id=${chainId(
+    network
+  )}&contract=${address}&from_block=0&name=Rely&name=Deny`;
   const response: any = await axios.get(url);
   const log = response.data.items.map(
     (event: any) =>
@@ -32,11 +40,24 @@ async function inspectL2Wards(key: string) {
   console.log(Array.from(wards).join("\n"));
 }
 
-async function inspectL1Wards(ethers: any, key: string) {
+type HREEthers = HardhatRuntimeEnvironment["ethers"];
+
+function getL1Provider(ethers: HREEthers) {
+  const network = getRequiredEnv("NETWORK");
   const infuraApiKey = getRequiredEnv("INFURA_API_KEY");
-  const provider = ethers.getDefaultProvider(
-    `https://mainnet.infura.io/v3/${infuraApiKey}`
+  const prefix = network.indexOf("MAINNET") >= 0 ? "mainnet" : "goerli";
+  return ethers.getDefaultProvider(
+    `https://${prefix}.infura.io/v3/${infuraApiKey}`
   );
+}
+
+function getStartingBlock() {
+  const network = getRequiredEnv("NETWORK");
+  return network.indexOf("MAINNET") >= 0 ? 14742550 : 1474255;
+}
+
+async function inspectL1Wards(ethers: HREEthers, key: string) {
+  const provider = getL1Provider(ethers);
 
   const address = getRequiredEnv(key);
 
@@ -46,21 +67,18 @@ async function inspectL1Wards(ethers: any, key: string) {
 
   const relyEvents = await contract.queryFilter(
     contract.filters.Rely(),
-    14742550
+    getStartingBlock()
   );
   const denyEvents = await contract.queryFilter(
     contract.filters.Deny(),
-    14742550
+    getStartingBlock()
   );
-  // const denyEvents = []
 
   const sorted = [...relyEvents, ...denyEvents].sort((a, b) =>
     a.blockNumber === b.blockNumber
       ? a.logIndex - b.logIndex
       : a.blockNumber - b.logIndex
   );
-
-  provider.getBlock();
 
   const logs = await Promise.all(
     sorted.map(async (event: any) => {
@@ -94,14 +112,12 @@ function showNumber(n: BigNumberish) {
   return utils.formatEther(n);
 }
 
-async function inspectL1EscrowAllowances(ethers: any) {
-  const infuraApiKey = getRequiredEnv("INFURA_API_KEY");
-  const provider = ethers.getDefaultProvider(
-    `https://mainnet.infura.io/v3/${infuraApiKey}`
-  );
+async function inspectL1EscrowAllowances(ethers: HREEthers) {
+  const network = getRequiredEnv("NETWORK");
+  const provider = getL1Provider(ethers);
 
-  const escrowAddress = getRequiredEnv("ALPHA_MAINNET_L1_ESCROW_ADDRESS");
-  const daiAddress = getRequiredEnv("ALPHA_MAINNET_L1_DAI_ADDRESS");
+  const escrowAddress = getRequiredEnv(`${network}_L1_ESCROW_ADDRESS`);
+  const daiAddress = getRequiredEnv(`${network}_L1_DAI_ADDRESS`);
 
   const abi = [
     "event Approval(address indexed, address indexed, uint256)",
@@ -112,7 +128,7 @@ async function inspectL1EscrowAllowances(ethers: any) {
 
   const events = await dai.queryFilter(
     dai.filters.Approval(escrowAddress),
-    14742550
+    getStartingBlock()
   );
 
   const logs = await Promise.all(
@@ -145,12 +161,14 @@ async function inspectL1EscrowAllowances(ethers: any) {
 }
 
 task("inspect-wards", "Inspect wards").setAction(async (_, hre) => {
+  const network = getRequiredEnv("NETWORK");
+
   await inspectL1EscrowAllowances(hre.ethers);
 
-  await inspectL1Wards(hre.ethers, `ALPHA_MAINNET_L1_ESCROW_ADDRESS`);
-  await inspectL1Wards(hre.ethers, `ALPHA_MAINNET_L1_DAI_BRIDGE`);
-  await inspectL1Wards(hre.ethers, `ALPHA_MAINNET_L1_GOVERNANCE_RELAY`);
+  await inspectL1Wards(hre.ethers, `${network}_L1_ESCROW_ADDRESS`);
+  await inspectL1Wards(hre.ethers, `${network}_L1_DAI_BRIDGE`);
+  await inspectL1Wards(hre.ethers, `${network}_L1_GOVERNANCE_RELAY`);
 
-  await inspectL2Wards(`ALPHA_MAINNET_L2_DAI_ADDRESS`);
-  await inspectL2Wards(`ALPHA_MAINNET_L2_DAI_BRIDGE`);
+  await inspectL2Wards(`${network}_L2_DAI_ADDRESS`);
+  await inspectL2Wards(`${network}_L2_DAI_BRIDGE`);
 });
