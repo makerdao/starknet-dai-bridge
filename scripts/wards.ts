@@ -5,7 +5,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { getRequiredEnv } from "./utils";
 
-
 const YELLOW = "\x1b[33m";
 const RESET = "\x1b[0m";
 
