@@ -1,9 +1,10 @@
 import axios from "axios";
 import { BigNumberish, constants, Contract, utils } from "ethers";
 import { task } from "hardhat/config";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { getRequiredEnv } from "./utils";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
+
 
 const YELLOW = "\x1b[33m";
 const RESET = "\x1b[0m";
