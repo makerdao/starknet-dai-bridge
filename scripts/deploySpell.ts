@@ -53,6 +53,23 @@ end`;
   );
 });
 
+const officialMCD = `
+  WormholeJoinLike wormholeJoin = WormholeJoinLike(0x7954DA41E6D18e25Ad6365a146091c9D75E4b568);
+  address vow = 0x23f78612769b9013b3145E43896Fa1578cAa2c2a;
+  VatLike vat = VatLike(0xB966002DDAa2Baf48369f5015329750019736031);
+  RouterLike router = RouterLike(0xac22Eea777cd98A357f2E2f26e7Acd37651DBA9c);
+  OracleAuthLike oracleAuth = OracleAuthLike(0x70FEdb21fF40E8bAf9f1a631fA9c34F179f29442);
+  address dai = 0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844;
+`;
+const customMCD = `
+  WormholeJoinLike wormholeJoin = WormholeJoinLike(0x3e55b205760829Ff478191FfEAA3C542F982C096);
+  address vow = 0xDAb7bC19b593A7C694AE7484Cd4cB346e372e68C;
+  VatLike vat = VatLike(0x2D833c7bC94409F02aF5bC9C4a5FA28359795CC5);
+  RouterLike router = RouterLike(0x4213aE220314Ed4d972088e13D8F7D361760385e);
+  OracleAuthLike oracleAuth = OracleAuthLike(0x455f17Bdd98c19e3417129e7a821605661623aD7);
+  address dai = 0xd7F24C609825a4348dEc3C856Aa8796696355Fcd;
+`;
+
 task("create-teleport-spell-l1", "Create L1 spell").setAction(async () => {
   const l1DAITeleportGateway = getRequiredEnvDeployments(
     "GOERLI_L1_DAI_WORMHOLE_GATEWAY_ADDRESS"
@@ -63,6 +80,9 @@ task("create-teleport-spell-l1", "Create L1 spell").setAction(async () => {
     "GOERLI_L1_GOVERNANCE_RELAY_ADDRESS"
   );
   const l2Spell = getAddress("L2GoerliAddTeleportDomainSpell", "fork");
+
+  // temporary
+  const MCD_DEPLOYMENT = getRequiredEnv("OFFICIAL_MCD") === "true" ? officialMCD : customMCD;
 
   const spell = `
 // SPDX-License-Identifier: AGPL-3.0-or-later
@@ -81,7 +101,7 @@ task("create-teleport-spell-l1", "Create L1 spell").setAction(async () => {
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.7.6;
+pragma solidity 0.8.13;
 
 import {DssExec} from "../common/DssExec.sol";
 import {DssAction} from "../common/DssAction.sol";
@@ -159,36 +179,10 @@ contract DssSpellAction is DssAction {
     return false;
   }
 
-  // Here is current bridge deployment
-  //    {
-  //      'account-deployer': '0x035c782a5447a822a3ae179321dc694c8c36a0deb82524248e1e683dce4c2c59',
-  //      dai: '0x03e85bfbb8e2a42b7bead9e88e9a1b19dbccf661471061807292120462396ec9',
-  //      registry: '0x0009a22467ad5121347d290c8d439d660076bf8e6f836ad4ca607d7637f8c2a5',
-  //      L1Escrow: '0x38c3DDF1eF3e045abDDEb94f4e7a1a0d5440EB44',
-  //      l2_dai_bridge: '0x0278f24c3e74cbf7a375ec099df306289beb0605a346277d200b791a7f811a19',
-  //      L1DAIBridge: '0xd8beAa22894Cd33F24075459cFba287a10a104E4',
-  //      l2_governance_relay: '0x030255465a3d33f430ea6e16cb22cc09b9291972f7f8c7198b5e5b1ef522b85c',
-  //      L1GovernanceRelay: '0x73c0049Dd6560E644984Fa3Af30A55a02a7D81fB'
-  //    }
-
-  // And basic dss-teleport deployment
-  // deployed with: https://github.com/makerdao/teleport-integration-tests/pull/42
-  // Teleport:  {
-  //  "join": "0x7954DA41E6D18e25Ad6365a146091c9D75E4b568",
-  //  "oracleAuth": "0x70FEdb21fF40E8bAf9f1a631fA9c34F179f29442",
-  //  "router": "0xac22Eea777cd98A357f2E2f26e7Acd37651DBA9c",
-  //  "constantFee": "0xd40EA2981B350D38281402c058b1Ef1058dbac53",
-  //  "relay": "0x29e07B88a51281f3C3CDD9F8De94DfCf7Ff24C7B"
-  // }
-
   function actions() public override {
     bytes32 masterDomain = bytes32("GOERLI-MASTER-1");
-    TeleportJoinLike teleportJoin = TeleportJoinLike(0x7954DA41E6D18e25Ad6365a146091c9D75E4b568);
-    address vow = 0x23f78612769b9013b3145E43896Fa1578cAa2c2a;
-    VatLike vat = VatLike(0xB966002DDAa2Baf48369f5015329750019736031);
     uint256 globalLine = 10000000000 * RAD;
-    RouterLike router = RouterLike(0xac22Eea777cd98A357f2E2f26e7Acd37651DBA9c);
-    OracleAuthLike oracleAuth = OracleAuthLike(0x70FEdb21fF40E8bAf9f1a631fA9c34F179f29442);
+    ${MCD_DEPLOYMENT}
     address[] memory oracles = new address[](6);
 
     oracles[0] = 0xC4756A9DaE297A046556261Fa3CD922DFC32Db78; // OCU
@@ -211,7 +205,6 @@ contract DssSpellAction is DssAction {
     // configure starknet teleport
     bytes32 slaveDomain = bytes32("GOERLI-SLAVE-STARKNET-1");
     address constantFees = 0xd40EA2981B350D38281402c058b1Ef1058dbac53;
-    address dai = 0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844;
 
     address slaveDomainGateway = ${l1DAITeleportGateway};
     L1EscrowLike escrow = L1EscrowLike(${escrow});
@@ -303,24 +296,32 @@ async function waitForTx(tx: Promise<any>) {
   return await _.wait();
 }
 
+async function getPauseSigner(sdk: any, l1Signer: any) {
+  const pauseAddress = await sdk.pause_proxy.owner();
+  if ((await l1Signer.getAddress()) === pauseAddress || true) return l1Signer;
+  //return await impersonateAccount(pauseAddress, l1Signer.provider as JsonRpcProvider);
+}
+
 async function executeDssSpell(
   l1Signer: Signer,
   pauseAddress: string,
   spell: Contract,
-  mkrWhaleAddress: string
+  mkrWhaleAddress: string,
+  network: string
 ) {
   // execute spell using standard DssSpell procedure
-  const mkrWhale = await impersonateAccount(
-    mkrWhaleAddress,
-    l1Signer.provider as JsonRpcProvider
-  );
-  const pause = new Contract(
-    pauseAddress,
-    new Interface(["function authority() view returns (address)"]),
-    l1Signer
-  );
+  let mkrWhale;
+  if (network === "fork") {
+    mkrWhale = await impersonateAccount(
+      mkrWhaleAddress,
+      l1Signer.provider as JsonRpcProvider
+    );
+  } else {
+    const CHIEF_PRIVATE_KEY = getRequiredEnv("CHIEF_PRIVATE_KEY");
+    mkrWhale = (new ethers.Wallet(CHIEF_PRIVATE_KEY)).connect(l1Signer.provider as JsonRpcProvider);
+  }
   const chief = new Contract(
-    await pause.authority(),
+    mkrWhaleAddress,
     new Interface([
       "function vote(address[])",
       "function lift(address)",
@@ -330,17 +331,26 @@ async function executeDssSpell(
     ]),
     mkrWhale
   );
-  await waitForTx(chief.lock(encodeHex(toWad(100001))));
+  const pause = new Contract(
+    pauseAddress,
+    new Interface([
+      "function owner() view returns (address)",
+    ]),
+    mkrWhale
+  );
+  const owner = await chief.hat();
+  console.log(owner);
+  await waitForTx(chief.lock(encodeHex(toWad("1000"))));
   console.log("Vote spell...");
   await waitForTx(chief.vote([spell.address]));
   console.log("Lift spell...");
   await waitForTx(chief.lift(spell.address));
   console.log("Scheduling spell...");
-  await waitForTx(spell.connect(l1Signer).schedule());
+  await waitForTx(spell.connect(mkrWhale).schedule());
   console.log("Waiting for pause delay...");
   await sleep(60000);
   console.log("Casting spell...");
-  return await waitForTx(spell.connect(l1Signer).cast());
+  return await waitForTx(spell.connect(mkrWhale).cast());
 }
 
 const toBytes32 = (bn: ethers.BigNumber) => {
@@ -352,37 +362,58 @@ task("run-spell", "Deploy L1 spell").setAction(async (_, hre) => {
   let ADDRESS_NETWORK;
   if (NETWORK === "fork") {
     ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
+    const mkrWhaleAddress = "0x33Ed584fc655b08b2bca45E1C5b5f07c98053bC1";
+    const [signer] = await hre.ethers.getSigners();
+    const L1_DAI_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L1_DAI_ADDRESS`);
+    const balanceWei = hre.ethers.utils.parseEther("200000");
+    await hre.network.provider.request({
+      method: "hardhat_setStorageAt",
+      params: [
+        L1_DAI_ADDRESS,
+        hre.ethers.utils
+          .solidityKeccak256(["uint256", "uint256"], [mkrWhaleAddress, 2])
+          .replace(/(?<=0x)0+/, ""),
+        toBytes32(balanceWei).toString(),
+      ],
+    });
+
+    const goerliSdk = getGoerliSdk(signer.provider! as any);
+
+    const l1SpellContract = await getL1ContractAt(
+      hre,
+      "L1GoerliAddWormholeDomainSpell",
+      getAddress("L1GoerliAddWormholeDomainSpell", NETWORK)
+    );
+
+    await executeDssSpell(
+      signer,
+      await goerliSdk.maker.pause_proxy.owner(),
+      l1SpellContract,
+      mkrWhaleAddress,
+      NETWORK
+    );
   } else {
     ADDRESS_NETWORK = NETWORK.toUpperCase();
+    const [_signer] = await hre.ethers.getSigners();
+    const mkrWhaleAddress = "0xE305a1ab188416DB9c712dcBd66bd7F611Ad36C7";
+
+    const CHIEF_PRIVATE_KEY = getRequiredEnv("CHIEF_PRIVATE_KEY");
+    const signer = (new ethers.Wallet(CHIEF_PRIVATE_KEY)).connect(_signer.provider as JsonRpcProvider);
+
+    const goerliSdk = getGoerliSdk(signer.provider! as any);
+
+    const l1SpellContract = await getL1ContractAt(
+      hre,
+      "L1GoerliAddWormholeDomainSpell",
+      getAddress("L1GoerliAddWormholeDomainSpell", NETWORK)
+    );
+
+    await executeDssSpell(
+      signer,
+      await goerliSdk.maker.pause_proxy.owner(),
+      l1SpellContract,
+      mkrWhaleAddress,
+      NETWORK
+    );
   }
-
-  const [signer] = await hre.ethers.getSigners();
-  const mkrWhaleAddress = "0x33Ed584fc655b08b2bca45E1C5b5f07c98053bC1";
-
-  const goerliSdk = getGoerliSdk(signer.provider! as any);
-
-  const l1SpellContract = await getL1ContractAt(
-    hre,
-    "L1GoerliAddTeleportDomainSpell",
-    getAddress("L1GoerliAddTeleportDomainSpell", NETWORK)
-  );
-  const balanceWei = hre.ethers.utils.parseEther("200000");
-  const L1_DAI_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L1_DAI_ADDRESS`);
-  await hre.network.provider.request({
-    method: "hardhat_setStorageAt",
-    params: [
-      L1_DAI_ADDRESS,
-      hre.ethers.utils
-        .solidityKeccak256(["uint256", "uint256"], [mkrWhaleAddress, 2])
-        .replace(/(?<=0x)0+/, ""),
-      toBytes32(balanceWei).toString(),
-    ],
-  });
-
-  await executeDssSpell(
-    signer,
-    await goerliSdk.maker.pause_proxy.owner(),
-    l1SpellContract,
-    mkrWhaleAddress
-  );
 });

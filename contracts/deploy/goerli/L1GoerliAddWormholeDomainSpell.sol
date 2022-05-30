@@ -87,7 +87,11 @@ contract DssSpellAction is DssAction {
   uint256 public constant RAY = 10**27;
   uint256 public constant RAD = 10**45;
 
+<<<<<<< HEAD
   string public constant override description = "Gorli Starknet Teleport deployment spell";
+=======
+  string public constant override description = "Goerli Starknet Wormhole deployment spell";
+>>>>>>> Cleanup
 
   function officeHours() public pure override returns (bool) {
     return false;

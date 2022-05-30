@@ -3,8 +3,10 @@
  */
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
 import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
+import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/account";
 import dotenv from "dotenv";
 import { ethers } from "ethers";
+import { starknet } from "hardhat";
 import {
   BaseContract,
   BigNumber,
@@ -22,6 +24,7 @@ import { isEmpty } from "lodash";
 import { assert } from "ts-essentials";
 
 const DEPLOYMENTS_DIR = `deployments`;
+const ACCOUNTS_DIR = "starknet-accounts";
 const MASK_250 = BigInt(2 ** 250 - 1);
 
 export function l1String(str: string): string {
@@ -161,12 +164,24 @@ export function getAddress(contract: string, network: string) {
   }
 }
 
+export async function getAccount(name: string, hre: any): Promise<ArgentAccount> {
+  const STARKNET_NETWORK =
+    hre.config.starknet.network || DEFAULT_STARKNET_NETWORK;
+  const { address, privateKey, guardianPrivateKey } = JSON.parse(fs.readFileSync(`./${ACCOUNTS_DIR}/${STARKNET_NETWORK}/${name}.json`).toString());
+  const account = (await hre.starknet.getAccountFromAddress(
+    address,
+    privateKey,
+    "Argent"
+  )) as ArgentAccount;
+  await account.setGuardian(guardianPrivateKey);
+  return account;
+}
+
 function getAccounts(network: string) {
-  const files = fs.readdirSync(`./deployments/${network}`);
+  const files = fs.readdirSync(`./${ACCOUNTS_DIR}/${network}`);
   return files
-    .filter((file) => file.slice(0, 7) === "account")
     .map((file) => {
-      return file.split("-")[1].split(".")[0];
+      return file.split(".")[0];
     });
 }
 
@@ -273,6 +288,24 @@ export function save(
     JSON.stringify({
       address: contract.address,
       block,
+    })
+  );
+}
+
+export function saveAccount(
+  name: string,
+  account: ArgentAccount,
+  network: string
+) {
+  if (!fs.existsSync(`./${ACCOUNTS_DIR}/${network}`)) {
+    fs.mkdirSync(`./${ACCOUNTS_DIR}/${network}`, { recursive: true });
+  }
+  fs.writeFileSync(
+    `./${ACCOUNTS_DIR}/${network}/${name}.json`,
+    JSON.stringify({
+      address: account.starknetContract.address,
+      privateKey: account.privateKey,
+      guardianPrivateKey: account.guardianPrivateKey,
     })
   );
 }

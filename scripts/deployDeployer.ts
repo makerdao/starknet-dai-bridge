@@ -1,8 +1,9 @@
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
 import fs from "fs";
 import { task } from "hardhat/config";
+import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/account";
 
-import { save } from "./utils";
+import { saveAccount } from "./utils";
 
 task("deploy-deployer", "Deploy deployer").setAction(async (_, hre) => {
   const STARKNET_NETWORK =
@@ -10,13 +11,8 @@ task("deploy-deployer", "Deploy deployer").setAction(async (_, hre) => {
 
   console.log(`Deploying deployer on ${STARKNET_NETWORK}`);
 
-  const deployer = await hre.starknet.deployAccount("OpenZeppelin");
-  save("account-deployer", deployer.starknetContract, hre.network.name);
-
-  fs.writeFileSync(
-    ".env.deployer",
-    `DEPLOYER_ECDSA_PRIVATE_KEY=${deployer.privateKey}`
-  );
+  const deployer: ArgentAccount = (await hre.starknet.deployAccount("Argent")) as ArgentAccount;
+  saveAccount("deployer", deployer, STARKNET_NETWORK);
 
   console.log(
     `Deployer private key is in .env.deployer. It should be added to .env under DEPLOYER_ECDSA_PRIVATE_KEY\n`

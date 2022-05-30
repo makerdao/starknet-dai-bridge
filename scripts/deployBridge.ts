@@ -1,6 +1,7 @@
 import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
 import { expect } from "chai";
 import { task } from "hardhat/config";
+import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/account";
 
 import {
   asDec,
@@ -8,6 +9,7 @@ import {
   deployL2,
   getActiveWards,
   getAddress,
+  getAccount,
   getAddressOfNextDeployedContract,
   getL2ContractAt,
   getOptionalEnv,
@@ -49,12 +51,7 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
-  const DEPLOYER_KEY = getRequiredEnvDeployer(`DEPLOYER_ECDSA_PRIVATE_KEY`);
-  const deployer = await hre.starknet.getAccountFromAddress(
-    getAddress("account-deployer", NETWORK),
-    DEPLOYER_KEY,
-    "OpenZeppelin"
-  );
+  const deployer: ArgentAccount = (await getAccount("deployer", NETWORK)) as ArgentAccount;
   console.log(
     `Deploying from account: ${deployer.starknetContract.address.toString()}`
   );
