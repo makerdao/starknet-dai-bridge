@@ -56,7 +56,11 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   console.log(
     `Deploying from account: ${deployer.starknetContract.address.toString()}`
   );
-  save("account-deployer", { address: deployer.starknetContract.address }, network);
+  save(
+    "account-deployer",
+    { address: deployer.starknetContract.address },
+    network
+  );
 
   console.log("From");
   console.log(`\tl2 account: ${deployer.starknetContract.address.toString()}`);

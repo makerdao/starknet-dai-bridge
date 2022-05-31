@@ -1,8 +1,9 @@
 import * as dotenv from "dotenv";
 import { Contract } from "ethers";
 import { Interface } from "ethers/lib/utils";
-import { getNetwork } from "./utils";
 import { task } from "hardhat/config";
+
+import { getNetwork } from "./utils";
 dotenv.config();
 
 import {

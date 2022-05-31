@@ -5,8 +5,8 @@ import { Contract, ethers, Signer } from "ethers";
 import { Interface } from "ethers/lib/utils";
 import fs from "fs";
 import { task } from "hardhat/config";
-import { getNetwork } from "./utils";
 
+import { getNetwork } from "./utils";
 import {
   deployL1,
   deployL2,
@@ -299,12 +299,6 @@ export async function impersonateAccount(
 async function waitForTx(tx: Promise<any>) {
   const _ = await tx;
   return await _.wait();
-}
-
-async function getPauseSigner(sdk: any, l1Signer: any) {
-  const pauseAddress = await sdk.pause_proxy.owner();
-  if ((await l1Signer.getAddress()) === pauseAddress || true) return l1Signer;
-  //return await impersonateAccount(pauseAddress, l1Signer.provider as JsonRpcProvider);
 }
 
 async function executeDssSpell(
