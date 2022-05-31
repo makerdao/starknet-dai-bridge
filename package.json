@@ -58,7 +58,7 @@
     "call:l2": "hardhat call:l2",
     "invoke:l2": "hardhat invoke:l2",
     "test:l1": "NODE_ENV=test TEST_ENV=l1 hardhat test",
-    "test:e2e": "wait-on tcp:5000 && wait-on tcp:8545 && TEST_ENV=e2e hardhat test --network localhost",
+    "test:e2e": "wait-on tcp:5000 && wait-on tcp:8545 && NODE_ENV=test TEST_ENV=e2e hardhat test --network localhost",
     "test:e2e:ci": "concurrently './scripts/chain.sh' './scripts/test-e2e.sh'",
     "test:l2": "pytest ./test/l2/* --disable-pytest-warnings",
     "test:fix": "yarn lint:fix && yarn format:fix && yarn test:l1 && yarn typecheck",
