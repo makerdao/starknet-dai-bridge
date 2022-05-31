@@ -18,7 +18,7 @@ import {
 
 task("create-teleport-spell-l2", "Create L2 spell").setAction(async () => {
   const l2DAITeleportGateway = getRequiredEnvDeployments(
-    "ALPHA_GOERLI_L2_DAI_TELEPORT_GATEWAY_ADDRESS"
+    `ALPHA_GOERLI_L2_DAI_TELEPORT_GATEWAY_ADDRESS`
   );
 
   const spell = `

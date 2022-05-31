@@ -2,7 +2,7 @@ import pytest
 
 from starkware.starknet.testing.contract import StarknetContract
 from starkware.starkware_utils.error_handling import StarkException
-from starkware.starknet.business_logic.execution.objects import Event
+from starkware.starknet.business_logic.transaction_execution_objects import Event
 from starkware.starknet.public.abi import get_selector_from_name
 from itertools import chain
 from conftest import to_split_uint, to_uint, check_event
@@ -16,74 +16,6 @@ no_funds = 1
 
 starknet_contract_address = 0x0
 
-
-
-@pytest.fixture
-async def check_balances(
-    dai: StarknetContract,
-    user1: StarknetContract,
-    user2: StarknetContract,
-    user3: StarknetContract,
-):
-    async def internal_check_balances(
-        expected_user1_balance,
-        expected_user2_balance,
-    ):
-        user1_balance = await dai.balanceOf(user1.contract_address).call()
-        user2_balance = await dai.balanceOf(user2.contract_address).call()
-        user3_balance = await dai.balanceOf(user3.contract_address).call()
-        total_supply = await dai.totalSupply().call()
-
-        assert user1_balance.result == (to_split_uint(expected_user1_balance),)
-        assert user2_balance.result == (to_split_uint(expected_user2_balance),)
-        assert user3_balance.result == (to_split_uint(0),)
-        assert total_supply.result == (
-                to_split_uint(expected_user1_balance+expected_user2_balance),)
-
-    return internal_check_balances
-
-
-@pytest.fixture
-def event_loop():
-    return asyncio.get_event_loop()
-
-
-@pytest.fixture(autouse=True)
-async def before_all(
-    starknet: Starknet,
-    dai: StarknetContract,
-    l2_bridge: StarknetContract,
-    auth_user: StarknetContract,
-):
-    await dai.rely(
-            l2_bridge.contract_address,
-        ).invoke(auth_user.contract_address)
-
-
-@pytest.fixture(scope="function", autouse=True)
-async def before_each(
-    starknet: Starknet,
-    dai: StarknetContract,
-    auth_user: StarknetContract,
-    user1: StarknetContract,
-    user2: StarknetContract,
-):
-    global user1_balance
-    global user2_balance
-
-    # intialize two users with 100 DAI
-    await dai.mint(
-            user1.contract_address,
-            to_split_uint(100)).invoke(auth_user.contract_address)
-    await dai.mint(
-            user2.contract_address,
-            to_split_uint(100)).invoke(auth_user.contract_address)
-
-    balance = await dai.balanceOf(user1.contract_address).call()
-    user1_balance = to_uint(balance.result[0])
-    balance = await dai.balanceOf(user2.contract_address).call()
-    user2_balance = to_uint(balance.result[0])
->>>>>>> Add event tests
 
 
 #########
@@ -250,19 +182,6 @@ async def test_mint(
 
 
 @pytest.mark.asyncio
-async def test_mint_should_not_accept_invalid_amount(
-    dai: StarknetContract,
-    auth_user: StarknetContract,
-    user1: StarknetContract,
-):
-    with pytest.raises(StarkException) as err:
-        await dai.mint(
-                user1.contract_address,
-                (2**128, 0)).invoke(auth_user.contract_address)
-    assert "dai/invalid-amount" in str(err.value)
-
-
-@pytest.mark.asyncio
 async def test_should_not_allow_minting_to_zero_address(
     dai: StarknetContract,
     auth_user: StarknetContract,
@@ -287,7 +206,7 @@ async def test_should_not_allow_minting_to_dai_address(
 
 
 @pytest.mark.asyncio
-async def test_mint_should_not_allow_beyond_max(
+async def test_should_not_allow_minting_to_address_beyond_max(
     dai: StarknetContract,
     auth_user: StarknetContract,
     user3: StarknetContract,
@@ -313,18 +232,6 @@ async def test_burn(
     ).invoke(user1.contract_address)
 
     await check_balances(90, 100)
-
-
-@pytest.mark.asyncio
-async def test_burn_should_not_accept_invalid_amount(
-    dai: StarknetContract,
-    user1: StarknetContract,
-):
-    with pytest.raises(StarkException) as err:
-        await dai.burn(
-                user1.contract_address,
-                (2**128, 0)).invoke(user1.contract_address)
-    assert "dai/invalid-amount" in str(err.value)
 
 
 @pytest.mark.asyncio
@@ -355,7 +262,7 @@ async def test_should_not_burn_other(
 
 
 @pytest.mark.asyncio
-async def test_burn_should_not_allow_deployer(
+async def test_deployer_should_not_be_able_to_burn(
     dai: StarknetContract,
     auth_user: StarknetContract,
     user1: StarknetContract,
@@ -395,7 +302,7 @@ async def test_approve(
 
 
 @pytest.mark.asyncio
-async def test_burn_other_if_approved(
+async def test_can_burn_other_if_approved(
     dai: StarknetContract,
     user1: StarknetContract,
     user2: StarknetContract,
