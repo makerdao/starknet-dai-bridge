@@ -1,4 +1,4 @@
-import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
+import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 import { expect } from "chai";
 import { task } from "hardhat/config";
 
@@ -6,11 +6,11 @@ import {
   asDec,
   deployL1,
   deployL2,
-  getAddress,
+  getAccount,
   getAddressOfNextDeployedContract,
   getL2ContractAt,
+  getNetwork,
   getRequiredEnv,
-  getRequiredEnvDeployer,
   getRequiredEnvDeployments,
   printAddresses,
   wards,
@@ -20,44 +20,31 @@ import {
 task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   const [l1Signer] = await hre.ethers.getSigners();
 
-  const NETWORK = hre.network.name;
-  let ADDRESS_NETWORK;
-  if (NETWORK === "fork") {
-    ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
-  } else {
-    ADDRESS_NETWORK = NETWORK.toUpperCase();
-  }
-  const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
+  const { network, NETWORK } = getNetwork(hre);
 
-  const L1_DAI_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L1_DAI_ADDRESS`);
-  const L1_STARKNET_ADDRESS = getRequiredEnv(
-    `${ADDRESS_NETWORK}_L1_STARKNET_ADDRESS`
-  );
-  const L1_WORMHOLE_ROUTER_ADDRESS = getRequiredEnv(
-    `${ADDRESS_NETWORK}_L1_WORMHOLE_ROUTER_ADDRESS`
+  const L1_DAI_ADDRESS = getRequiredEnv(`${NETWORK}_L1_DAI_ADDRESS`);
+  const L1_STARKNET_ADDRESS = getRequiredEnv(`${NETWORK}_L1_STARKNET_ADDRESS`);
+  const L1_TELEPORT_ROUTER_ADDRESS = getRequiredEnv(
+    `${NETWORK}_L1_TELEPORT_ROUTER_ADDRESS`
   );
   const L1_ESCROW_ADDRESS = getRequiredEnvDeployments(
-    `${ADDRESS_NETWORK}_L1_ESCROW_ADDRESS`
+    `${NETWORK}_L1_ESCROW_ADDRESS`
   );
-  const L2_DAI_ADDRESS = getRequiredEnvDeployments(
-    `${ADDRESS_NETWORK}_L2_DAI_ADDRESS`
-  );
+  const L2_DAI_ADDRESS = getRequiredEnvDeployments(`${NETWORK}_L2_DAI_ADDRESS`);
   const L2_GOVERNANCE_RELAY_ADDRESS = getRequiredEnvDeployments(
-    `${ADDRESS_NETWORK}_L2_GOVERNANCE_RELAY_ADDRESS`
+    `${NETWORK}_L2_GOVERNANCE_RELAY_ADDRESS`
   );
   const DENY_DEPLOYER = getRequiredEnv("DENY_DEPLOYER") === "true";
 
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
-  console.log(`Deploying gateway on ${NETWORK}/${STARKNET_NETWORK}`);
+  console.log(`Deploying gateway on ${network}`);
 
-  const DEPLOYER_KEY = getRequiredEnvDeployer(`DEPLOYER_ECDSA_PRIVATE_KEY`);
-  const deployer = await hre.starknet.getAccountFromAddress(
-    getAddress("account-deployer", NETWORK),
-    DEPLOYER_KEY,
-    "OpenZeppelin"
-  );
+  const deployer: ArgentAccount = (await getAccount(
+    "deployer",
+    hre
+  )) as ArgentAccount;
   console.log(
     `Deploying from account: ${deployer.starknetContract.address.toString()}`
   );
@@ -72,7 +59,7 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
     await getAddressOfNextDeployedContract(l1Signer);
 
   const L2_SOURCE_DOMAIN = `0x${Buffer.from(
-    `${ADDRESS_NETWORK}-SLAVE-STARKNET-1`,
+    `${NETWORK.replace(/[_]/g, "-")}-SLAVE-STARKNET-1`,
     "utf8"
   ).toString("hex")}`;
   const l2DAITeleportGateway = await deployL2(
@@ -96,7 +83,7 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
       L1_DAI_ADDRESS,
       l2DAITeleportGateway.address,
       L1_ESCROW_ADDRESS,
-      L1_WORMHOLE_ROUTER_ADDRESS,
+      L1_TELEPORT_ROUTER_ADDRESS,
     ]
   );
   expect(
