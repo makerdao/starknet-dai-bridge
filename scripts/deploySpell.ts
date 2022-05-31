@@ -5,6 +5,7 @@ import { Contract, ethers, Signer } from "ethers";
 import { Interface } from "ethers/lib/utils";
 import fs from "fs";
 import { task } from "hardhat/config";
+import { getNetwork } from "./utils";
 
 import {
   deployL1,
@@ -17,7 +18,7 @@ import {
 
 task("create-teleport-spell-l2", "Create L2 spell").setAction(async () => {
   const l2DAITeleportGateway = getRequiredEnvDeployments(
-    "GOERLI_L2_DAI_WORMHOLE_GATEWAY_ADDRESS"
+    "ALPHA_GOERLI_L2_DAI_TELEPORT_GATEWAY_ADDRESS"
   );
 
   const spell = `
@@ -54,7 +55,7 @@ end`;
 });
 
 const officialMCD = `
-  WormholeJoinLike wormholeJoin = WormholeJoinLike(0x7954DA41E6D18e25Ad6365a146091c9D75E4b568);
+  TeleportJoinLike teleportJoin = TeleportJoinLike(0x7954DA41E6D18e25Ad6365a146091c9D75E4b568);
   address vow = 0x23f78612769b9013b3145E43896Fa1578cAa2c2a;
   VatLike vat = VatLike(0xB966002DDAa2Baf48369f5015329750019736031);
   RouterLike router = RouterLike(0xac22Eea777cd98A357f2E2f26e7Acd37651DBA9c);
@@ -62,7 +63,7 @@ const officialMCD = `
   address dai = 0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844;
 `;
 const customMCD = `
-  WormholeJoinLike wormholeJoin = WormholeJoinLike(0x3e55b205760829Ff478191FfEAA3C542F982C096);
+  TeleportJoinLike teleportJoin = TeleportJoinLike(0x3e55b205760829Ff478191FfEAA3C542F982C096);
   address vow = 0xDAb7bC19b593A7C694AE7484Cd4cB346e372e68C;
   VatLike vat = VatLike(0x2D833c7bC94409F02aF5bC9C4a5FA28359795CC5);
   RouterLike router = RouterLike(0x4213aE220314Ed4d972088e13D8F7D361760385e);
@@ -72,17 +73,21 @@ const customMCD = `
 
 task("create-teleport-spell-l1", "Create L1 spell").setAction(async () => {
   const l1DAITeleportGateway = getRequiredEnvDeployments(
-    "GOERLI_L1_DAI_WORMHOLE_GATEWAY_ADDRESS"
+    "ALPHA_GOERLI_L1_DAI_TELEPORT_GATEWAY_ADDRESS"
   );
-  const escrow = getRequiredEnvDeployments("GOERLI_L1_ESCROW_ADDRESS");
-  const l1Bridge = getRequiredEnvDeployments("GOERLI_L1_DAI_BRIDGE_ADDRESS");
+  const escrow = getRequiredEnvDeployments("ALPHA_GOERLI_L1_ESCROW_ADDRESS");
+  const l1Bridge = getRequiredEnvDeployments(
+    "ALPHA_GOERLI_L1_DAI_BRIDGE_ADDRESS"
+  );
   const l1GovernanceRelay = getRequiredEnvDeployments(
-    "GOERLI_L1_GOVERNANCE_RELAY_ADDRESS"
+    "ALPHA_GOERLI_L1_GOVERNANCE_RELAY_ADDRESS"
   );
-  const l2Spell = getAddress("L2GoerliAddTeleportDomainSpell", "fork");
+  const l2Spell = getAddress("L2GoerliAddTeleportDomainSpell", "alpha-goerli");
 
   // temporary
-  const MCD_DEPLOYMENT = getRequiredEnv("OFFICIAL_MCD") === "true" ? officialMCD : customMCD;
+  const MCD_DEPLOYMENT =
+    getRequiredEnv("OFFICIAL_MCD") === "true" ? officialMCD : customMCD;
+  console.log(getRequiredEnv("OFFICIAL_MCD"));
 
   const spell = `
 // SPDX-License-Identifier: AGPL-3.0-or-later
@@ -203,7 +208,7 @@ contract DssSpellAction is DssAction {
     oracleAuth.addSigners(oracles);
 
     // configure starknet teleport
-    bytes32 slaveDomain = bytes32("GOERLI-SLAVE-STARKNET-1");
+    bytes32 slaveDomain = bytes32("ALPHA_GOERLI-SLAVE-STARKNET-1");
     address constantFees = 0xd40EA2981B350D38281402c058b1Ef1058dbac53;
 
     address slaveDomainGateway = ${l1DAITeleportGateway};
@@ -318,7 +323,9 @@ async function executeDssSpell(
     );
   } else {
     const CHIEF_PRIVATE_KEY = getRequiredEnv("CHIEF_PRIVATE_KEY");
-    mkrWhale = (new ethers.Wallet(CHIEF_PRIVATE_KEY)).connect(l1Signer.provider as JsonRpcProvider);
+    mkrWhale = new ethers.Wallet(CHIEF_PRIVATE_KEY).connect(
+      l1Signer.provider as JsonRpcProvider
+    );
   }
   const chief = new Contract(
     mkrWhaleAddress,
@@ -326,20 +333,10 @@ async function executeDssSpell(
       "function vote(address[])",
       "function lift(address)",
       "function approvals(address) view returns (uint256)",
-      "function hat() view returns (address)",
       "function lock(uint)",
     ]),
     mkrWhale
   );
-  const pause = new Contract(
-    pauseAddress,
-    new Interface([
-      "function owner() view returns (address)",
-    ]),
-    mkrWhale
-  );
-  const owner = await chief.hat();
-  console.log(owner);
   await waitForTx(chief.lock(encodeHex(toWad("1000"))));
   console.log("Vote spell...");
   await waitForTx(chief.vote([spell.address]));
@@ -358,13 +355,11 @@ const toBytes32 = (bn: ethers.BigNumber) => {
 };
 
 task("run-spell", "Deploy L1 spell").setAction(async (_, hre) => {
-  const NETWORK = hre.network.name;
-  let ADDRESS_NETWORK;
-  if (NETWORK === "fork") {
-    ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
+  const { network, NETWORK } = getNetwork(hre);
+  if (hre.network.name === "fork") {
     const mkrWhaleAddress = "0x33Ed584fc655b08b2bca45E1C5b5f07c98053bC1";
     const [signer] = await hre.ethers.getSigners();
-    const L1_DAI_ADDRESS = getRequiredEnv(`${ADDRESS_NETWORK}_L1_DAI_ADDRESS`);
+    const L1_DAI_ADDRESS = getRequiredEnv(`${NETWORK}_L1_DAI_ADDRESS`);
     const balanceWei = hre.ethers.utils.parseEther("200000");
     await hre.network.provider.request({
       method: "hardhat_setStorageAt",
@@ -381,8 +376,8 @@ task("run-spell", "Deploy L1 spell").setAction(async (_, hre) => {
 
     const l1SpellContract = await getL1ContractAt(
       hre,
-      "L1GoerliAddWormholeDomainSpell",
-      getAddress("L1GoerliAddWormholeDomainSpell", NETWORK)
+      "L1GoerliAddTeleportDomainSpell",
+      getAddress("L1GoerliAddTeleportDomainSpell", network)
     );
 
     await executeDssSpell(
@@ -390,22 +385,23 @@ task("run-spell", "Deploy L1 spell").setAction(async (_, hre) => {
       await goerliSdk.maker.pause_proxy.owner(),
       l1SpellContract,
       mkrWhaleAddress,
-      NETWORK
+      network
     );
   } else {
-    ADDRESS_NETWORK = NETWORK.toUpperCase();
     const [_signer] = await hre.ethers.getSigners();
     const mkrWhaleAddress = "0xE305a1ab188416DB9c712dcBd66bd7F611Ad36C7";
 
     const CHIEF_PRIVATE_KEY = getRequiredEnv("CHIEF_PRIVATE_KEY");
-    const signer = (new ethers.Wallet(CHIEF_PRIVATE_KEY)).connect(_signer.provider as JsonRpcProvider);
+    const signer = new ethers.Wallet(CHIEF_PRIVATE_KEY).connect(
+      _signer.provider as JsonRpcProvider
+    );
 
     const goerliSdk = getGoerliSdk(signer.provider! as any);
 
     const l1SpellContract = await getL1ContractAt(
       hre,
-      "L1GoerliAddWormholeDomainSpell",
-      getAddress("L1GoerliAddWormholeDomainSpell", NETWORK)
+      "L1GoerliAddTeleportDomainSpell",
+      getAddress("L1GoerliAddTeleportDomainSpell", network)
     );
 
     await executeDssSpell(
@@ -413,7 +409,7 @@ task("run-spell", "Deploy L1 spell").setAction(async (_, hre) => {
       await goerliSdk.maker.pause_proxy.owner(),
       l1SpellContract,
       mkrWhaleAddress,
-      NETWORK
+      network
     );
   }
 });

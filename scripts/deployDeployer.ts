@@ -1,7 +1,6 @@
-import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
+import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 import fs from "fs";
 import { task } from "hardhat/config";
-import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/account";
 
 import { getNetwork, saveAccount } from "./utils";
 
@@ -10,7 +9,9 @@ task("deploy-deployer", "Deploy deployer").setAction(async (_, hre) => {
 
   console.log(`Deploying deployer on ${network}`);
 
-  const deployer: ArgentAccount = (await hre.starknet.deployAccount("Argent")) as ArgentAccount;
+  const deployer: ArgentAccount = (await hre.starknet.deployAccount(
+    "Argent"
+  )) as ArgentAccount;
   saveAccount("deployer", deployer, network);
 
   fs.writeFileSync(

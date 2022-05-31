@@ -1,12 +1,9 @@
-/**
- * Full goerli deploy including any permissions that need to be set.
- */
-
+import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 import {
   DeployOptions,
   StarknetContract,
 } from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
-import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/account";
+import dotenv from "dotenv";
 import { ethers } from "ethers";
 import {
   BaseContract,
@@ -21,7 +18,6 @@ import {
 } from "ethers";
 import { getContractAddress, Result } from "ethers/lib/utils";
 import fs from "fs";
-import dotenv from "dotenv";
 import { isEmpty } from "lodash";
 import { assert } from "ts-essentials";
 
@@ -169,10 +165,14 @@ export function getAddress(contract: string, network: string) {
   }
 }
 
-export async function getAccount(name: string, hre: any): Promise<ArgentAccount> {
-  const STARKNET_NETWORK =
-    hre.config.starknet.network || DEFAULT_STARKNET_NETWORK;
-  const { address, privateKey, guardianPrivateKey } = JSON.parse(fs.readFileSync(`./${ACCOUNTS_DIR}/${STARKNET_NETWORK}/${name}.json`).toString());
+export async function getAccount(
+  name: string,
+  hre: any
+): Promise<ArgentAccount> {
+  const { network } = getNetwork(hre);
+  const { address, privateKey, guardianPrivateKey } = JSON.parse(
+    fs.readFileSync(`./${ACCOUNTS_DIR}/${network}/${name}.json`).toString()
+  );
   const account = (await hre.starknet.getAccountFromAddress(
     address,
     privateKey,
@@ -184,10 +184,9 @@ export async function getAccount(name: string, hre: any): Promise<ArgentAccount>
 
 function getAccounts(network: string) {
   const files = fs.readdirSync(`./${ACCOUNTS_DIR}/${network}`);
-  return files
-    .map((file) => {
-      return file.split(".")[0];
-    });
+  return files.map((file) => {
+    return file.split(".")[0];
+  });
 }
 
 export function parseCalldataL1(calldata: string, network: string) {
@@ -322,10 +321,9 @@ export function getSelectorFromName(name: string) {
 }
 
 export function printAddresses(hre: any, includeTeleport: boolean = false) {
-  const NETWORK = hre.network.name;
+  const { network } = getNetwork(hre);
 
   let contracts = [
-    "account-deployer",
     "dai",
     "registry",
     "L1Escrow",
@@ -344,7 +342,7 @@ export function printAddresses(hre: any, includeTeleport: boolean = false) {
   }
 
   const addresses = contracts.reduce(
-    (a, c) => Object.assign(a, { [c]: getAddress(c, NETWORK) }),
+    (a, c) => Object.assign(a, { [c]: getAddress(c, network) }),
     {}
   );
 
@@ -352,13 +350,7 @@ export function printAddresses(hre: any, includeTeleport: boolean = false) {
 }
 
 export function writeAddresses(hre: any, includeTeleport: boolean = false) {
-  const NETWORK = hre.network.name;
-  let ADDRESS_NETWORK: string;
-  if (NETWORK === "fork") {
-    ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
-  } else {
-    ADDRESS_NETWORK = NETWORK.toUpperCase();
-  }
+  const { network, NETWORK } = getNetwork(hre);
 
   let variables = [
     ["L1_ESCROW_ADDRESS", "L1Escrow"],
@@ -373,15 +365,15 @@ export function writeAddresses(hre: any, includeTeleport: boolean = false) {
   if (includeTeleport) {
     variables = [
       ...variables,
-      ["L1_DAI_WORMHOLE_GATEWAY_ADDRESS", "L1DAITeleportGateway"],
-      ["L2_DAI_WORMHOLE_GATEWAY_ADDRESS", "l2_dai_teleport_gateway"],
+      ["L1_DAI_TELEPORT_GATEWAY_ADDRESS", "L1DAITeleportGateway"],
+      ["L2_DAI_TELEPORT_GATEWAY_ADDRESS", "l2_dai_teleport_gateway"],
     ];
   }
 
   const addresses = variables.reduce((a, c) => {
-    const address = getAddress(c[1], NETWORK);
+    const address = getAddress(c[1], network);
     if (address) {
-      return `${a}${ADDRESS_NETWORK}_${c[0]}=${address}\n`;
+      return `${a}${NETWORK}_${c[0]}=${address}\n`;
     } else {
       return a;
     }
