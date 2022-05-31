@@ -13,7 +13,6 @@ export default defineConfig({
       },
     },
 
-    /*
     goerli: {
       maker: {
         vat: "0xB966002DDAa2Baf48369f5015329750019736031",
@@ -24,7 +23,7 @@ export default defineConfig({
         dai: "0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844",
       },
     },
-    */
+    /*
     goerli: {
       maker: {
         vat: "0x2D833c7bC94409F02aF5bC9C4a5FA28359795CC5",
@@ -35,5 +34,6 @@ export default defineConfig({
         dai: "0xd7F24C609825a4348dEc3C856Aa8796696355Fcd",
       },
     },
+    */
   },
 });
