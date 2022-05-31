@@ -8,7 +8,7 @@ import time
 
 from starkware.starknet.compiler.compile import compile_starknet_files
 from starkware.starknet.testing.starknet import Starknet, StarknetContract
-from starkware.starknet.business_logic.state import BlockInfo
+from starkware.starknet.business_logic.state.state import BlockInfo
 from starkware.starknet.business_logic.transaction_execution_objects import Event
 from starkware.starknet.public.abi import get_selector_from_name
 from itertools import chain
