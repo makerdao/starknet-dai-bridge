@@ -142,7 +142,7 @@ describe("l1:L1DAIBridge", function () {
 
       await expect(
         l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
-      ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
+      ).to.be.revertedWith("ERC20: insufficient allowance");
     });
     it("reverts when funds too low", async () => {
       const { admin, l1Alice, dai, l1Bridge } = await setupTest();
@@ -477,7 +477,7 @@ describe("l1:L1DAIBridge", function () {
 
       await expect(
         l1Bridge.connect(l1Alice).withdraw(withdrawalAmount, l1Alice.address)
-      ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
+      ).to.be.revertedWith("ERC20: insufficient allowance");
     });
   });
   describe("close", function () {
