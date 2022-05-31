@@ -30,7 +30,7 @@ interface StarkNetLike {
         uint256 to,
         uint256 selector,
         uint256[] calldata payload
-    ) external;
+    ) external returns (bytes32);
 
     function consumeMessageFromL2(
         uint256 from,

@@ -20,7 +20,7 @@ import "./scripts/fork";
 import "./scripts/wards";
 
 import { config as dotenvConfig } from "dotenv";
-import { NetworkUserConfig } from "hardhat/types";
+import { HardhatUserConfig, NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
@@ -75,7 +75,7 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   };
 }
 
-const config: any = {
+const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     goerli: getChainConfig("goerli"),

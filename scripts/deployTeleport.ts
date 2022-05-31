@@ -59,7 +59,7 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
     await getAddressOfNextDeployedContract(l1Signer);
 
   const L2_SOURCE_DOMAIN = `0x${Buffer.from(
-    `${NETWORK}-SLAVE-STARKNET-1`,
+    `${NETWORK.replace(/[_]/g, "-")}-SLAVE-STARKNET-1`,
     "utf8"
   ).toString("hex")}`;
   const l2DAITeleportGateway = await deployL2(

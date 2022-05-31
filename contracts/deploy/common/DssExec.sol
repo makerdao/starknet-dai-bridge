@@ -77,8 +77,8 @@ contract DssExec {
   // @param _expiration   The timestamp this spell will expire. (Ex. now + 30 days)
   // @param _spellAction  The address of the spell action
   constructor(uint256 _expiration, address _spellAction) {
-    // pause = PauseAbstract(log.getAddress("MCD_PAUSE"));
-    pause = PauseAbstract(0x88a1886A2CD2D459CDcB73E70441a88793D09AD6);
+    pause = PauseAbstract(log.getAddress("MCD_PAUSE"));
+    // pause = PauseAbstract(0x88a1886A2CD2D459CDcB73E70441a88793D09AD6);
     expiration = _expiration;
     action = _spellAction;
 
