@@ -9,16 +9,19 @@ build
 node_modules
 .env
 .env.deployer
+.env.*.deployer
 .env.deployments
 
 #Hardhat files
 cache
 artifacts
 starknet-artifacts
+starknet-accounts
 deployments/localhost
 contracts/l2/sample_spell.cairo
 deployer-key.json
 deployments
 yarn-error.log
 contracts/l2/dai_rescue_spell.cairo
+contracts/deploy/goerli
 eth-sdk/abis
