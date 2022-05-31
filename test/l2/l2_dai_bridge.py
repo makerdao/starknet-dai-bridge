@@ -6,7 +6,7 @@ from starkware.starkware_utils.error_handling import StarkException
 from starkware.starknet.definitions.error_codes import StarknetErrorCode
 from conftest import to_split_uint, to_uint
 
-from starkware.starknet.business_logic.transaction_execution_objects import Event
+from starkware.starknet.business_logic.execution.objects import Event
 from starkware.starknet.public.abi import get_selector_from_name
 from itertools import chain
 

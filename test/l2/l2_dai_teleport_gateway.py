@@ -8,7 +8,7 @@ from starkware.starkware_utils.error_handling import StarkException
 from starkware.starknet.public.abi import get_selector_from_name
 from starkware.crypto.signature.fast_pedersen_hash import pedersen_hash
 from conftest import to_split_uint, to_uint, check_event, VALID_DOMAINS
-from starkware.starknet.business_logic.transaction_execution_objects import Event
+from starkware.starknet.business_logic.execution.objects import Event
 from itertools import chain
 import pprint
 
