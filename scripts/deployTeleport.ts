@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { task } from "hardhat/config";
-import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/account";
+import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 
 import {
   asDec,

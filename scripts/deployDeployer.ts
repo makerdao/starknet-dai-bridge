@@ -1,4 +1,4 @@
-import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/account";
+import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 import fs from "fs";
 import { task } from "hardhat/config";
 

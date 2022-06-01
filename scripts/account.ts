@@ -1,6 +1,6 @@
 import { task } from "hardhat/config";
-import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
-import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/account";
+import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/src/constants";
+import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 
 import { saveAccount } from "./utils";
 
