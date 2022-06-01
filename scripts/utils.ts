@@ -5,18 +5,17 @@ import {
 } from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
 import dotenv from "dotenv";
 import {
-  ethers,
   BaseContract,
   BigNumber,
   CallOverrides,
   ContractTransaction,
+  ethers,
   Event,
   EventFilter,
   Overrides,
   providers,
   Signer,
 } from "ethers";
-import { starknet } from "hardhat";
 import { getContractAddress, Result } from "ethers/lib/utils";
 import fs from "fs";
 import { isEmpty } from "lodash";
@@ -166,7 +165,6 @@ export function getAddress(contract: string, network: string) {
   }
 }
 
-<<<<<<< HEAD
 export async function getAccount(
   name: string,
   hre: any
@@ -175,12 +173,6 @@ export async function getAccount(
   const { address, privateKey, guardianPrivateKey } = JSON.parse(
     fs.readFileSync(`./${ACCOUNTS_DIR}/${network}/${name}.json`).toString()
   );
-=======
-export async function getAccount(name: string, hre: any): Promise<ArgentAccount> {
-  const STARKNET_NETWORK =
-    hre.config.starknet.network || DEFAULT_STARKNET_NETWORK;
-  const { address, privateKey, guardianPrivateKey } = JSON.parse(fs.readFileSync(`./${ACCOUNTS_DIR}/${STARKNET_NETWORK}/${name}.json`).toString());
->>>>>>> bc8b51ecfcf6eac5089f7e0d84922171225f1cb2
   const account = (await hre.starknet.getAccountFromAddress(
     address,
     privateKey,
@@ -192,16 +184,9 @@ export async function getAccount(name: string, hre: any): Promise<ArgentAccount>
 
 function getAccounts(network: string) {
   const files = fs.readdirSync(`./${ACCOUNTS_DIR}/${network}`);
-<<<<<<< HEAD
   return files.map((file) => {
     return file.split(".")[0];
   });
-=======
-  return files
-    .map((file) => {
-      return file.split(".")[0];
-    });
->>>>>>> bc8b51ecfcf6eac5089f7e0d84922171225f1cb2
 }
 
 export function parseCalldataL1(calldata: string, network: string) {

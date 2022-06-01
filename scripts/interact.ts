@@ -1,14 +1,13 @@
 import * as dotenv from "dotenv";
 import { Contract } from "ethers";
-import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/src/constants";
 import { Interface } from "ethers/lib/utils";
 import { task } from "hardhat/config";
+
 import { getAccount, getNetwork } from "./utils";
 dotenv.config();
 
 import {
   getAddress,
-  getRequiredEnvDeployer,
   parseCalldataL1,
   parseCalldataL2,
   toBytes32,

@@ -1,6 +1,6 @@
-import { task } from "hardhat/config";
-import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/src/constants";
 import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
+import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/src/constants";
+import { task } from "hardhat/config";
 
 import { saveAccount } from "./utils";
 
@@ -10,7 +10,9 @@ task("account:create", "Create new L2 account")
     const STARKNET_NETWORK =
       hre.config.starknet.network || DEFAULT_STARKNET_NETWORK;
     const _name = name || "default";
-    const account: ArgentAccount = (await hre.starknet.deployAccount("Argent")) as ArgentAccount;
+    const account: ArgentAccount = (await hre.starknet.deployAccount(
+      "Argent"
+    )) as ArgentAccount;
     await account.multiInvoke([
       {
         functionName: "change_guardian",
@@ -19,5 +21,8 @@ task("account:create", "Create new L2 account")
       },
     ]);
     saveAccount(`account-${_name}`, account, STARKNET_NETWORK);
-    console.log(`account-${_name} L2 address:`, account.starknetContract.address);
+    console.log(
+      `account-${_name} L2 address:`,
+      account.starknetContract.address
+    );
   });
