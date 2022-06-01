@@ -1,40 +1,41 @@
-import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
+import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 import fs from "fs";
 import { task } from "hardhat/config";
 
-import { save } from "./utils";
+import { getNetwork, saveAccount } from "./utils";
 
 task("deploy-deployer", "Deploy deployer").setAction(async (_, hre) => {
-  const STARKNET_NETWORK =
-    hre.config.starknet.network || DEFAULT_STARKNET_NETWORK;
+  const { network, NETWORK } = getNetwork(hre);
 
-  console.log(`Deploying deployer on ${STARKNET_NETWORK}`);
+  console.log(`Deploying deployer on ${network}`);
 
-  const deployer = await hre.starknet.deployAccount("OpenZeppelin");
-  save("account-deployer", deployer.starknetContract, hre.network.name);
+  const deployer: ArgentAccount = (await hre.starknet.deployAccount(
+    "Argent"
+  )) as ArgentAccount;
+  saveAccount("deployer", deployer, network);
 
   fs.writeFileSync(
-    ".env.deployer",
-    `DEPLOYER_ECDSA_PRIVATE_KEY=${deployer.privateKey}`
+    `.env.${network}.deployer`,
+    `${NETWORK}_DEPLOYER_ECDSA_PRIVATE_KEY=${deployer.privateKey}`
   );
 
   console.log(
-    `Deployer private key is in .env.deployer. It should be added to .env under DEPLOYER_ECDSA_PRIVATE_KEY\n`
+    `Deployer private key is in .env.${network}.deployer. It should be added to .env under ${NETWORK}_DEPLOYER_ECDSA_PRIVATE_KEY\n`
   );
 
   console.log(`Next steps:`);
   console.log(`  If You want to deploy dai contract now:`);
   console.log(
-    `    STARKNET_NETWORK=${STARKNET_NETWORK} starknet deploy --inputs ${deployer.starknetContract.address} --contract starknet-artifacts/contracts/l2/dai.cairo/dai.json --salt <insert salt here>\n`
+    `    STARKNET_NETWORK=${network} starknet deploy --inputs ${deployer.starknetContract.address} --contract starknet-artifacts/contracts/l2/dai.cairo/dai.json --salt <insert salt here>\n`
   );
   console.log(
     `  After manual dai deployment dai contract address should be added to .env:`
   );
-  console.log(`    ${STARKNET_NETWORK.toUpperCase()}_L2_DAI_ADDRESS=...\n`);
+  console.log(`    ${NETWORK}_L2_DAI_ADDRESS=...\n`);
 
   console.log("  To verify dai:");
   console.log(
-    `    npx hardhat starknet-verify --starknet-network ${STARKNET_NETWORK} --path contracts/l2/dai.cairo --address <L2_DAI_ADDRESS>\n`
+    `    npx hardhat starknet-verify --starknet-network ${network} --path contracts/l2/dai.cairo --address <L2_DAI_ADDRESS>\n`
   );
 
   console.log(

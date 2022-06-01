@@ -23,5 +23,17 @@ export default defineConfig({
         dai: "0x11fE4B6AE13d2a6055C8D9cF65c55bac32B5d844",
       },
     },
+    /*
+    goerli: {
+      maker: {
+        vat: "0x2D833c7bC94409F02aF5bC9C4a5FA28359795CC5",
+        dai_join: "0x65dA7Af225fA988B42f002bF05b95c8EE5DCfe9F",
+        vow: "0xDAb7bC19b593A7C694AE7484Cd4cB346e372e68C",
+        pause_proxy: "0x9FdeD504a45b3C13C96ebca7becDd9677D342340",
+        esm: "0x0c2a6328b18091dd243F18e229F7dF442FB52D94",
+        dai: "0xd7F24C609825a4348dEc3C856Aa8796696355Fcd",
+      },
+    },
+    */
   },
 });

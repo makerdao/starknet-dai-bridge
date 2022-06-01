@@ -75,7 +75,7 @@ export function asDec(a: string | number | bigint): string {
 export async function getEvent(eventName: string, contractAddress: string) {
   const _contractAddress = `0x${BigInt(contractAddress).toString(16)}`;
   const eventKey = getSelectorFromName(eventName);
-  const res = await fetch(`http://localhost:5000/feeder_gateway/get_block`);
+  const res = await fetch(`http://localhost:5050/feeder_gateway/get_block`);
   const json = await res.json();
   const [event] = json["transaction_receipts"][0]["events"].filter(
     (event: any) => {

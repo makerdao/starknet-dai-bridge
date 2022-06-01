@@ -1,8 +1,8 @@
-/**
- * Full goerli deploy including any permissions that need to be set.
- */
-import { DEFAULT_STARKNET_NETWORK } from "@shardlabs/starknet-hardhat-plugin/dist/constants";
-import { StarknetContract } from "@shardlabs/starknet-hardhat-plugin/dist/types";
+import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
+import {
+  DeployOptions,
+  StarknetContract,
+} from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
 import dotenv from "dotenv";
 import { ethers } from "ethers";
 import {
@@ -22,6 +22,7 @@ import { isEmpty } from "lodash";
 import { assert } from "ts-essentials";
 
 const DEPLOYMENTS_DIR = `deployments`;
+const ACCOUNTS_DIR = "starknet-accounts";
 const MASK_250 = BigInt(2 ** 250 - 1);
 
 export function l1String(str: string): string {
@@ -141,18 +142,21 @@ export async function getAddressOfNextDeployedContract(
 export async function waitForTx(
   tx: Promise<any>
 ): Promise<providers.TransactionReceipt> {
+  console.log(`Sending transaction...`);
   const resolvedTx = await tx;
+  console.log(`Waiting for tx: ${resolvedTx.hash}`);
   return await resolvedTx.wait();
 }
 
 export function getAddress(contract: string, network: string) {
+  console.log(`reading: ./deployments/${network}/${contract}.json`);
   try {
     return JSON.parse(
       fs.readFileSync(`./deployments/${network}/${contract}.json`).toString()
     ).address;
   } catch (err) {
-    if (process.env[`${network.toUpperCase()}_${contract}`]) {
-      return process.env[`${network.toUpperCase()}_${contract}`];
+    if (process.env[`${getNetworkUpperCase(network)}_${contract}`]) {
+      return process.env[`${getNetworkUpperCase(network)}_${contract}`];
     } else {
       throw Error(
         `${contract} deployment on ${network} not found, run 'yarn deploy:${network}'`
@@ -161,13 +165,28 @@ export function getAddress(contract: string, network: string) {
   }
 }
 
+export async function getAccount(
+  name: string,
+  hre: any
+): Promise<ArgentAccount> {
+  const { network } = getNetwork(hre);
+  const { address, privateKey, guardianPrivateKey } = JSON.parse(
+    fs.readFileSync(`./${ACCOUNTS_DIR}/${network}/${name}.json`).toString()
+  );
+  const account = (await hre.starknet.getAccountFromAddress(
+    address,
+    privateKey,
+    "Argent"
+  )) as ArgentAccount;
+  await account.setGuardian(guardianPrivateKey);
+  return account;
+}
+
 function getAccounts(network: string) {
-  const files = fs.readdirSync(`./deployments/${network}`);
-  return files
-    .filter((file) => file.slice(0, 7) === "account")
-    .map((file) => {
-      return file.split("-")[1].split(".")[0];
-    });
+  const files = fs.readdirSync(`./${ACCOUNTS_DIR}/${network}`);
+  return files.map((file) => {
+    return file.split(".")[0];
+  });
 }
 
 export function parseCalldataL1(calldata: string, network: string) {
@@ -277,6 +296,24 @@ export function save(
   );
 }
 
+export function saveAccount(
+  name: string,
+  account: ArgentAccount,
+  network: string
+) {
+  if (!fs.existsSync(`./${ACCOUNTS_DIR}/${network}`)) {
+    fs.mkdirSync(`./${ACCOUNTS_DIR}/${network}`, { recursive: true });
+  }
+  fs.writeFileSync(
+    `./${ACCOUNTS_DIR}/${network}/${name}.json`,
+    JSON.stringify({
+      address: account.starknetContract.address,
+      privateKey: account.privateKey,
+      guardianPrivateKey: account.guardianPrivateKey,
+    })
+  );
+}
+
 export function getSelectorFromName(name: string) {
   return (
     BigInt(ethers.utils.keccak256(Buffer.from(name))) % MASK_250
@@ -284,10 +321,9 @@ export function getSelectorFromName(name: string) {
 }
 
 export function printAddresses(hre: any, includeTeleport: boolean = false) {
-  const NETWORK = hre.network.name;
+  const { network } = getNetwork(hre);
 
   let contracts = [
-    "account-deployer",
     "dai",
     "registry",
     "L1Escrow",
@@ -306,7 +342,7 @@ export function printAddresses(hre: any, includeTeleport: boolean = false) {
   }
 
   const addresses = contracts.reduce(
-    (a, c) => Object.assign(a, { [c]: getAddress(c, NETWORK) }),
+    (a, c) => Object.assign(a, { [c]: getAddress(c, network) }),
     {}
   );
 
@@ -314,13 +350,7 @@ export function printAddresses(hre: any, includeTeleport: boolean = false) {
 }
 
 export function writeAddresses(hre: any, includeTeleport: boolean = false) {
-  const NETWORK = hre.network.name;
-  let ADDRESS_NETWORK: string;
-  if (NETWORK === "fork") {
-    ADDRESS_NETWORK = getRequiredEnv("FORK_NETWORK").toUpperCase();
-  } else {
-    ADDRESS_NETWORK = NETWORK.toUpperCase();
-  }
+  const { network, NETWORK } = getNetwork(hre);
 
   let variables = [
     ["L1_ESCROW_ADDRESS", "L1Escrow"],
@@ -335,15 +365,15 @@ export function writeAddresses(hre: any, includeTeleport: boolean = false) {
   if (includeTeleport) {
     variables = [
       ...variables,
-      ["L1_DAI_WORMHOLE_GATEWAY_ADDRESS", "L1DAITeleportGateway"],
-      ["L2_DAI_WORMHOLE_GATEWAY_ADDRESS", "l2_dai_teleport_gateway"],
+      ["L1_DAI_TELEPORT_GATEWAY_ADDRESS", "L1DAITeleportGateway"],
+      ["L2_DAI_TELEPORT_GATEWAY_ADDRESS", "l2_dai_teleport_gateway"],
     ];
   }
 
   const addresses = variables.reduce((a, c) => {
-    const address = getAddress(c[1], NETWORK);
+    const address = getAddress(c[1], network);
     if (address) {
-      return `${a}${ADDRESS_NETWORK}_${c[0]}=${address}\n`;
+      return `${a}${NETWORK}_${c[0]}=${address}\n`;
     } else {
       return a;
     }
@@ -380,12 +410,18 @@ export async function deployL1(
   name: string,
   blockNumber: number,
   calldata: any = [],
+  overrides: any = {},
   saveName?: string
 ) {
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
+
+  const { network } = getNetwork(hre);
+
   const contractFactory = await hre.ethers.getContractFactory(name);
-  const contract = await contractFactory.deploy(...calldata);
-  save(saveName || name, contract, hre.network.name, blockNumber);
+  const contract = await contractFactory.deploy(...calldata, overrides);
+  save(saveName || name, contract, network, blockNumber);
+
+  await contract.deployed();
 
   console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
   console.log(
@@ -402,18 +438,34 @@ export async function deployL2(
   name: string,
   blockNumber: number,
   calldata: any = {},
+  options: DeployOptions = {},
   saveName?: string
 ) {
-  const STARKNET_NETWORK = hre.starknet.network || DEFAULT_STARKNET_NETWORK;
+  const { network } = getNetwork(hre);
+
   console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
   const contractFactory = await hre.starknet.getContractFactory(name);
 
-  const contract = await contractFactory.deploy(calldata);
-  save(saveName || name, contract, hre.network.name, blockNumber);
+  const contract = await contractFactory.deploy(calldata, options);
+  save(saveName || name, contract, network, blockNumber);
 
   console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
   console.log(
-    `To verify: npx hardhat starknet-verify --starknet-network ${STARKNET_NETWORK} --path contracts/l2/${name}.cairo --address ${contract.address}`
+    `To verify: npx hardhat starknet-verify --starknet-network ${network} --path contracts/l2/${name}.cairo --address ${contract.address}`
   );
   return contract;
+}
+
+export function getNetwork(hre: any) {
+  const network = hre.config.starknet.network!;
+  assert(
+    network === "alpha-mainnet" || network === "alpha-goerli",
+    "Network not properly set!"
+  );
+  const NETWORK = getNetworkUpperCase(network);
+  return { network, NETWORK };
+}
+
+function getNetworkUpperCase(network: string) {
+  return network.toUpperCase().replace(/[-]/g, "_")!;
 }
