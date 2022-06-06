@@ -10,7 +10,6 @@ import "./scripts/deployBridge";
 import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
 import "./scripts/deployTeleport";
-import "./scripts/fork";
 import "./scripts/interact";
 import "./scripts/starknet";
 import "./scripts/wards";
@@ -80,17 +79,10 @@ const config = {
     localhost: {
       url: "http://127.0.0.1:8545",
     },
-    fork: {
-      url: "http://127.0.0.1:8545",
-    },
     devnet: {
       url: "http://127.0.0.1:5050",
     },
     hardhat: {
-      forking: {
-        url: `https://${process.env.FORK_NETWORK}.infura.io/v3/${infuraApiKey}`,
-        enabled: process.env.NODE_ENV !== "test",
-      },
       accounts: {
         count: 10,
         mnemonic,

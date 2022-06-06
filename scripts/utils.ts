@@ -484,10 +484,7 @@ export async function deployL2(
 }
 
 export function getNetwork(hre: any) {
-  let network = hre.config.starknet.network!;
-  if (network === "devnet") {
-    network = `alpha-${getRequiredEnv("FORK_NETWORK")}`;
-  }
+  const network = hre.config.starknet.network!;
   assert(
     network === "alpha-mainnet" || network === "alpha-goerli",
     "Network not properly set!"
