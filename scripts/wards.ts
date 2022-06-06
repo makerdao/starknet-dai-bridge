@@ -50,7 +50,6 @@ async function inspectL1Wards(
 
   const abi = ["event Rely(address indexed)", "event Deny(address indexed)"];
 
-  console.log(ethers.provider._network);
   const contract = new Contract(address, abi, ethers.provider);
 
   const relyEvents = await contract.queryFilter(
