@@ -83,11 +83,8 @@ const config = {
     fork: {
       url: "http://127.0.0.1:8545",
     },
-    integratedDevnet: {
+    devnet: {
       url: "http://127.0.0.1:5050",
-      venv: "active",
-      dockerizedVersion: "0.1.10",
-      starknetChainId: "0",
     },
     hardhat: {
       forking: {
@@ -103,10 +100,7 @@ const config = {
   },
   starknet: {
     dockerizedVersion: "0.8.1",
-    network:
-      process.env.NODE_ENV !== "test"
-        ? process.env.STARKNET_NETWORK
-        : "integrated-devnet",
+    network: process.env.STARKNET_NETWORK,
   },
   paths: {
     artifacts: "./artifacts",

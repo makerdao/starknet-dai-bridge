@@ -485,7 +485,7 @@ export async function deployL2(
 
 export function getNetwork(hre: any) {
   let network = hre.config.starknet.network!;
-  if (network === "integrated-devnet") {
+  if (network === "devnet") {
     network = `alpha-${getRequiredEnv("FORK_NETWORK")}`;
   }
   assert(
