@@ -41,10 +41,10 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
 
   console.log(`Deploying gateway on ${network}`);
 
-  const deployer: ArgentAccount = (await getAccount(
+  const deployer = await getAccount(
     "deployer",
     hre
-  )) as ArgentAccount;
+  );
   console.log(
     `Deploying from account: ${deployer.starknetContract.address.toString()}`
   );
@@ -92,11 +92,11 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   );
 
   console.log("Finalizing permissions for l2_dai_teleport_gateway...");
-  await deployer.invoke(l2DAITeleportGateway, "rely", {
+  await deployer.estimateAndInvoke(l2DAITeleportGateway, "rely", {
     user: asDec(L2_GOVERNANCE_RELAY_ADDRESS),
   });
   if (DENY_DEPLOYER) {
-    await deployer.invoke(l2DAITeleportGateway, "deny", {
+    await deployer.estimateAndInvoke(l2DAITeleportGateway, "deny", {
       user: asDec(deployer.starknetContract.address),
     });
   }

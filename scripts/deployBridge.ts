@@ -49,10 +49,10 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
-  const deployer: ArgentAccount = (await getAccount(
+  const deployer = await getAccount(
     "deployer",
     hre
-  )) as ArgentAccount;
+  );
   console.log(
     `Deploying from account: ${deployer.starknetContract.address.toString()}`
   );
@@ -185,14 +185,14 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   }
 
   console.log("Finalizing permissions for l2_dai...");
-  await deployer.invoke(l2DAI, "rely", {
+  await deployer.estimateAndInvoke(l2DAI, "rely", {
     user: asDec(l2DAIBridge.address),
   });
-  await deployer.invoke(l2DAI, "rely", {
+  await deployer.estimateAndInvoke(l2DAI, "rely", {
     user: asDec(l2GovernanceRelay.address),
   });
   if (DENY_DEPLOYER) {
-    await deployer.invoke(l2DAI, "deny", {
+    await deployer.estimateAndInvoke(l2DAI, "deny", {
       user: asDec(deployer.starknetContract.address),
     });
   }

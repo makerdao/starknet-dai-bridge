@@ -4,19 +4,16 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
-import "./scripts/interact";
+
 import "./scripts/deployDeployer";
 import "./scripts/deploySpell";
 import "./scripts/deployBridge";
-import "./scripts/deployTeleport";
-import "./scripts/account";
-import "./scripts/fork";
-import "./scripts/starknet";
-import "./scripts/deployBridge";
 import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
-import "./scripts/account";
+import "./scripts/deployTeleport";
 import "./scripts/fork";
+import "./scripts/interact";
+import "./scripts/starknet";
 import "./scripts/wards";
 
 import { config as dotenvConfig } from "dotenv";
@@ -75,7 +72,8 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   };
 }
 
-const config: HardhatUserConfig = {
+// const config: HardhatUserConfig = {
+const config = {
   defaultNetwork: "hardhat",
   networks: {
     goerli: getChainConfig("goerli"),
@@ -86,8 +84,11 @@ const config: HardhatUserConfig = {
     fork: {
       url: "http://127.0.0.1:8545",
     },
-    devnet: {
+    integratedDevnet: {
       url: "http://127.0.0.1:5050",
+      venv: "active",
+      dockerizedVersion: "0.1.10",
+      starknetChainId: "0",
     },
     hardhat: {
       forking: {
@@ -104,7 +105,7 @@ const config: HardhatUserConfig = {
   starknet: {
     dockerizedVersion: "0.8.1",
     network:
-      process.env.NODE_ENV !== "test" ? process.env.STARKNET_NETWORK : "devnet",
+      process.env.NODE_ENV !== "test" ? process.env.STARKNET_NETWORK : "integrated-devnet",
   },
   paths: {
     artifacts: "./artifacts",

@@ -1,7 +1,9 @@
 import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
+import { generateKeys } from "@shardlabs/starknet-hardhat-plugin/dist/src/account-utils";
 import {
   DeployOptions,
   StarknetContract,
+  StringMap,
 } from "@shardlabs/starknet-hardhat-plugin/dist/src/types";
 import dotenv from "dotenv";
 import {
@@ -165,10 +167,33 @@ export function getAddress(contract: string, network: string) {
   }
 }
 
+class CustomArgentAccount extends ArgentAccount {
+  async estimateAndInvoke(
+    toContract: StarknetContract,
+    functionName: string,
+    calldata?: StringMap,
+    options: any = {}
+  ) {
+    const { amount } = await this.estimateFee(
+      toContract,
+      functionName,
+      calldata,
+      options
+    );
+    const feeMultiplier = BigInt(getRequiredEnv("FEE_MULTIPLIER"));
+    return this.invoke(
+      toContract,
+      functionName,
+      calldata,
+      { maxFee: amount * feeMultiplier }
+    );
+  }
+}
+
 export async function getAccount(
   name: string,
   hre: any
-): Promise<ArgentAccount> {
+): Promise<CustomArgentAccount> {
   const { network } = getNetwork(hre);
   const { address, privateKey, guardianPrivateKey } = JSON.parse(
     fs.readFileSync(`./${ACCOUNTS_DIR}/${network}/${name}.json`).toString()
@@ -177,8 +202,12 @@ export async function getAccount(
     address,
     privateKey,
     "Argent"
-  )) as ArgentAccount;
-  await account.setGuardian(guardianPrivateKey);
+  )) as CustomArgentAccount;
+  const guardian = generateKeys(guardianPrivateKey);
+  account.guardianPrivateKey = guardian.privateKey;
+  account.guardianPublicKey = guardian.publicKey;
+  account.guardianKeyPair = guardian.keyPair;
+  account["estimateAndInvoke"] = CustomArgentAccount.prototype.estimateAndInvoke;
   return account;
 }
 
@@ -457,7 +486,10 @@ export async function deployL2(
 }
 
 export function getNetwork(hre: any) {
-  const network = hre.config.starknet.network!;
+  let network = hre.config.starknet.network!;
+  if (network === "integrated-devnet") {
+    network = `alpha-${getRequiredEnv("FORK_NETWORK")}`;
+  }
   assert(
     network === "alpha-mainnet" || network === "alpha-goerli",
     "Network not properly set!"

@@ -25,9 +25,9 @@ task("invoke:l2", "Invoke an L2 contract")
     const contractFactory = await hre.starknet.getContractFactory(contract);
     const contractInstance = contractFactory.getContractAt(address);
     const _name = name || "default";
-    const _calldata = parseCalldataL2(calldata, NETWORK, contract, func);
+    const _calldata = parseCalldataL2(calldata, network, contract, func);
     const account = await getAccount(_name, hre);
-    const res = await account.invoke(contractInstance, func, _calldata);
+    const res = await account.estimateAndInvoke(contractInstance, func, _calldata);
     console.log("Response:", res);
   });
 
