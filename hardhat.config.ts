@@ -11,7 +11,6 @@ import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
 import "./scripts/deployTeleport";
 import "./scripts/interact";
-import "./scripts/starknet";
 import "./scripts/wards";
 
 import { config as dotenvConfig } from "dotenv";
