@@ -181,12 +181,9 @@ class CustomArgentAccount extends ArgentAccount {
       options
     );
     const feeMultiplier = BigInt(getRequiredEnv("FEE_MULTIPLIER"));
-    return this.invoke(
-      toContract,
-      functionName,
-      calldata,
-      { maxFee: amount * feeMultiplier }
-    );
+    return this.invoke(toContract, functionName, calldata, {
+      maxFee: amount * feeMultiplier,
+    });
   }
 }
 
@@ -207,7 +204,8 @@ export async function getAccount(
   account.guardianPrivateKey = guardian.privateKey;
   account.guardianPublicKey = guardian.publicKey;
   account.guardianKeyPair = guardian.keyPair;
-  account["estimateAndInvoke"] = CustomArgentAccount.prototype.estimateAndInvoke;
+  account["estimateAndInvoke"] =
+    CustomArgentAccount.prototype.estimateAndInvoke;
   return account;
 }
 

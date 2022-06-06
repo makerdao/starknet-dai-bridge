@@ -4,7 +4,6 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
-
 import "./scripts/deployDeployer";
 import "./scripts/deploySpell";
 import "./scripts/deployBridge";
@@ -17,7 +16,7 @@ import "./scripts/starknet";
 import "./scripts/wards";
 
 import { config as dotenvConfig } from "dotenv";
-import { HardhatUserConfig, NetworkUserConfig } from "hardhat/types";
+import { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
@@ -105,7 +104,9 @@ const config = {
   starknet: {
     dockerizedVersion: "0.8.1",
     network:
-      process.env.NODE_ENV !== "test" ? process.env.STARKNET_NETWORK : "integrated-devnet",
+      process.env.NODE_ENV !== "test"
+        ? process.env.STARKNET_NETWORK
+        : "integrated-devnet",
   },
   paths: {
     artifacts: "./artifacts",

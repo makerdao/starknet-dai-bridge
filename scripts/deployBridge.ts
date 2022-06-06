@@ -1,4 +1,3 @@
-import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 import { expect } from "chai";
 import { utils } from "ethers";
 import { task } from "hardhat/config";
@@ -49,10 +48,7 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   // @ts-ignore
   const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
-  const deployer = await getAccount(
-    "deployer",
-    hre
-  );
+  const deployer = await getAccount("deployer", hre);
   console.log(
     `Deploying from account: ${deployer.starknetContract.address.toString()}`
   );

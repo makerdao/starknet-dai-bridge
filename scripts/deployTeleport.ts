@@ -1,4 +1,3 @@
-import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 import { expect } from "chai";
 import { task } from "hardhat/config";
 
@@ -41,10 +40,7 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
 
   console.log(`Deploying gateway on ${network}`);
 
-  const deployer = await getAccount(
-    "deployer",
-    hre
-  );
+  const deployer = await getAccount("deployer", hre);
   console.log(
     `Deploying from account: ${deployer.starknetContract.address.toString()}`
   );
