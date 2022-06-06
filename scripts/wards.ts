@@ -3,7 +3,7 @@ import { BigNumberish, constants, Contract, utils } from "ethers";
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
-import { getRequiredEnv } from "./utils";
+import { getNetwork, getRequiredEnv } from "./utils";
 
 const YELLOW = "\x1b[33m";
 const RESET = "\x1b[0m";
@@ -12,8 +12,7 @@ function chainId(network: string) {
   return network.indexOf("MAINNET") >= 0 ? "mainnet" : "testnet";
 }
 
-async function inspectL2Wards(key: string) {
-  const network = getRequiredEnv("NETWORK");
+async function inspectL2Wards(network: string, key: string) {
   const address = `0x${BigInt(getRequiredEnv(key)).toString(16)}`;
 
   const url = `http://starknet.events/api/v1/get_events?chain_id=${chainId(
@@ -42,36 +41,25 @@ async function inspectL2Wards(key: string) {
 
 type HREEthers = HardhatRuntimeEnvironment["ethers"];
 
-function getL1Provider(ethers: HREEthers) {
-  const network = getRequiredEnv("NETWORK");
-  const infuraApiKey = getRequiredEnv("INFURA_API_KEY");
-  const prefix = network.indexOf("MAINNET") >= 0 ? "mainnet" : "goerli";
-  return ethers.getDefaultProvider(
-    `https://${prefix}.infura.io/v3/${infuraApiKey}`
-  );
-}
-
-function getStartingBlock() {
-  const network = getRequiredEnv("NETWORK");
-  return network.indexOf("MAINNET") >= 0 ? 14742550 : 1474255;
-}
-
-async function inspectL1Wards(ethers: HREEthers, key: string) {
-  const provider = getL1Provider(ethers);
-
+async function inspectL1Wards(
+  ethers: HREEthers,
+  key: string,
+  startingBlock: number
+) {
   const address = getRequiredEnv(key);
 
   const abi = ["event Rely(address indexed)", "event Deny(address indexed)"];
 
-  const contract = new Contract(address, abi, provider);
+  console.log(ethers.provider._network);
+  const contract = new Contract(address, abi, ethers.provider);
 
   const relyEvents = await contract.queryFilter(
     contract.filters.Rely(),
-    getStartingBlock()
+    startingBlock
   );
   const denyEvents = await contract.queryFilter(
     contract.filters.Deny(),
-    getStartingBlock()
+    startingBlock
   );
 
   const sorted = [...relyEvents, ...denyEvents].sort((a, b) =>
@@ -83,7 +71,7 @@ async function inspectL1Wards(ethers: HREEthers, key: string) {
   const logs = await Promise.all(
     sorted.map(async (event: any) => {
       const timestamp = new Date(
-        1000 * (await provider.getBlock(event.blockHash)).timestamp
+        1000 * (await ethers.provider.getBlock(event.blockHash)).timestamp
       ).toISOString();
       return `${timestamp} - ${event.event} ${event.args[0]}`;
     })
@@ -112,10 +100,11 @@ function showNumber(n: BigNumberish) {
   return utils.formatEther(n);
 }
 
-async function inspectL1EscrowAllowances(ethers: HREEthers) {
-  const network = getRequiredEnv("NETWORK");
-  const provider = getL1Provider(ethers);
-
+async function inspectL1EscrowAllowances(
+  network: string,
+  ethers: HREEthers,
+  startingBlock: number
+) {
   const escrowAddress = getRequiredEnv(`${network}_L1_ESCROW_ADDRESS`);
   const daiAddress = getRequiredEnv(`${network}_L1_DAI_ADDRESS`);
 
@@ -124,17 +113,17 @@ async function inspectL1EscrowAllowances(ethers: HREEthers) {
     "function allowance(address, address) view returns (uint256)",
   ];
 
-  const dai = new Contract(daiAddress, abi, provider);
+  const dai = new Contract(daiAddress, abi, ethers.provider);
 
   const events = await dai.queryFilter(
     dai.filters.Approval(escrowAddress),
-    getStartingBlock()
+    startingBlock
   );
 
   const logs = await Promise.all(
     events.map(async (event: any) => {
       const timestamp = new Date(
-        1000 * (await provider.getBlock(event.blockHash)).timestamp
+        1000 * (await ethers.provider.getBlock(event.blockHash)).timestamp
       ).toISOString();
       return `${timestamp} - ${event.event} ${event.args[1]}, ${showNumber(
         event.args[2]
@@ -161,14 +150,26 @@ async function inspectL1EscrowAllowances(ethers: HREEthers) {
 }
 
 task("inspect-wards", "Inspect wards").setAction(async (_, hre) => {
-  const network = getRequiredEnv("NETWORK");
+  const { NETWORK } = getNetwork(hre);
 
-  await inspectL1EscrowAllowances(hre.ethers);
+  const startingBlock = Number.parseInt(
+    getRequiredEnv(`${NETWORK}_STARTING_BLOCK`)
+  );
 
-  await inspectL1Wards(hre.ethers, `${network}_L1_ESCROW_ADDRESS`);
-  await inspectL1Wards(hre.ethers, `${network}_L1_DAI_BRIDGE`);
-  await inspectL1Wards(hre.ethers, `${network}_L1_GOVERNANCE_RELAY`);
+  await inspectL1EscrowAllowances(NETWORK, hre.ethers, startingBlock);
 
-  await inspectL2Wards(`${network}_L2_DAI_ADDRESS`);
-  await inspectL2Wards(`${network}_L2_DAI_BRIDGE`);
+  await inspectL1Wards(
+    hre.ethers,
+    `${NETWORK}_L1_ESCROW_ADDRESS`,
+    startingBlock
+  );
+  await inspectL1Wards(hre.ethers, `${NETWORK}_L1_DAI_BRIDGE`, startingBlock);
+  await inspectL1Wards(
+    hre.ethers,
+    `${NETWORK}_L1_GOVERNANCE_RELAY`,
+    startingBlock
+  );
+
+  await inspectL2Wards(NETWORK, `${NETWORK}_L2_DAI_ADDRESS`);
+  await inspectL2Wards(NETWORK, `${NETWORK}_L2_DAI_BRIDGE`);
 });
