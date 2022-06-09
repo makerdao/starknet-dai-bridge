@@ -4,23 +4,17 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
-import "./scripts/interact";
 import "./scripts/deployDeployer";
 import "./scripts/deploySpell";
 import "./scripts/deployBridge";
-import "./scripts/deployTeleport";
-import "./scripts/account";
-import "./scripts/fork";
-import "./scripts/starknet";
-import "./scripts/deployBridge";
 import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
-import "./scripts/account";
-import "./scripts/fork";
+import "./scripts/deployTeleport";
+import "./scripts/interact";
 import "./scripts/wards";
 
 import { config as dotenvConfig } from "dotenv";
-import { HardhatUserConfig, NetworkUserConfig } from "hardhat/types";
+import { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
@@ -75,7 +69,8 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   };
 }
 
-const config: HardhatUserConfig = {
+// const config: HardhatUserConfig = {
+const config = {
   defaultNetwork: "hardhat",
   networks: {
     goerli: getChainConfig("goerli"),
@@ -83,17 +78,10 @@ const config: HardhatUserConfig = {
     localhost: {
       url: "http://127.0.0.1:8545",
     },
-    fork: {
-      url: "http://127.0.0.1:8545",
-    },
     devnet: {
       url: "http://127.0.0.1:5050",
     },
     hardhat: {
-      forking: {
-        url: `https://${process.env.FORK_NETWORK}.infura.io/v3/${infuraApiKey}`,
-        enabled: process.env.NODE_ENV !== "test",
-      },
       accounts: {
         count: 10,
         mnemonic,
@@ -103,16 +91,7 @@ const config: HardhatUserConfig = {
   },
   starknet: {
     dockerizedVersion: "0.8.1",
-    network:
-      process.env.NODE_ENV !== "test" ? process.env.STARKNET_NETWORK : "devnet",
-    wallets: {
-      user: {
-        accountName: "OpenZeppelin",
-        modulePath:
-          "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
-        accountPath: "~/.starknet_accounts",
-      },
-    },
+    network: process.env.STARKNET_NETWORK,
   },
   paths: {
     artifacts: "./artifacts",

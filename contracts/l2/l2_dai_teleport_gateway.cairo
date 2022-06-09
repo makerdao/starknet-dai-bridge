@@ -24,7 +24,7 @@ from starkware.cairo.common.math_cmp import (is_not_zero)
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address, get_block_timestamp)
 from starkware.cairo.common.uint256 import (Uint256, uint256_lt, uint256_add, uint256_check)
 
-const FINALIZE_REGISTER_WORMHOLE = 0
+const FINALIZE_REGISTER_TELEPORT = 0
 const FINALIZE_FLUSH = 1
 const valid_domains_file = 'valid_domains'
 const MAX_NONCE = 2**80-1
@@ -346,7 +346,7 @@ func initiate_teleport{
     let (nonce) = read_and_update_nonce()
 
     let (payload) = alloc()
-    assert payload[0] = FINALIZE_REGISTER_WORMHOLE
+    assert payload[0] = FINALIZE_REGISTER_TELEPORT
     assert payload[1] = domain
     assert payload[2] = target_domain
     assert payload[3] = receiver
@@ -393,7 +393,7 @@ func finalize_register_teleport{
     let (domain) = _domain.read()
 
     let (payload) = alloc()
-    assert payload[0] = FINALIZE_REGISTER_WORMHOLE
+    assert payload[0] = FINALIZE_REGISTER_TELEPORT
     assert payload[1] = domain
     assert payload[2] = target_domain
     assert payload[3] = receiver

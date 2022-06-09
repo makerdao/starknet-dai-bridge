@@ -99,7 +99,7 @@ L2_CONTRACTS_DIR = os.path.join(os.getcwd(), "contracts/l2")
 ACCOUNT_FILE = os.path.join(L2_CONTRACTS_DIR, "account.cairo")
 DAI_FILE = os.path.join(L2_CONTRACTS_DIR, "dai.cairo")
 BRIDGE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_bridge.cairo")
-WORMHOLE_GATEWAY_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_teleport_gateway.cairo")
+TELEPORT_GATEWAY_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_teleport_gateway.cairo")
 SPELL_FILE = os.path.join(L2_CONTRACTS_DIR, "sample_spell.cairo")
 REGISTRY_FILE = os.path.join(L2_CONTRACTS_DIR, "registry.cairo")
 GOVERNANCE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_governance_relay.cairo")
@@ -150,7 +150,7 @@ async def build_copyable_deployment():
     )
 
     l2_teleport_gateway = await starknet.deploy(
-        source=WORMHOLE_GATEWAY_FILE,
+        source=TELEPORT_GATEWAY_FILE,
         constructor_calldata=[
             accounts.auth_user.contract_address,
             dai.contract_address,
@@ -216,7 +216,7 @@ async def build_copyable_deployment():
         account=compile(ACCOUNT_FILE),
         dai=compile(DAI_FILE),
         l2_bridge=compile(BRIDGE_FILE),
-        l2_teleport_gateway=compile(WORMHOLE_GATEWAY_FILE),
+        l2_teleport_gateway=compile(TELEPORT_GATEWAY_FILE),
         sample_spell=compile(SPELL_FILE),
         registry=compile(REGISTRY_FILE),
         l2_governance_relay=compile(GOVERNANCE_FILE),

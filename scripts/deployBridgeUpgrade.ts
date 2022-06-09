@@ -6,8 +6,8 @@ import {
   asDec,
   deployL1,
   deployL2,
+  getAccount,
   getActiveWards,
-  getAddress,
   getAddressOfNextDeployedContract,
   getL1ContractAt,
   getL2ContractAt,
@@ -49,15 +49,7 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     // @ts-ignore
     const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
-    const DEPLOYER_KEY = getRequiredEnv(
-      `${NETWORK}_DEPLOYER_ECDSA_PRIVATE_KEY`
-    );
-
-    const deployer = await hre.starknet.getAccountFromAddress(
-      getAddress("account-deployer", network),
-      DEPLOYER_KEY,
-      "OpenZeppelin"
-    );
+    const deployer = await getAccount("deployer", hre);
 
     console.log("From");
     console.log(
@@ -159,11 +151,11 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     // });
 
     console.log("Finalizing permissions for l2_dai_bridge...");
-    await deployer.invoke(l2DAIBridge, "rely", {
+    await deployer.estimateAndInvoke(l2DAIBridge, "rely", {
       user: asDec(l2GovernanceRelay.address),
     });
     if (DENY_DEPLOYER) {
-      await deployer.invoke(l2DAIBridge, "deny", {
+      await deployer.estimateAndInvoke(l2DAIBridge, "deny", {
         user: asDec(deployer.starknetContract.address),
       });
     }

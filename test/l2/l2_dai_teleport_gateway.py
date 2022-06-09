@@ -14,12 +14,12 @@ import pprint
 
 L1_ADDRESS = 0x1
 INVALID_L1_ADDRESS = 0x10000000000000000000000000000000000000000
-L1_WORMHOLE_BRIDGE_ADDRESS = 0x1
+L1_TELEPORT_BRIDGE_ADDRESS = 0x1
 DOMAIN = get_selector_from_name("starknet")
 TARGET_DOMAIN = get_selector_from_name("optimism")
 INVALID_DOMAIN = get_selector_from_name("invalid_domain")
-WORMHOLE_AMOUNT = 10
-FINALIZE_REGISTER_WORMHOLE = 0
+TELEPORT_AMOUNT = 10
+FINALIZE_REGISTER_TELEPORT = 0
 FINALIZE_FLUSH = 1
 ECDSA_PUBLIC_KEY = 0
 
@@ -101,11 +101,11 @@ async def test_burns_dai_marks_it_for_future_flush(
     check_balances,
     block_timestamp
 ):
-    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(WORMHOLE_AMOUNT)).invoke(user1.contract_address)
+    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT)).invoke(user1.contract_address)
     tx = await l2_teleport_gateway.initiate_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
-            WORMHOLE_AMOUNT,
+            TELEPORT_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
     check_event(
         l2_teleport_gateway,
@@ -115,7 +115,7 @@ async def test_burns_dai_marks_it_for_future_flush(
             TARGET_DOMAIN,
             user1.contract_address,
             user1.contract_address,
-            WORMHOLE_AMOUNT,
+            TELEPORT_AMOUNT,
             0,
             block_timestamp()
         )
@@ -126,20 +126,20 @@ async def test_burns_dai_marks_it_for_future_flush(
         TARGET_DOMAIN, # targetDomain
         user1.contract_address, # receiver
         user1.contract_address, # operator
-        WORMHOLE_AMOUNT, # amount
+        TELEPORT_AMOUNT, # amount
         0, # nonce
         block_timestamp() # timestamp
     ]
 
-    await check_balances(100 - WORMHOLE_AMOUNT, 100)
+    await check_balances(100 - TELEPORT_AMOUNT, 100)
     batched_dai_to_flush = await l2_teleport_gateway.batched_dai_to_flush(TARGET_DOMAIN).call()
-    assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT),)
+    assert batched_dai_to_flush.result == (to_split_uint(TELEPORT_AMOUNT),)
 
-    payload = [FINALIZE_REGISTER_WORMHOLE, *teleport]
+    payload = [FINALIZE_REGISTER_TELEPORT, *teleport]
     with pytest.raises(AssertionError):
         starknet.consume_message_from_l2(
             from_address=l2_teleport_gateway.contract_address,
-            to_address=L1_WORMHOLE_BRIDGE_ADDRESS,
+            to_address=L1_TELEPORT_BRIDGE_ADDRESS,
             payload=payload,
         )
 
@@ -152,11 +152,11 @@ async def test_nonce_management(
     check_balances,
     block_timestamp
 ):
-    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(WORMHOLE_AMOUNT*2)).invoke(user1.contract_address)
+    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT*2)).invoke(user1.contract_address)
     tx = await l2_teleport_gateway.initiate_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
-            WORMHOLE_AMOUNT,
+            TELEPORT_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
     check_event(
         l2_teleport_gateway,
@@ -166,7 +166,7 @@ async def test_nonce_management(
             TARGET_DOMAIN,
             user1.contract_address,
             user1.contract_address,
-            WORMHOLE_AMOUNT,
+            TELEPORT_AMOUNT,
             0,
             block_timestamp()
         )
@@ -175,7 +175,7 @@ async def test_nonce_management(
     tx = await l2_teleport_gateway.initiate_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
-            WORMHOLE_AMOUNT,
+            TELEPORT_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
     check_event(
         l2_teleport_gateway,
@@ -185,7 +185,7 @@ async def test_nonce_management(
             TARGET_DOMAIN,
             user1.contract_address,
             user1.contract_address,
-            WORMHOLE_AMOUNT,
+            TELEPORT_AMOUNT,
             1,
             block_timestamp()
         )
@@ -201,11 +201,11 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     check_balances,
     block_timestamp
 ):
-    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(WORMHOLE_AMOUNT)).invoke(user1.contract_address)
+    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT)).invoke(user1.contract_address)
     tx = await l2_teleport_gateway.initiate_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
-            WORMHOLE_AMOUNT,
+            TELEPORT_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
     check_event(
         l2_teleport_gateway,
@@ -215,7 +215,7 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
             TARGET_DOMAIN,
             user1.contract_address,
             user1.contract_address,
-            WORMHOLE_AMOUNT,
+            TELEPORT_AMOUNT,
             0,
             block_timestamp()
         )
@@ -226,7 +226,7 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     await l2_teleport_gateway.finalize_register_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
-            WORMHOLE_AMOUNT,
+            TELEPORT_AMOUNT,
             user1.contract_address,
             0,
             timestamp).invoke(user1.contract_address)
@@ -236,19 +236,19 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
         TARGET_DOMAIN, # targetDomain
         user1.contract_address, # receiver
         user1.contract_address, # operator
-        WORMHOLE_AMOUNT, # amount
+        TELEPORT_AMOUNT, # amount
         0, # nonce
         timestamp # timestamp
     ]
 
-    await check_balances(100 - WORMHOLE_AMOUNT, 100)
+    await check_balances(100 - TELEPORT_AMOUNT, 100)
     batched_dai_to_flush = await l2_teleport_gateway.batched_dai_to_flush(TARGET_DOMAIN).call()
-    assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT),)
+    assert batched_dai_to_flush.result == (to_split_uint(TELEPORT_AMOUNT),)
 
-    payload = [FINALIZE_REGISTER_WORMHOLE, *teleport]
+    payload = [FINALIZE_REGISTER_TELEPORT, *teleport]
     starknet.consume_message_from_l2(
         from_address=l2_teleport_gateway.contract_address,
-        to_address=L1_WORMHOLE_BRIDGE_ADDRESS,
+        to_address=L1_TELEPORT_BRIDGE_ADDRESS,
         payload=payload,
     )
 
@@ -262,7 +262,7 @@ async def test_reverts_when_insufficient_funds(
         await l2_teleport_gateway.initiate_teleport(
                 TARGET_DOMAIN,
                 user2.contract_address,
-                100 + WORMHOLE_AMOUNT,
+                100 + TELEPORT_AMOUNT,
                 user2.contract_address).invoke(user2.contract_address)
     assert "dai/insufficient-balance" in str(err.value)
 
@@ -294,7 +294,7 @@ async def test_reverts_when_gateway_is_closed(
         await l2_teleport_gateway.initiate_teleport(
                 TARGET_DOMAIN,
                 user2.contract_address,
-                WORMHOLE_AMOUNT,
+                TELEPORT_AMOUNT,
                 user2.contract_address).invoke(user1.contract_address)
     assert "l2_dai_teleport_gateway/gateway-closed" in str(err.value)
 
@@ -309,7 +309,7 @@ async def test_reverts_when_domain_is_not_whitelisted(
         await l2_teleport_gateway.initiate_teleport(
                 INVALID_DOMAIN,
                 user2.contract_address,
-                WORMHOLE_AMOUNT,
+                TELEPORT_AMOUNT,
                 user2.contract_address).invoke(user1.contract_address)
     assert "l2_dai_teleport_gateway/invalid-domain" in str(err.value)
 
@@ -322,19 +322,19 @@ async def test_flushes_batched_dai(
     dai: StarknetContract,
     user1: StarknetContract,
 ):
-    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(WORMHOLE_AMOUNT * 2)).invoke(user1.contract_address)
+    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT * 2)).invoke(user1.contract_address)
     await l2_teleport_gateway.initiate_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
-            WORMHOLE_AMOUNT,
+            TELEPORT_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
     await l2_teleport_gateway.initiate_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
-            WORMHOLE_AMOUNT,
+            TELEPORT_AMOUNT,
             user1.contract_address).invoke(user1.contract_address)
     batched_dai_to_flush = await l2_teleport_gateway.batched_dai_to_flush(TARGET_DOMAIN).call()
-    assert batched_dai_to_flush.result == (to_split_uint(WORMHOLE_AMOUNT * 2),)
+    assert batched_dai_to_flush.result == (to_split_uint(TELEPORT_AMOUNT * 2),)
 
     tx = await l2_teleport_gateway.flush(
             TARGET_DOMAIN,
@@ -344,18 +344,18 @@ async def test_flushes_batched_dai(
         "Flushed",
         tx, (
             TARGET_DOMAIN,
-            to_split_uint(WORMHOLE_AMOUNT * 2)
+            to_split_uint(TELEPORT_AMOUNT * 2)
         )
     )
 
     payload = [
         FINALIZE_FLUSH,
         TARGET_DOMAIN,
-        *to_split_uint(WORMHOLE_AMOUNT * 2),
+        *to_split_uint(TELEPORT_AMOUNT * 2),
     ]
     starknet.consume_message_from_l2(
         from_address=l2_teleport_gateway.contract_address,
-        to_address=L1_WORMHOLE_BRIDGE_ADDRESS,
+        to_address=L1_TELEPORT_BRIDGE_ADDRESS,
         payload=payload,
     )
 

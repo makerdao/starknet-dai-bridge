@@ -142,8 +142,8 @@ Settlement process moves DAI from L1 Bridge to TeleportJoin to clear the debt th
 
 #### Slow path
 If attestations cannot be obtained (Oracles down or censoring), `l2_dai_teleport_gateway` provides a way to finalize teleport through L2->L1 messages:
-1. Initiate slow path on L2 by calling `l2_dai_teleport_gateway.finalize_register_teleport`. After checking in `l2_dai_teleport_gateway.teleports` that teleport was opened, `FINALIZE_REGISTER_WORMHOLE` L2->L1 message will sent to `L1DAITeleportGateway`
-2. Receive `FINALIZE_REGISTER_WORMHOLE` message by calling `L1DAITeleportGateway.finalizeRegisterTeleport`, which in turn will call `TeleportJoin.requestMint` which will finalize teleport if it was not finalized already.
+1. Initiate slow path on L2 by calling `l2_dai_teleport_gateway.finalize_register_teleport`. After checking in `l2_dai_teleport_gateway.teleports` that teleport was opened, `FINALIZE_REGISTER_TELEPORT` L2->L1 message will sent to `L1DAITeleportGateway`
+2. Receive `FINALIZE_REGISTER_TELEPORT` message by calling `L1DAITeleportGateway.finalizeRegisterTeleport`, which in turn will call `TeleportJoin.requestMint` which will finalize teleport if it was not finalized already.
 
 ## Risks
 In addition to general teleport risks described [here](https://github.com/makerdao/dss-teleport#risks) there are a few  StarkNet specific risks that are worth mentioning.
