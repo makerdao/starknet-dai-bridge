@@ -1,7 +1,7 @@
 import pytest
 
 from starkware.starknet.testing.starknet import Starknet
-from starkware.starknet.testing.contract import StarknetContract
+from starkware.starknet.testing.contract import StarknetContract, DeclaredClass
 from starkware.starkware_utils.error_handling import StarkException
 from conftest import to_split_uint, to_uint
 
@@ -17,7 +17,6 @@ no_funds = 1
 
 starknet_contract_address = 0x0
 
-
 #########
 # TESTS #
 #########
@@ -25,7 +24,7 @@ starknet_contract_address = 0x0
 async def test_governance_relay(
     starknet: Starknet,
     l2_governance_relay: StarknetContract,
-    sample_spell: StarknetContract,
+    sample_spell: DeclaredClass,
     check_balances,
 ):
     await starknet.send_message_to_l2(
@@ -36,14 +35,3 @@ async def test_governance_relay(
     )
 
     await check_balances(110, 100)
-
-
-@pytest.mark.asyncio
-async def test_governance_relay_revoke_auth(
-    sample_spell: StarknetContract,
-    check_balances,
-):
-    with pytest.raises(StarkException):
-        await sample_spell.execute().invoke()
-
-    await check_balances(100, 100)

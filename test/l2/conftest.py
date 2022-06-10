@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import time
 
 from starkware.starknet.compiler.compile import compile_starknet_files
-from starkware.starknet.testing.starknet import Starknet, StarknetContract
+from starkware.starknet.testing.starknet import Starknet, StarknetContract, DeclaredClass
 from starkware.starknet.business_logic.state.state import BlockInfo
 from starkware.starknet.business_logic.execution.objects import Event
 from starkware.starknet.public.abi import get_selector_from_name
@@ -217,7 +217,6 @@ async def build_copyable_deployment():
         dai=compile(DAI_FILE),
         l2_bridge=compile(BRIDGE_FILE),
         l2_teleport_gateway=compile(TELEPORT_GATEWAY_FILE),
-        sample_spell=compile(SPELL_FILE),
         registry=compile(REGISTRY_FILE),
         l2_governance_relay=compile(GOVERNANCE_FILE),
     )
@@ -242,13 +241,13 @@ async def build_copyable_deployment():
         starknet=starknet,
         consts=consts,
         signers=signers,
+        sample_spell=sample_spell,
         serialized_contracts=dict(
             user1=serialize_contract(accounts.user1, defs.account.abi),
             user2=serialize_contract(accounts.user2, defs.account.abi),
             user3=serialize_contract(accounts.user3, defs.account.abi),
             auth_user=serialize_contract(accounts.auth_user, defs.account.abi),
             dai=serialize_contract(dai, defs.dai.abi),
-            sample_spell=serialize_contract(sample_spell, defs.sample_spell.abi),
             l2_bridge=serialize_contract(l2_bridge, defs.l2_bridge.abi),
             l2_teleport_gateway=serialize_contract(l2_teleport_gateway, defs.l2_teleport_gateway.abi),
             registry=serialize_contract(registry, defs.registry.abi),
@@ -273,6 +272,7 @@ async def ctx_factory(copyable_deployment):
         serialized_contracts = copyable_deployment.serialized_contracts
         signers = copyable_deployment.signers
         consts = copyable_deployment.consts
+        sample_spell = copyable_deployment.sample_spell
 
         starknet_state = copyable_deployment.starknet.state.copy()
         contracts = {
@@ -298,6 +298,7 @@ async def ctx_factory(copyable_deployment):
             advance_clock=advance_clock,
             consts=consts,
             execute=execute,
+            sample_spell=sample_spell,
             **contracts,
         )
 
@@ -333,7 +334,7 @@ async def auth_user(ctx) -> StarknetContract:
     return ctx.auth_user
 
 @pytest.fixture(scope="function")
-async def sample_spell(ctx) -> StarknetContract:
+async def sample_spell(ctx) -> DeclaredClass:
     return ctx.sample_spell
 
 @pytest.fixture(scope="function")
