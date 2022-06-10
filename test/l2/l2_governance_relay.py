@@ -32,7 +32,7 @@ async def test_governance_relay(
         from_address=L1_GOVERNANCE_ADDRESS,
         to_address=l2_governance_relay.contract_address,
         selector="relay",
-        payload=[sample_spell.contract_address],
+        payload=[sample_spell.class_hash],
     )
 
     await check_balances(110, 100)

@@ -103,7 +103,7 @@ struct TeleportData:
   member receiver: felt
   member operator: felt
   member amount: felt
-  member timestamp: felt #TODO: join amount and timestamp
+  member timestamp: felt
 end
 
 @storage_var
@@ -344,17 +344,7 @@ func initiate_teleport{
 
     let (domain) = _domain.read()
     let (nonce) = read_and_update_nonce()
-
-    let (payload) = alloc()
-    assert payload[0] = FINALIZE_REGISTER_WORMHOLE
-    assert payload[1] = domain
-    assert payload[2] = target_domain
-    assert payload[3] = receiver
-    assert payload[4] = operator
-    assert payload[5] = amount
-    assert payload[6] = nonce
     let (timestamp) = get_block_timestamp()
-    assert payload[7] = timestamp
 
     TeleportInitialized.emit(
       source_domain=domain,
