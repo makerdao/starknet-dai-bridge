@@ -316,14 +316,14 @@ func initiate_teleport{
     amount : felt,
     operator : felt
   ):
-    let (is_open) = _is_open.read()
     with_attr error_message("l2_dai_teleport_gateway/gateway-closed"):
+      let (is_open) = _is_open.read()
       assert is_open = 1
     end
 
     # valid domain check
-    let (valid_domain) = _valid_domains.read(target_domain)
     with_attr error_message("l2_dai_teleport_gateway/invalid-domain"):
+      let (valid_domain) = _valid_domains.read(target_domain)
       assert valid_domain = 1
     end
 
@@ -375,10 +375,6 @@ func finalize_register_teleport{
     nonce : felt,
     timestamp : felt
   ):
-    let (is_open) = _is_open.read()
-    with_attr error_message("l2_dai_teleport_gateway/gateway-closed"):
-      assert is_open = 1
-    end
     let (domain) = _domain.read()
 
     let (payload) = alloc()

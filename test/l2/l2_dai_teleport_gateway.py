@@ -300,6 +300,50 @@ async def test_reverts_when_gateway_is_closed(
 
 
 @pytest.mark.asyncio
+async def test_allows_to_finalize_when_closed(
+    l2_teleport_gateway: StarknetContract,
+    dai: StarknetContract,
+    user1: StarknetContract,
+    auth_user: StarknetContract,
+    block_timestamp
+):
+    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT)).invoke(user1.contract_address)
+
+
+    tx = await l2_teleport_gateway.initiate_teleport(
+            TARGET_DOMAIN,
+            user1.contract_address,
+            TELEPORT_AMOUNT,
+            user1.contract_address).invoke(user1.contract_address)
+
+    timestamp = block_timestamp()
+
+    check_event(
+        l2_teleport_gateway,
+        "TeleportInitialized",
+        tx, (
+            DOMAIN,
+            TARGET_DOMAIN,
+            user1.contract_address,
+            user1.contract_address,
+            TELEPORT_AMOUNT,
+            0,
+            timestamp
+        )
+    )
+
+    await l2_teleport_gateway.close().invoke(auth_user.contract_address)
+
+    await l2_teleport_gateway.finalize_register_teleport(
+            TARGET_DOMAIN,
+            user1.contract_address,
+            TELEPORT_AMOUNT,
+            user1.contract_address,
+            0,
+            timestamp).invoke(user1.contract_address)
+
+
+@pytest.mark.asyncio
 async def test_reverts_when_domain_is_not_whitelisted(
     l2_teleport_gateway: StarknetContract,
     user1: StarknetContract,
