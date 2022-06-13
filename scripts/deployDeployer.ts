@@ -1,4 +1,4 @@
-import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
+import { OpenZeppelinAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 import fs from "fs";
 import { task } from "hardhat/config";
 
@@ -9,9 +9,9 @@ task("deploy-deployer", "Deploy deployer").setAction(async (_, hre) => {
 
   console.log(`Deploying deployer on ${network}`);
 
-  const deployer: ArgentAccount = (await hre.starknet.deployAccount(
-    "Argent"
-  )) as ArgentAccount;
+  const deployer: OpenZeppelinAccount = (await hre.starknet.deployAccount(
+    "OpenZeppelin"
+  )) as OpenZeppelinAccount;
   saveAccount("deployer", deployer, network);
 
   fs.writeFileSync(

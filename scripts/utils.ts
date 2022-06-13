@@ -1,4 +1,4 @@
-import { ArgentAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
+import { OpenZeppelinAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 import { generateKeys } from "@shardlabs/starknet-hardhat-plugin/dist/src/account-utils";
 import {
   DeployOptions,
@@ -167,7 +167,7 @@ export function getAddress(contract: string, network: string) {
   }
 }
 
-class CustomArgentAccount extends ArgentAccount {
+class CustomAccount extends OpenZeppelinAccount {
   async estimateAndInvoke(
     toContract: StarknetContract,
     functionName: string,
@@ -190,39 +190,25 @@ class CustomArgentAccount extends ArgentAccount {
 export async function getAccount(
   name: string,
   hre: any
-): Promise<CustomArgentAccount> {
+): Promise<CustomAccount> {
   const { network } = getNetwork(hre);
-  const { address, privateKey, guardianPrivateKey } = JSON.parse(
-    fs.readFileSync(`./${ACCOUNTS_DIR}/${network}/${name}.json`).toString()
-  );
+  const { address, private_key } = JSON.parse(
+    fs.readFileSync(`~/.starknet_accounts/starknet_open_zeppelin_accounts.json`).toString()
+  )[network];
   const account = (await hre.starknet.getAccountFromAddress(
     address,
-    privateKey,
-    "Argent"
-  )) as CustomArgentAccount;
-  const guardian = generateKeys(guardianPrivateKey);
-  account.guardianPrivateKey = guardian.privateKey;
-  account.guardianPublicKey = guardian.publicKey;
-  account.guardianKeyPair = guardian.keyPair;
+    private_key,
+    "OpenZeppelinAccount"
+  )) as CustomAccount;
   account["estimateAndInvoke"] =
-    CustomArgentAccount.prototype.estimateAndInvoke;
+    CustomAccount.prototype.estimateAndInvoke;
   return account;
-}
-
-function getAccounts(network: string) {
-  const files = fs.readdirSync(`./${ACCOUNTS_DIR}/${network}`);
-  return files.map((file) => {
-    return file.split(".")[0];
-  });
 }
 
 export function parseCalldataL1(calldata: string, network: string) {
   const _calldata = calldata ? calldata.split(",") : [];
-  const accounts = getAccounts(network);
   return _calldata.map((input: string) => {
-    if (accounts.includes(input)) {
-      return BigInt(getAddress(`account-${input}`, network)).toString();
-    } else if (input === "l2_dai_bridge") {
+    if (input === "l2_dai_bridge") {
       return getAddress("l2_dai_bridge", network);
     } else if (input === "L1DAIBridge") {
       return getAddress("L1DAIBridge", network);
@@ -268,18 +254,13 @@ export function parseCalldataL2(
   func: string
 ) {
   const _calldata = calldata ? calldata.split(",") : [];
-  const accounts = getAccounts(network);
   const res: Record<string, any> = {};
   const inputs = getInputAbi(contract, func);
   for (let i = 0; i < _calldata.length; i++) {
     const input = _calldata[i];
     const inputName: string = inputs[i].name;
     const inputType: string = inputs[i].type;
-    if (accounts.includes(input)) {
-      res[inputName] = BigInt(
-        getAddress(`account-${input}`, network)
-      ).toString();
-    } else if (input === "L1DAIBridge") {
+    if (input === "L1DAIBridge") {
       res[inputName] = BigInt(getAddress("L1DAIBridge", network)).toString();
     } else if (input === "l2_dai_bridge") {
       res[inputName] = BigInt(getAddress("l2_dai_bridge", network)).toString();
@@ -325,7 +306,7 @@ export function save(
 
 export function saveAccount(
   name: string,
-  account: ArgentAccount,
+  account: OpenZeppelinAccount,
   network: string
 ) {
   if (!fs.existsSync(`./${ACCOUNTS_DIR}/${network}`)) {
@@ -336,7 +317,6 @@ export function saveAccount(
     JSON.stringify({
       address: account.starknetContract.address,
       privateKey: account.privateKey,
-      guardianPrivateKey: account.guardianPrivateKey,
     })
   );
 }
