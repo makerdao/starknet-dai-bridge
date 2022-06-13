@@ -290,6 +290,8 @@ func file{
     domain : felt,
     data : felt,
   ):
+    auth()
+
     with_attr error_message("l2_dai_teleport_gateway/file-unrecognized-param"):
       assert what = 'valid_domains'
     end

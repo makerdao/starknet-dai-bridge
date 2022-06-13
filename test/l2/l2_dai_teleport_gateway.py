@@ -65,7 +65,7 @@ async def test_can_be_called_multiple_times_by_owner(
 
 
 @pytest.mark.asyncio
-async def test_reverts_when_not_called_by_owner(
+async def test_close_reverts_when_not_called_by_owner(
     l2_teleport_gateway: StarknetContract,
     user1: StarknetContract,
 ):
@@ -73,7 +73,18 @@ async def test_reverts_when_not_called_by_owner(
         await l2_teleport_gateway.close().invoke(user1.contract_address)
     assert "l2_dai_teleport_gateway/not-authorized" in str(err.value)
 
-# file()
+
+@pytest.mark.asyncio
+async def test_file_should_not_accept_invalid_what(
+    l2_teleport_gateway: StarknetContract,
+    auth_user: StarknetContract,
+):
+    with pytest.raises(StarkException) as err:
+        await l2_teleport_gateway.file(
+                TARGET_DOMAIN, TARGET_DOMAIN, 0,
+            ).invoke(auth_user.contract_address)
+    assert "l2_dai_teleport_gateway/file-unrecognized-param" in str(err.value)
+
 @pytest.mark.asyncio
 async def test_file_should_not_accept_invalid_data(
     l2_teleport_gateway: StarknetContract,
@@ -89,6 +100,17 @@ async def test_file_should_not_accept_invalid_data(
                 VALID_DOMAINS, TARGET_DOMAIN, 2,
             ).invoke(auth_user.contract_address)
     assert "l2_dai_teleport_gateway/invalid-data" in str(err.value)
+
+@pytest.mark.asyncio
+async def test_file_reverts_when_not_called_by_owner(
+    l2_teleport_gateway: StarknetContract,
+    user1: StarknetContract,
+):
+    with pytest.raises(StarkException) as err:
+        await l2_teleport_gateway.file(
+                VALID_DOMAINS, TARGET_DOMAIN, 0,
+            ).invoke(auth_user.contract_address)
+    assert "l2_dai_teleport_gateway/not-authorized" in str(err.value)
 
 
 ## initiateTeleport()
