@@ -26,7 +26,6 @@ from starkware.cairo.common.uint256 import (Uint256, uint256_lt, uint256_add, ui
 
 const FINALIZE_REGISTER_TELEPORT = 0
 const FINALIZE_FLUSH = 1
-const valid_domains_file = 'valid_domains'
 const MAX_NONCE = 2**80-1
 
 @contract_interface
@@ -291,8 +290,8 @@ func file{
     domain : felt,
     data : felt,
   ):
-    with_attr error_message("l2_dai_teleport_gateway/invalid-file"):
-      assert what = valid_domains_file
+    with_attr error_message("l2_dai_teleport_gateway/file-unrecognized-param"):
+      assert what = 'valid_domains'
     end
 
     with_attr error_message("l2_dai_teleport_gateway/invalid-data"):
