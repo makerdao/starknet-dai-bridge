@@ -95,10 +95,11 @@ const config = {
     wallets: {
       deployer: {
         accountName: "deployer",
-        modulePath: "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
-        accountPath: "~/.starknet_accounts"
-      }
-    }
+        modulePath:
+          "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
+        accountPath: "~/.starknet_accounts",
+      },
+    },
   },
   paths: {
     artifacts: "./artifacts",

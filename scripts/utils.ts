@@ -1,5 +1,4 @@
 import { OpenZeppelinAccount } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
-import { generateKeys } from "@shardlabs/starknet-hardhat-plugin/dist/src/account-utils";
 import {
   DeployOptions,
   StarknetContract,
@@ -193,15 +192,16 @@ export async function getAccount(
 ): Promise<CustomAccount> {
   const { network } = getNetwork(hre);
   const { address, private_key } = JSON.parse(
-    fs.readFileSync(`~/.starknet_accounts/starknet_open_zeppelin_accounts.json`).toString()
+    fs
+      .readFileSync(`~/.starknet_accounts/starknet_open_zeppelin_accounts.json`)
+      .toString()
   )[network];
   const account = (await hre.starknet.getAccountFromAddress(
     address,
     private_key,
     "OpenZeppelinAccount"
   )) as CustomAccount;
-  account["estimateAndInvoke"] =
-    CustomAccount.prototype.estimateAndInvoke;
+  account["estimateAndInvoke"] = CustomAccount.prototype.estimateAndInvoke;
   return account;
 }
 
