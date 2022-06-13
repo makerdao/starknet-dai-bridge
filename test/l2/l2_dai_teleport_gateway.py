@@ -109,7 +109,7 @@ async def test_file_reverts_when_not_called_by_owner(
     with pytest.raises(StarkException) as err:
         await l2_teleport_gateway.file(
                 VALID_DOMAINS, TARGET_DOMAIN, 0,
-            ).invoke(auth_user.contract_address)
+            ).invoke(user1.contract_address)
     assert "l2_dai_teleport_gateway/not-authorized" in str(err.value)
 
 
