@@ -423,7 +423,7 @@ func flush{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(target_domain : felt) -> (res : Uint256):
+  }(target_domain : felt):
 
     let (dai_to_flush : Uint256) = _batched_dai_to_flush.read(target_domain)
     uint256_assert_not_zero(dai_to_flush)
@@ -443,7 +443,7 @@ func flush{
 
     Flushed.emit(target_domain=target_domain, dai=dai_to_flush)
 
-    return (res=dai_to_flush)
+    return ()
 end
 
 func uint256_add_safe{
