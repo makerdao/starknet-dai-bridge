@@ -90,7 +90,7 @@ const config = {
     },
   },
   starknet: {
-    dockerizedVersion: "0.8.1",
+    dockerizedVersion: "0.9.0",
     network: process.env.STARKNET_NETWORK,
   },
   paths: {
@@ -107,7 +107,7 @@ const config = {
   solidity: {
     compilers: [
       {
-        version: "0.8.13",
+        version: "0.8.14",
         settings: {
           metadata: {
             // Not including the metadata hash
