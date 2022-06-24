@@ -245,13 +245,27 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
 
     timestamp = block_timestamp()
 
-    await l2_teleport_gateway.finalize_register_teleport(
+    tx2 = await l2_teleport_gateway.finalize_register_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
             TELEPORT_AMOUNT,
             user1.contract_address,
             0,
             timestamp).invoke(user1.contract_address)
+
+    check_event(
+        l2_teleport_gateway,
+        "TeleportRegisterFinalized",
+        tx2, (
+            DOMAIN,
+            TARGET_DOMAIN,
+            user1.contract_address,
+            user1.contract_address,
+            TELEPORT_AMOUNT,
+            0,
+            timestamp
+        )
+    )
 
     teleport = [
         DOMAIN, # sourceDomain

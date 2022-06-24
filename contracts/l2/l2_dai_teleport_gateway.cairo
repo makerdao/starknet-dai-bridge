@@ -60,6 +60,17 @@ func TeleportInitialized(
 end
 
 @event
+func TeleportRegisterFinalized(
+  source_domain : felt,
+  target_domain : felt,
+  receiver : felt,
+  operator : felt,
+  amount : felt,
+  nonce : felt,
+  timestamp : felt):
+end
+
+@event
 func Flushed(target_domain : felt, dai : Uint256):
 end
 
@@ -395,6 +406,15 @@ func finalize_register_teleport{
       assert amount = teleport.amount
       assert timestamp = teleport.timestamp
     end
+
+    TeleportRegisterFinalized.emit(
+      source_domain=domain,
+      target_domain=target_domain,
+      receiver=receiver,
+      operator=operator,
+      amount=amount,
+      nonce=nonce,
+      timestamp=timestamp)
 
     let (teleport_gateway) = _teleport_gateway.read()
     send_message_to_l1(teleport_gateway, 8, payload)
