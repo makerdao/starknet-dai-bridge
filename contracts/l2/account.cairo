@@ -1,3 +1,4 @@
+# amarna: disable=arithmetic-add,unused-arguments,must-check-caller-address
 %lang starknet
 
 from starkware.cairo.common.registers import get_fp_and_pc

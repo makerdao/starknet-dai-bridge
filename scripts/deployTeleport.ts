@@ -35,9 +35,6 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   );
   const DENY_DEPLOYER = getRequiredEnv("DENY_DEPLOYER") === "true";
 
-  // @ts-ignore
-  const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
-
   console.log(`Deploying gateway on ${network}`);
 
   const deployer = await getAccount("deployer", hre);
@@ -61,7 +58,6 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   const l2DAITeleportGateway = await deployL2(
     hre,
     "l2_dai_teleport_gateway",
-    BLOCK_NUMBER,
     {
       ward: asDec(deployer.starknetContract.address),
       dai: asDec(L2_DAI_ADDRESS),
@@ -73,7 +69,6 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   const l1DAITeleportGateway = await deployL1(
     hre,
     "L1DAITeleportGateway",
-    BLOCK_NUMBER,
     [
       L1_STARKNET_ADDRESS,
       L1_DAI_ADDRESS,
@@ -105,6 +100,10 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
     await wards(l2DAITeleportGateway, deployer.starknetContract)
   ).to.deep.eq(BigInt(!DENY_DEPLOYER));
 
-  printAddresses(hre, true);
-  writeAddresses(hre, true);
+  const addresses = {
+    "L1_DAI_TELEPORT_GATEWAY_ADDRESS": l1DAITeleportGateway.address,
+    "L2_DAI_TELEPORT_GATEWAY_ADDRESS": l2DAITeleportGateway.address,
+  };
+  printAddresses(hre, addresses);
+  writeAddresses(hre, addresses);
 });
