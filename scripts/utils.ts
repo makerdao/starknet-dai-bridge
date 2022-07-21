@@ -19,8 +19,8 @@ import {
 } from "ethers";
 import { getContractAddress, Result } from "ethers/lib/utils";
 import fs from "fs";
-import os from "os";
 import { isEmpty } from "lodash";
+import os from "os";
 import { assert } from "ts-essentials";
 
 const DEPLOYMENTS_DIR = `deployments`;
@@ -194,7 +194,9 @@ export async function getAccount(
   const { network } = getNetwork(hre);
   const { address, private_key } = JSON.parse(
     fs
-      .readFileSync(`${os.homedir()}/.starknet_accounts/starknet_open_zeppelin_accounts.json`)
+      .readFileSync(
+        `${os.homedir()}/.starknet_accounts/starknet_open_zeppelin_accounts.json`
+      )
       .toString()
   )[network][name];
   const account = (await hre.starknet.getAccountFromAddress(
