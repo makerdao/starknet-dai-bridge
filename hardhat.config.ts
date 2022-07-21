@@ -90,11 +90,11 @@ const config = {
     },
   },
   starknet: {
-    dockerizedVersion: "0.9.0",
+    dockerizedVersion: "0.9.1",
     network: process.env.STARKNET_NETWORK,
     wallets: {
-      deployer: {
-        accountName: "deployer",
+      user: {
+        accountName: "user",
         modulePath:
           "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
         accountPath: "~/.starknet_accounts",

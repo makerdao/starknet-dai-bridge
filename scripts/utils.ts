@@ -19,6 +19,7 @@ import {
 } from "ethers";
 import { getContractAddress, Result } from "ethers/lib/utils";
 import fs from "fs";
+import os from "os";
 import { isEmpty } from "lodash";
 import { assert } from "ts-essentials";
 
@@ -181,7 +182,8 @@ class CustomAccount extends OpenZeppelinAccount {
     );
     const feeMultiplier = BigInt(getRequiredEnv("FEE_MULTIPLIER"));
     return this.invoke(toContract, functionName, calldata, {
-      maxFee: amount * feeMultiplier,
+      // maxFee: amount * feeMultiplier,
+      maxFee: 1e18,
     });
   }
 }
@@ -193,13 +195,13 @@ export async function getAccount(
   const { network } = getNetwork(hre);
   const { address, private_key } = JSON.parse(
     fs
-      .readFileSync(`~/.starknet_accounts/starknet_open_zeppelin_accounts.json`)
+      .readFileSync(`${os.homedir()}/.starknet_accounts/starknet_open_zeppelin_accounts.json`)
       .toString()
-  )[network];
+  )[network][name];
   const account = (await hre.starknet.getAccountFromAddress(
     address,
     private_key,
-    "OpenZeppelinAccount"
+    "OpenZeppelin"
   )) as CustomAccount;
   account["estimateAndInvoke"] = CustomAccount.prototype.estimateAndInvoke;
   return account;
