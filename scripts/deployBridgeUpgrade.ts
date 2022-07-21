@@ -14,7 +14,6 @@ import {
   getNetwork,
   getOptionalEnv,
   getRequiredEnv,
-  printAddresses,
   waitForTx,
   wards,
 } from "./utils";
