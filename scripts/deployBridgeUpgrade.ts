@@ -178,7 +178,7 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
       BigInt(!DENY_DEPLOYER)
     );
 
-    printAddresses(network);
+    // printAddresses(network);
     // writeAddresses(hre);
   }
 );
