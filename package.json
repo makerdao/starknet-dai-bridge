@@ -38,6 +38,7 @@
     "test:e2e": "wait-on tcp:5050 && wait-on tcp:8545 && NODE_ENV=test STARKNET_NETWORK=devnet TEST_ENV=e2e hardhat test --network localhost",
     "test:e2e:ci": "concurrently './scripts/chain.sh' './scripts/test-e2e.sh'",
     "test:l2": "pytest ./test/l2/* --disable-pytest-warnings",
+    "test:integration": "NODE_ENV=integration npx hardhat test --network goerli",
     "test:fix": "yarn lint:fix && yarn format:fix && yarn test:l1 && yarn typecheck",
     "inspect-wards:mainnet": "hardhat inspect-wards"
   },

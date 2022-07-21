@@ -39,6 +39,15 @@ if (!infuraApiKey) {
   throw new Error("Please set your INFURA_API_KEY in a .env file");
 }
 
+let test: string;
+if (process.env.TEST_ENV === "e2e") {
+  test = "e2e";
+} else if (process.env.TEST_ENV === "integration") {
+  test = "integration";
+} else {
+  test = "l1:*";
+}
+
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;
 
@@ -110,7 +119,7 @@ const config = {
     starknetArtifacts: "./starknet-artifacts",
   },
   mocha: {
-    grep: process.env.TEST_ENV === "e2e" ? "e2e" : "l1:*",
+    grep: test,
   },
   solidity: {
     compilers: [

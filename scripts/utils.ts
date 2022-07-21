@@ -182,8 +182,7 @@ class CustomAccount extends OpenZeppelinAccount {
     );
     const feeMultiplier = BigInt(getRequiredEnv("FEE_MULTIPLIER"));
     return this.invoke(toContract, functionName, calldata, {
-      // maxFee: amount * feeMultiplier,
-      maxFee: 1e18,
+      maxFee: amount * feeMultiplier,
     });
   }
 }
