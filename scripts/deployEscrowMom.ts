@@ -13,8 +13,6 @@ import {
 } from "./utils";
 
 task("deploy-escrow-mom", "Deploy L1EscrowMom").setAction(async (_, hre) => {
-  const [l1Signer] = await hre.ethers.getSigners();
-
   const { network, NETWORK } = getNetwork(hre);
 
   console.log(`Deploying escrow mom on: ${network}`);
