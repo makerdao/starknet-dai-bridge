@@ -23,8 +23,6 @@ import { isEmpty } from "lodash";
 import os from "os";
 import { assert } from "ts-essentials";
 
-const DEPLOYMENTS_DIR = `deployments`;
-const ACCOUNTS_DIR = "starknet-accounts";
 const MASK_250 = BigInt(2 ** 250 - 1);
 
 export function l1String(str: string): string {
@@ -289,107 +287,33 @@ export function parseCalldataL2(
   return res;
 }
 
-export function save(
-  name: string,
-  contract: any,
-  network: string,
-  block?: number
-) {
-  if (!fs.existsSync(`${DEPLOYMENTS_DIR}/${network}`)) {
-    fs.mkdirSync(`${DEPLOYMENTS_DIR}/${network}`, { recursive: true });
-  }
-  fs.writeFileSync(
-    `${DEPLOYMENTS_DIR}/${network}/${name}.json`,
-    JSON.stringify({
-      address: contract.address,
-      block,
-    })
-  );
-}
-
-export function saveAccount(
-  name: string,
-  account: OpenZeppelinAccount,
-  network: string
-) {
-  if (!fs.existsSync(`./${ACCOUNTS_DIR}/${network}`)) {
-    fs.mkdirSync(`./${ACCOUNTS_DIR}/${network}`, { recursive: true });
-  }
-  fs.writeFileSync(
-    `./${ACCOUNTS_DIR}/${network}/${name}.json`,
-    JSON.stringify({
-      address: account.starknetContract.address,
-      privateKey: account.privateKey,
-    })
-  );
-}
-
 export function getSelectorFromName(name: string) {
   return (
     BigInt(ethers.utils.keccak256(Buffer.from(name))) % MASK_250
   ).toString();
 }
 
-export function printAddresses(hre: any, includeTeleport: boolean = false) {
-  const { network } = getNetwork(hre);
+export function printAddresses(hre: any, addresses: Record<string, string>) {
+  const { NETWORK } = getNetwork(hre);
 
-  let contracts = [
-    "dai",
-    "registry",
-    "L1Escrow",
-    "L1DAIBridge",
-    "l2_dai_bridge",
-    "L1GovernanceRelay",
-    "l2_governance_relay",
-  ];
+  const result: Record<string, string> = {};
+  Object.keys(addresses).forEach(key => {
+    result[`${NETWORK}_${key}`] = addresses[key];
+  });
 
-  if (includeTeleport) {
-    contracts = [
-      ...contracts,
-      "L1DAITeleportGateway",
-      "l2_dai_teleport_gateway",
-    ];
-  }
-
-  const addresses = contracts.reduce(
-    (a, c) => Object.assign(a, { [c]: getAddress(c, network) }),
-    {}
-  );
-
-  console.log(addresses);
+  console.log(result);
 }
 
-export function writeAddresses(hre: any, includeTeleport: boolean = false) {
-  const { network, NETWORK } = getNetwork(hre);
+export function writeAddresses(hre: any, addresses: Record<string, string>) {
+  const { NETWORK } = getNetwork(hre);
 
-  let variables = [
-    ["L1_ESCROW_ADDRESS", "L1Escrow"],
-    ["L2_DAI_ADDRESS", "dai"],
-    ["L1_GOVERNANCE_RELAY_ADDRESS", "L1GovernanceRelay"],
-    ["L2_GOVERNANCE_RELAY_ADDRESS", "l2_governance_relay"],
-    ["L1_DAI_BRIDGE_ADDRESS", "L1DAIBridge"],
-    ["L2_DAI_BRIDGE_ADDRESS", "l2_dai_bridge"],
-    ["REGISTRY_ADDRESS", "registry"],
-  ];
+  const result = JSON.parse(fs.readFileSync(".env.deployments").toString());
 
-  if (includeTeleport) {
-    variables = [
-      ...variables,
-      ["L1_DAI_TELEPORT_GATEWAY_ADDRESS", "L1DAITeleportGateway"],
-      ["L2_DAI_TELEPORT_GATEWAY_ADDRESS", "l2_dai_teleport_gateway"],
-    ];
-  }
+  Object.keys(addresses).forEach(key => {
+    result[`${NETWORK}_${key}`] = addresses[key];
+  });
 
-  const addresses = variables.reduce((a, c) => {
-    const address = getAddress(c[1], network);
-    if (address) {
-      return `${a}${NETWORK}_${c[0]}=${address}\n`;
-    } else {
-      return a;
-    }
-  }, "");
-
-  fs.writeFileSync(".env.deployments", addresses);
+  fs.writeFileSync(".env.deployments", JSON.stringify(result));
 }
 
 export async function wards(
@@ -418,22 +342,17 @@ export async function getL2ContractAt(hre: any, name: string, address: string) {
 export async function deployL1(
   hre: any,
   name: string,
-  blockNumber: number,
   calldata: any = [],
   overrides: any = {},
-  saveName?: string
 ) {
-  console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
-
-  const { network } = getNetwork(hre);
+  console.log(`Deploying: ${name}...`);
 
   const contractFactory = await hre.ethers.getContractFactory(name);
   const contract = await contractFactory.deploy(...calldata, overrides);
-  save(saveName || name, contract, network, blockNumber);
 
   await contract.deployed();
 
-  console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
+  console.log(`Deployed: ${name} to: ${contract.address}`);
   console.log(
     `To verify: npx hardhat verify ${contract.address} ${calldata
       .filter((a: any) => !isEmpty(a))
@@ -446,20 +365,17 @@ export async function deployL1(
 export async function deployL2(
   hre: any,
   name: string,
-  blockNumber: number,
   calldata: any = {},
   options: DeployOptions = {},
-  saveName?: string
 ) {
   const { network } = getNetwork(hre);
 
-  console.log(`Deploying: ${name}${(saveName && "/" + saveName) || ""}...`);
+  console.log(`Deploying: ${name}...`);
   const contractFactory = await hre.starknet.getContractFactory(name);
 
   const contract = await contractFactory.deploy(calldata, options);
-  save(saveName || name, contract, network, blockNumber);
 
-  console.log(`Deployed: ${saveName || name} to: ${contract.address}`);
+  console.log(`Deployed: ${name} to: ${contract.address}`);
   console.log(
     `To verify: npx hardhat starknet-verify --starknet-network ${network} --path contracts/l2/${name}.cairo --address ${contract.address}`
   );

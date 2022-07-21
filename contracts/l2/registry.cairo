@@ -1,3 +1,4 @@
+# amarna: disable=must-check-caller-address
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
