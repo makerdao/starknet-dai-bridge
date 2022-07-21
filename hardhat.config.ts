@@ -4,7 +4,6 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
-import "./scripts/deployDeployer";
 import "./scripts/deploySpell";
 import "./scripts/deployBridge";
 import "./scripts/deployBridgeUpgrade";
