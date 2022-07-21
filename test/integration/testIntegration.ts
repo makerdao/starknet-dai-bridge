@@ -184,7 +184,7 @@ describe("integration", async function () {
         setTimeout(resolve, ms);
       });
     }
-    await delay(10000);
+    await delay(25000);
 
     console.log(`\nGetting attestation for tx: ${tx}`);
     const url = `http://52.42.179.195:8080/?type=teleport_starknet&index=${tx}`;
@@ -202,11 +202,11 @@ describe("integration", async function () {
       "0x0",
     ));
 
-    const newBalance = (new SplitUint(await l2Dai.call("balanceOf", {
+    const { res: _newBalance } = await l2Dai.call("balanceOf", {
       user: l2Auth.starknetContract.address,
-    }).res));
-    console.log(newBalance);
-    expect(newBalance.toUint()).to.equal(l2Balance.sub(transferAmount));
+    });
+    const newBalance = new SplitUint(_newBalance);
+    expect(newBalance.toUint()).to.equal(l2Balance.sub(transferAmount).toUint());
     expect(await l1Dai.balanceOf(signer.address)).to.equal(l1Balance.add(100));
   });
 });
