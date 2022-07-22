@@ -4,7 +4,6 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
-import "./scripts/deployDeployer";
 import "./scripts/deploySpell";
 import "./scripts/deployBridge";
 import "./scripts/deployBridgeUpgrade";
@@ -95,10 +94,11 @@ const config = {
     wallets: {
       deployer: {
         accountName: "deployer",
-        modulePath: "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
-        accountPath: "~/.starknet_accounts"
-      }
-    }
+        modulePath:
+          "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
+        accountPath: "~/.starknet_accounts",
+      },
+    },
   },
   paths: {
     artifacts: "./artifacts",

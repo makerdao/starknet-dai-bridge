@@ -81,11 +81,10 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
     deploymentOptions
   );
 
-  const l1GovernanceRelay = await deployL1(
-    hre,
-    "L1GovernanceRelay",
-    [L1_STARKNET_ADDRESS, l2GovernanceRelay.address]
-  );
+  const l1GovernanceRelay = await deployL1(hre, "L1GovernanceRelay", [
+    L1_STARKNET_ADDRESS,
+    l2GovernanceRelay.address,
+  ]);
   expect(
     futureL1GovRelayAddress === l1GovernanceRelay.address,
     "futureL1GovRelayAddress != l1GovernanceRelay.address"
@@ -208,13 +207,13 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
   );
 
   const addresses = {
-    "L2_DAI_ADDRESS": l2DAI.address,
-    "L1_ESCROW_ADDRESS": l1Escrow.address,
-    "REGISTRY_ADDRESS": registry.address,
-    "L1_DAI_BRIDGE_ADDRESS": l1DAIBridge.address,
-    "L2_DAI_BRIDGE_ADDRESS": l2DAIBridge.address,
-    "L1_GOVERNANCE_RELAY_ADDRESS": l1GovernanceRelay.address,
-    "L2_GOVERNANCE_RELAY_ADDRESS": l2GovernanceRelay.address,
+    L2_DAI_ADDRESS: l2DAI.address,
+    L1_ESCROW_ADDRESS: l1Escrow.address,
+    REGISTRY_ADDRESS: registry.address,
+    L1_DAI_BRIDGE_ADDRESS: l1DAIBridge.address,
+    L2_DAI_BRIDGE_ADDRESS: l2DAIBridge.address,
+    L1_GOVERNANCE_RELAY_ADDRESS: l1GovernanceRelay.address,
+    L2_GOVERNANCE_RELAY_ADDRESS: l2GovernanceRelay.address,
   };
   printAddresses(hre, addresses);
   writeAddresses(hre, addresses);

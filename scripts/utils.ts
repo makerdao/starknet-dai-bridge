@@ -177,15 +177,16 @@ export async function getAccount(
 ): Promise<CustomAccount> {
   const { network } = getNetwork(hre);
   const { address, private_key } = JSON.parse(
-    fs.readFileSync(`~/.starknet_accounts/starknet_open_zeppelin_accounts.json`).toString()
+    fs
+      .readFileSync(`~/.starknet_accounts/starknet_open_zeppelin_accounts.json`)
+      .toString()
   )[network];
   const account = (await hre.starknet.getAccountFromAddress(
     address,
     private_key,
     "OpenZeppelinAccount"
   )) as CustomAccount;
-  account["estimateAndInvoke"] =
-    CustomAccount.prototype.estimateAndInvoke;
+  account["estimateAndInvoke"] = CustomAccount.prototype.estimateAndInvoke;
   return account;
 }
 
@@ -199,7 +200,7 @@ export function printAddresses(hre: any, addresses: Record<string, string>) {
   const { NETWORK } = getNetwork(hre);
 
   const result: Record<string, string> = {};
-  Object.keys(addresses).forEach(key => {
+  Object.keys(addresses).forEach((key) => {
     result[`${NETWORK}_${key}`] = addresses[key];
   });
 
@@ -211,7 +212,7 @@ export function writeAddresses(hre: any, addresses: Record<string, string>) {
 
   const result = JSON.parse(fs.readFileSync(".env.deployments").toString());
 
-  Object.keys(addresses).forEach(key => {
+  Object.keys(addresses).forEach((key) => {
     result[`${NETWORK}_${key}`] = addresses[key];
   });
 
@@ -245,7 +246,7 @@ export async function deployL1(
   hre: any,
   name: string,
   calldata: any = [],
-  overrides: any = {},
+  overrides: any = {}
 ) {
   console.log(`Deploying: ${name}...`);
 
@@ -268,7 +269,7 @@ export async function deployL2(
   hre: any,
   name: string,
   calldata: any = {},
-  options: DeployOptions = {},
+  options: DeployOptions = {}
 ) {
   const { network } = getNetwork(hre);
 
