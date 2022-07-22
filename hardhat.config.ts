@@ -4,7 +4,6 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
-import "./scripts/deployDeployer";
 import "./scripts/deploySpell";
 import "./scripts/deployBridge";
 import "./scripts/deployBridgeUpgrade";
@@ -37,6 +36,15 @@ if (!mnemonic) {
 const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
 if (!infuraApiKey) {
   throw new Error("Please set your INFURA_API_KEY in a .env file");
+}
+
+let test: string;
+if (process.env.TEST_ENV === "e2e") {
+  test = "e2e";
+} else if (process.env.TEST_ENV === "integration") {
+  test = "integration";
+} else {
+  test = "l1:*";
 }
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
@@ -90,15 +98,16 @@ const config = {
     },
   },
   starknet: {
-    dockerizedVersion: "0.9.0",
+    dockerizedVersion: "0.9.1",
     network: process.env.STARKNET_NETWORK,
     wallets: {
-      deployer: {
-        accountName: "deployer",
-        modulePath: "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
-        accountPath: "~/.starknet_accounts"
-      }
-    }
+      user: {
+        accountName: "user",
+        modulePath:
+          "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
+        accountPath: "~/.starknet_accounts",
+      },
+    },
   },
   paths: {
     artifacts: "./artifacts",
@@ -109,7 +118,7 @@ const config = {
     starknetArtifacts: "./starknet-artifacts",
   },
   mocha: {
-    grep: process.env.TEST_ENV === "e2e" ? "e2e" : "l1:*",
+    grep: test,
   },
   solidity: {
     compilers: [
