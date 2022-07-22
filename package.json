@@ -13,7 +13,7 @@
     "lint:fix": "yarn lint --fix",
     "compile:l1": "hardhat compile",
     "compile:l2": "hardhat starknet-compile",
-    "compile": "yarn compile",
+    "compile": "yarn compile:l1 && yarn compile:l2",
     "chain:l1": "hardhat node",
     "chain:l2": "starknet-devnet",
     "chain": "concurrently 'yarn chain:l1' 'yarn chain:l2'",
@@ -47,7 +47,8 @@
     "@commitlint/cli": "^13.1.0",
     "@commitlint/config-conventional": "^13.1.0",
     "@defi-wonderland/smock": "^2.0.7",
-    "@dethcrypto/eth-sdk": "^0.3.1",
+    "@dethcrypto/eth-sdk": "0.3.1",
+    "@dethcrypto/eth-sdk-client": "^0.1.6",
     "@ethersproject/abi": "^5.4.1",
     "@ethersproject/abstract-signer": "^5.4.1",
     "@ethersproject/bignumber": "^5.4.1",
@@ -88,7 +89,6 @@
     "typechain": "^5.1.2"
   },
   "dependencies": {
-    "@dethcrypto/eth-sdk-client": "^0.1.6",
     "@eth-optimism/smock": "^1.1.10",
     "@ethersproject/abstract-provider": "^5.4.1",
     "@makerdao/hardhat-utils": "^0.1.3",

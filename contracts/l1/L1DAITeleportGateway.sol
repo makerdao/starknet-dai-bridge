@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.14;
 pragma abicoder v2;
 
 import "./TeleportGUID.sol";
@@ -112,7 +112,7 @@ contract L1DAITeleportGateway {
     payload[7] = uint256(teleport.timestamp); // uint48 -> uint256
 
     StarkNetLike(starkNet).consumeMessageFromL2(l2DaiTeleportGateway, payload);
-    
+
     teleportRouter.requestMint(teleport, 0, 0);
   }
 
