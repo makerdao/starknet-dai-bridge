@@ -14,7 +14,6 @@ import {
   getNetwork,
   getOptionalEnv,
   getRequiredEnv,
-  printAddresses,
   waitForTx,
   wards,
 } from "./utils";
@@ -45,9 +44,6 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     );
     const L1_ESM_ADDRESS = getRequiredEnv(`${NETWORK}_L1_ESM_ADDRESS`);
     const DENY_DEPLOYER = getRequiredEnv("DENY_DEPLOYER") === "true";
-
-    // @ts-ignore
-    const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
 
     const deployer = await getAccount("deployer", hre);
 
@@ -100,7 +96,6 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     const l2DAIBridge = await deployL2(
       hre,
       "l2_dai_bridge",
-      BLOCK_NUMBER,
       {
         ward: asDec(deployer.starknetContract.address),
         dai: asDec(l2DAI.address),
@@ -113,7 +108,6 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     const l1DAIBridge = await deployL1(
       hre,
       "L1DAIBridge",
-      BLOCK_NUMBER,
       [
         L1_STARKNET_ADDRESS,
         L1_DAI_ADDRESS,
@@ -183,7 +177,7 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
       BigInt(!DENY_DEPLOYER)
     );
 
-    printAddresses(network);
+    // printAddresses(network);
     // writeAddresses(hre);
   }
 );

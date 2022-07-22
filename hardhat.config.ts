@@ -4,13 +4,11 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
-import "./scripts/deployDeployer";
 import "./scripts/deploySpell";
 import "./scripts/deployBridge";
 import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
 import "./scripts/deployTeleport";
-import "./scripts/interact";
 import "./scripts/wards";
 
 import { config as dotenvConfig } from "dotenv";
@@ -92,6 +90,14 @@ const config = {
   starknet: {
     dockerizedVersion: "0.9.0",
     network: process.env.STARKNET_NETWORK,
+    wallets: {
+      deployer: {
+        accountName: "deployer",
+        modulePath:
+          "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
+        accountPath: "~/.starknet_accounts",
+      },
+    },
   },
   paths: {
     artifacts: "./artifacts",

@@ -1,3 +1,5 @@
+# amarna: disable=arithmetic-add,arithmetic-sub,arithmetic-mul,must-check-caller-address
+#
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2021 Dai Foundation
 # This program is free software: you can redistribute it and/or modify
@@ -17,7 +19,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
-from starkware.cairo.common.cairo_builtins import (HashBuiltin)
+from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.math import (assert_lt, assert_not_zero)
 from starkware.starknet.common.syscalls import (get_caller_address, get_block_timestamp)
 from starkware.cairo.common.uint256 import (Uint256, uint256_add, uint256_check)
