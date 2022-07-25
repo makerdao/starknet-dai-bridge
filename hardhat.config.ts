@@ -10,6 +10,7 @@ import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
 import "./scripts/deployTeleport";
 import "./scripts/wards";
+import "./scripts/testIntegration";
 
 import { config as dotenvConfig } from "dotenv";
 import { NetworkUserConfig } from "hardhat/types";
@@ -40,8 +41,6 @@ if (!infuraApiKey) {
 let test: string;
 if (process.env.TEST_ENV === "e2e") {
   test = "e2e";
-} else if (process.env.TEST_ENV === "integration") {
-  test = "integration";
 } else {
   test = "l1:*";
 }
@@ -100,8 +99,8 @@ const config = {
     dockerizedVersion: "0.9.1",
     network: process.env.STARKNET_NETWORK,
     wallets: {
-      deployer: {
-        accountName: "deployer",
+      user: {
+        accountName: "user",
         modulePath:
           "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
         accountPath: "~/.starknet_accounts",

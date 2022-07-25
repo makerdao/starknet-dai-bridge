@@ -1,6 +1,5 @@
 import { BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
-import { starknet } from "hardhat";
 import { StarknetContract } from "hardhat/types";
 import fetch from "node-fetch";
 
@@ -102,8 +101,9 @@ export async function getEvent(eventName: string, contractAddress: string) {
 
 export async function simpleDeployL2(
   name: string,
-  args: object
+  args: object,
+  hre: any
 ): Promise<StarknetContract> {
-  const factory = await starknet.getContractFactory(name);
+  const factory = await hre.starknet.getContractFactory(name);
   return factory.deploy(args);
 }

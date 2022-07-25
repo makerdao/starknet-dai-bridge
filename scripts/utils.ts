@@ -204,7 +204,7 @@ export function printAddresses(hre: any, addresses: Record<string, string>) {
 
   const result: Record<string, string> = {};
   Object.keys(addresses).forEach((key) => {
-    result[`${NETWORK}_${key}`] = addresses[key];
+    result[`${NETWORK}_${key}_ADDRESS`] = addresses[key];
   });
 
   console.log(result);
@@ -216,7 +216,7 @@ export function writeAddresses(hre: any, addresses: Record<string, string>) {
   const result = JSON.parse(fs.readFileSync(".env.deployments").toString());
 
   Object.keys(addresses).forEach((key) => {
-    result[`${NETWORK}_${key}`] = addresses[key];
+    result[`${NETWORK}_${key}_ADDRESS`] = addresses[key];
   });
 
   fs.writeFileSync(".env.deployments", JSON.stringify(result));
