@@ -2,13 +2,13 @@ import axios from "axios";
 import { ethers } from "ethers";
 import { task } from "hardhat/config";
 
+import { asDec, SplitUint } from "../test/utils";
 import {
   getAccount,
   getRequiredEnv,
   getRequiredEnvDeployments,
   waitForTx,
 } from "./utils";
-import { asDec, SplitUint } from "../test/utils";
 
 const L2_TARGET_DOMAIN = `0x${Buffer.from("GOERLI-MASTER-1", "utf8").toString(
   "hex"
@@ -73,160 +73,162 @@ async function getL2Contract(
   return contractFactory.getContractAt(contractAddress);
 }
 
-task("integration", "Test Fast Withdrawal Integration").setAction(async (_, hre) => {
-  const NETWORK = "ALPHA_GOERLI";
-  const NETWORK_INT = "ALPHA_GOERLI_INT";
+task("integration", "Test Fast Withdrawal Integration").setAction(
+  async (_, hre) => {
+    const NETWORK = "ALPHA_GOERLI";
+    const NETWORK_INT = "ALPHA_GOERLI_INT";
 
-  const [signer] = await hre.ethers.getSigners();
-  const l2Auth = await getAccount("user", hre);
+    const [signer] = await hre.ethers.getSigners();
+    const l2Auth = await getAccount("user", hre);
 
-  const l1Dai = await getL1Contract(
-    "DAIMock",
-    getRequiredEnv(`${NETWORK_INT}_L1_DAI_ADDRESS`),
-    hre
-  );
-  const l2Dai = await getL2Contract(
-    "dai",
-    getAddress("L2_DAI", NETWORK),
-    hre
-  );
-
-  const l2Bridge = await getL2Contract(
-    "l2_dai_bridge",
-    getAddress("L2_DAI_BRIDGE", NETWORK),
-    hre
-  );
-  const l2TeleportGateway = await getL2Contract(
-    "l2_dai_teleport_gateway",
-    getAddress("L2_DAI_TELEPORT_GATEWAY", NETWORK),
-    hre
-  );
-  const l1Bridge = await getL1Contract(
-    "L1DAIBridge",
-    getAddress("L1_DAI_BRIDGE", NETWORK),
-    hre
-  );
-  const l1TeleportGateway = await getL1Contract(
-    "L1DAITeleportGateway",
-    getAddress("L1_DAI_TELEPORT_GATEWAY", NETWORK),
-    hre
-  );
-  const l1OracleAuth = new ethers.Contract(
-    getRequiredEnv(`${NETWORK_INT}_TELEPORT_ORACLE_AUTH`),
-    oracleAuthIface,
-    signer
-  );
-
-  const transferAmount = 100;
-
-  const l1BridgeAllowance = await l1Dai.allowance(
-    signer.address,
-    l1Bridge.address
-  );
-  const l1GatewayAllowance = await l1Dai.allowance(
-    signer.address,
-    l1Bridge.address
-  );
-  if (l1BridgeAllowance < transferAmount) {
-    console.log("\nApproving L1 Bridge");
-    await waitForTx(l1Dai.approve(l1Bridge.address, MAX));
-  }
-  if (l1GatewayAllowance < transferAmount) {
-    console.log("\nApproving L1 Teleport Gateway");
-    await waitForTx(l1Dai.approve(l1TeleportGateway.address, MAX));
-  }
-
-  const { res: _l2BridgeAllowance } = await l2Dai.call("allowance", {
-    owner: l2Auth.starknetContract.address,
-    spender: l2Bridge.address,
-  });
-  const l2BridgeAllowance = new SplitUint(_l2BridgeAllowance);
-  const { res: _l2GatewayAllowance } = await l2Dai.call("allowance", {
-    owner: l2Auth.starknetContract.address,
-    spender: l2TeleportGateway.address,
-  });
-  const l2GatewayAllowance = new SplitUint(_l2GatewayAllowance);
-  if (l2BridgeAllowance.toUint() < transferAmount) {
-    console.log("\nApproving L2 Bridge");
-    await l2Auth.estimateAndInvoke(l2Dai, "approve", {
-      spender: asDec(l2Bridge.address),
-      amount: {
-        low: MAX_HALF,
-        high: MAX_HALF,
-      },
-    });
-  }
-  if (l2GatewayAllowance.toUint() < transferAmount) {
-    console.log("\nApproving L2 Teleport Gateway");
-    await l2Auth.estimateAndInvoke(l2Dai, "approve", {
-      spender: asDec(l2TeleportGateway.address),
-      amount: {
-        low: MAX_HALF,
-        high: MAX_HALF,
-      },
-    });
-  }
-
-  const { res: _l2Balance } = await l2Dai.call("balanceOf", {
-    user: l2Auth.starknetContract.address,
-  });
-  let l2Balance = new SplitUint(_l2Balance);
-  if (l2Balance.toUint() < transferAmount) {
-    console.log("\nDepositing DAI to L2");
-    await waitForTx(
-      l1Bridge.deposit(transferAmount, l2Auth.starknetContract.address)
+    const l1Dai = await getL1Contract(
+      "DAIMock",
+      getRequiredEnv(`${NETWORK_INT}_L1_DAI_ADDRESS`),
+      hre
     );
-    l2Balance = l2Balance.add(transferAmount);
-    let newL2Balance = SplitUint.fromUint(0);
-    while (newL2Balance.toUint() < transferAmount) {
-      const { res: _newL2Balance } = await l2Dai.call("balanceOf", {
-        user: l2Auth.starknetContract.address,
-      });
-      newL2Balance = new SplitUint(_newL2Balance);
+    const l2Dai = await getL2Contract(
+      "dai",
+      getAddress("L2_DAI", NETWORK),
+      hre
+    );
+
+    const l2Bridge = await getL2Contract(
+      "l2_dai_bridge",
+      getAddress("L2_DAI_BRIDGE", NETWORK),
+      hre
+    );
+    const l2TeleportGateway = await getL2Contract(
+      "l2_dai_teleport_gateway",
+      getAddress("L2_DAI_TELEPORT_GATEWAY", NETWORK),
+      hre
+    );
+    const l1Bridge = await getL1Contract(
+      "L1DAIBridge",
+      getAddress("L1_DAI_BRIDGE", NETWORK),
+      hre
+    );
+    const l1TeleportGateway = await getL1Contract(
+      "L1DAITeleportGateway",
+      getAddress("L1_DAI_TELEPORT_GATEWAY", NETWORK),
+      hre
+    );
+    const l1OracleAuth = new ethers.Contract(
+      getRequiredEnv(`${NETWORK_INT}_TELEPORT_ORACLE_AUTH`),
+      oracleAuthIface,
+      signer
+    );
+
+    const transferAmount = 100;
+
+    const l1BridgeAllowance = await l1Dai.allowance(
+      signer.address,
+      l1Bridge.address
+    );
+    const l1GatewayAllowance = await l1Dai.allowance(
+      signer.address,
+      l1Bridge.address
+    );
+    if (l1BridgeAllowance < transferAmount) {
+      console.log("\nApproving L1 Bridge");
+      await waitForTx(l1Dai.approve(l1Bridge.address, MAX));
     }
-  }
-  const l1Balance = await l1Dai.balanceOf(signer.address);
+    if (l1GatewayAllowance < transferAmount) {
+      console.log("\nApproving L1 Teleport Gateway");
+      await waitForTx(l1Dai.approve(l1TeleportGateway.address, MAX));
+    }
 
-  console.log("\nInitiating teleport");
-  const tx = await waitForL2Tx(
-    l2Auth.estimateAndInvoke(l2TeleportGateway, "initiate_teleport", {
-      target_domain: L2_TARGET_DOMAIN,
-      receiver: signer.address,
-      amount: transferAmount,
-      operator: signer.address,
-    }),
-    hre
-  );
+    const { res: _l2BridgeAllowance } = await l2Dai.call("allowance", {
+      owner: l2Auth.starknetContract.address,
+      spender: l2Bridge.address,
+    });
+    const l2BridgeAllowance = new SplitUint(_l2BridgeAllowance);
+    const { res: _l2GatewayAllowance } = await l2Dai.call("allowance", {
+      owner: l2Auth.starknetContract.address,
+      spender: l2TeleportGateway.address,
+    });
+    const l2GatewayAllowance = new SplitUint(_l2GatewayAllowance);
+    if (l2BridgeAllowance.toUint() < transferAmount) {
+      console.log("\nApproving L2 Bridge");
+      await l2Auth.estimateAndInvoke(l2Dai, "approve", {
+        spender: asDec(l2Bridge.address),
+        amount: {
+          low: MAX_HALF,
+          high: MAX_HALF,
+        },
+      });
+    }
+    if (l2GatewayAllowance.toUint() < transferAmount) {
+      console.log("\nApproving L2 Teleport Gateway");
+      await l2Auth.estimateAndInvoke(l2Dai, "approve", {
+        spender: asDec(l2TeleportGateway.address),
+        amount: {
+          low: MAX_HALF,
+          high: MAX_HALF,
+        },
+      });
+    }
 
-  console.log(`\nGetting attestation for tx: ${tx}`);
-  const url = `${process.env.ORACLE_URL}/?type=teleport_starknet&index=${tx}`;
-  let attestations: Attestation[] = [];
-  while (attestations.length === 0) {
-    const response = await axios.get(url);
-    attestations = response.data as Attestation[];
-  }
+    const { res: _l2Balance } = await l2Dai.call("balanceOf", {
+      user: l2Auth.starknetContract.address,
+    });
+    let l2Balance = new SplitUint(_l2Balance);
+    if (l2Balance.toUint() < transferAmount) {
+      console.log("\nDepositing DAI to L2");
+      await waitForTx(
+        l1Bridge.deposit(transferAmount, l2Auth.starknetContract.address)
+      );
+      l2Balance = l2Balance.add(transferAmount);
+      let newL2Balance = SplitUint.fromUint(0);
+      while (newL2Balance.toUint() < transferAmount) {
+        const { res: _newL2Balance } = await l2Dai.call("balanceOf", {
+          user: l2Auth.starknetContract.address,
+        });
+        newL2Balance = new SplitUint(_newL2Balance);
+      }
+    }
+    const l1Balance = await l1Dai.balanceOf(signer.address);
 
-  console.log("\nCalling oracle");
-  await waitForTx(
-    l1OracleAuth.requestMint(
-      Object.values(parseTeleportGUID(attestations[0].data.event)),
-      `0x${attestations
-        .map((_) => _.signatures.ethereum.signature)
-        .join("")}`,
-      "0x0",
-      "0x0"
-    )
-  );
+    console.log("\nInitiating teleport");
+    const tx = await waitForL2Tx(
+      l2Auth.estimateAndInvoke(l2TeleportGateway, "initiate_teleport", {
+        target_domain: L2_TARGET_DOMAIN,
+        receiver: signer.address,
+        amount: transferAmount,
+        operator: signer.address,
+      }),
+      hre
+    );
 
-  const { res: _newL2Balance } = await l2Dai.call("balanceOf", {
-    user: l2Auth.starknetContract.address,
-  });
-  const newL2Balance = new SplitUint(_newL2Balance);
-  const newL1Balance = await l1Dai.balanceOf(signer.address);
-  console.log(`\nL1 Balance:
+    console.log(`\nGetting attestation for tx: ${tx}`);
+    const url = `${process.env.ORACLE_URL}/?type=teleport_starknet&index=${tx}`;
+    let attestations: Attestation[] = [];
+    while (attestations.length === 0) {
+      const response = await axios.get(url);
+      attestations = response.data as Attestation[];
+    }
+
+    console.log("\nCalling oracle");
+    await waitForTx(
+      l1OracleAuth.requestMint(
+        Object.values(parseTeleportGUID(attestations[0].data.event)),
+        `0x${attestations
+          .map((_) => _.signatures.ethereum.signature)
+          .join("")}`,
+        "0x0",
+        "0x0"
+      )
+    );
+
+    const { res: _newL2Balance } = await l2Dai.call("balanceOf", {
+      user: l2Auth.starknetContract.address,
+    });
+    const newL2Balance = new SplitUint(_newL2Balance);
+    const newL1Balance = await l1Dai.balanceOf(signer.address);
+    console.log(`\nL1 Balance:
     Before: ${BigInt(l1Balance.toHexString())}
     After: ${BigInt(newL1Balance.toHexString())}`);
-  console.log(`\nL2 Balance:
+    console.log(`\nL2 Balance:
     Before: ${l2Balance.toUint()}
     After: ${newL2Balance.toUint()}`);
-});
+  }
+);
