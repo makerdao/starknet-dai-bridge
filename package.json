@@ -8,6 +8,7 @@
   "scripts": {
     "format": "prettier --check \"./**/*.ts\"",
     "format:fix": "prettier --write \"./**/*.ts\"",
+    "amarna": "amarna . -s --disable-inline",
     "lint": "eslint --ext .ts test scripts hardhat.config.ts",
     "lint:fix": "yarn lint --fix",
     "compile:l1": "hardhat compile",
@@ -17,8 +18,8 @@
     "chain:l2": "starknet-devnet",
     "chain": "concurrently 'yarn chain:l1' 'yarn chain:l2'",
     "chain:ci": "concurrently 'NODE_ENV=test yarn chain:l1' 'yarn chain:l2'",
-    "deploy-deployer:goerli": "STARKNET_NETWORK=alpha-goerli hardhat deploy-deployer --network goerli",
-    "deploy-deployer:mainnet": "STARKNET_NETWORK=alpha-mainnet hardhat deploy-deployer --network mainnet",
+    "deploy-deployer:goerli": "hardhat starknet-deploy-account --starknet-network=alpha-goerli --wallet OpenZeppelin",
+    "deploy-deployer:mainnet": "hardhat starknet-deploy-account --starknet-network=alpha-mainnet --wallet OpenZeppelin",
     "deploy-bridge:goerli": "STARKNET_NETWORK=alpha-goerli hardhat deploy-bridge --network goerli",
     "deploy-bridge:mainnet": "STARKNET_NETWORK=alpha-mainnet hardhat deploy-bridge --network mainnet",
     "deploy-teleport:goerli": "STARKNET_NETWORK=alpha-goerli hardhat deploy-teleport --network goerli",

@@ -1,3 +1,5 @@
+# amarna: disable=arithmetic-sub,unused-arguments,must-check-caller-address
+#
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2021 Dai Foundation
 # This program is free software: you can redistribute it and/or modify
@@ -13,12 +15,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.messages import send_message_to_l1
-from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
-from starkware.cairo.common.math import (assert_le_felt)
+from starkware.cairo.common.cairo_builtins import HashBuiltin
+from starkware.cairo.common.math import assert_le_felt
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
 from starkware.cairo.common.uint256 import (Uint256, uint256_le)
 
@@ -246,7 +249,7 @@ func handle_deposit{
     l2_recipient: felt,
     amount_low : felt,
     amount_high : felt,
-    sender_address : felt, #l1 msg.sender ignored
+    sender_address : felt # l1 msg.sender ignored
   ):
     # check l1 message sender
     let (bridge) = _bridge.read()

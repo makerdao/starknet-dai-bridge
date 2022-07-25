@@ -35,9 +35,6 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   );
   const DENY_DEPLOYER = getRequiredEnv("DENY_DEPLOYER") === "true";
 
-  // @ts-ignore
-  const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
-
   console.log(`Deploying gateway on ${network}`);
 
   const deployer = await getAccount("deployer", hre);
@@ -58,30 +55,20 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
     `${NETWORK.replace(/[_]/g, "-")}-SLAVE-STARKNET-1`,
     "utf8"
   ).toString("hex")}`;
-  const l2DAITeleportGateway = await deployL2(
-    hre,
-    "l2_dai_teleport_gateway",
-    BLOCK_NUMBER,
-    {
-      ward: asDec(deployer.starknetContract.address),
-      dai: asDec(L2_DAI_ADDRESS),
-      teleport_gateway: asDec(futureL1DAITeleportGatewayAddress),
-      domain: L2_SOURCE_DOMAIN,
-    }
-  );
+  const l2DAITeleportGateway = await deployL2(hre, "l2_dai_teleport_gateway", {
+    ward: asDec(deployer.starknetContract.address),
+    dai: asDec(L2_DAI_ADDRESS),
+    teleport_gateway: asDec(futureL1DAITeleportGatewayAddress),
+    domain: L2_SOURCE_DOMAIN,
+  });
 
-  const l1DAITeleportGateway = await deployL1(
-    hre,
-    "L1DAITeleportGateway",
-    BLOCK_NUMBER,
-    [
-      L1_STARKNET_ADDRESS,
-      L1_DAI_ADDRESS,
-      l2DAITeleportGateway.address,
-      L1_ESCROW_ADDRESS,
-      L1_TELEPORT_ROUTER_ADDRESS,
-    ]
-  );
+  const l1DAITeleportGateway = await deployL1(hre, "L1DAITeleportGateway", [
+    L1_STARKNET_ADDRESS,
+    L1_DAI_ADDRESS,
+    l2DAITeleportGateway.address,
+    L1_ESCROW_ADDRESS,
+    L1_TELEPORT_ROUTER_ADDRESS,
+  ]);
   expect(
     futureL1DAITeleportGatewayAddress === l1DAITeleportGateway.address,
     "futureL1DAITeleportGatewayAddress != l1DAITeleportGateway.address"
@@ -105,6 +92,10 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
     await wards(l2DAITeleportGateway, deployer.starknetContract)
   ).to.deep.eq(BigInt(!DENY_DEPLOYER));
 
-  printAddresses(hre, true);
-  writeAddresses(hre, true);
+  const addresses = {
+    L1_DAI_TELEPORT_GATEWAY_ADDRESS: l1DAITeleportGateway.address,
+    L2_DAI_TELEPORT_GATEWAY_ADDRESS: l2DAITeleportGateway.address,
+  };
+  printAddresses(hre, addresses);
+  writeAddresses(hre, addresses);
 });

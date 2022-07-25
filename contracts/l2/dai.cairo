@@ -1,3 +1,5 @@
+# amarna: disable=arithmetic-sub,must-check-caller-address,must-check-overflow
+#
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2021 Dai Foundation
 # This program is free software: you can redistribute it and/or modify
@@ -17,7 +19,6 @@
 
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, BitwiseBuiltin)
 from starkware.cairo.common.math import (assert_not_equal, assert_not_zero)
-from starkware.cairo.common.math_cmp import is_not_zero
 from starkware.starknet.common.syscalls import (get_caller_address, get_contract_address)
 from starkware.cairo.common.uint256 import (
   Uint256,
