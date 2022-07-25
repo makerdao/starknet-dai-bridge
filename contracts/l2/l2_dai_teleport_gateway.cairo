@@ -26,7 +26,6 @@ from starkware.cairo.common.uint256 import (Uint256, uint256_add, uint256_check)
 
 const FINALIZE_REGISTER_TELEPORT = 0
 const FINALIZE_FLUSH = 1
-const valid_domains_file = 'valid_domains'
 const MAX_NONCE = 2**80-1
 
 @contract_interface
@@ -53,6 +52,17 @@ end
 
 @event
 func TeleportInitialized(
+  source_domain : felt,
+  target_domain : felt,
+  receiver : felt,
+  operator : felt,
+  amount : felt,
+  nonce : felt,
+  timestamp : felt):
+end
+
+@event
+func TeleportRegisterFinalized(
   source_domain : felt,
   target_domain : felt,
   receiver : felt,
@@ -103,7 +113,7 @@ struct TeleportData:
   member receiver: felt
   member operator: felt
   member amount: felt
-  member timestamp: felt #TODO: join amount and timestamp
+  member timestamp: felt
 end
 
 @storage_var
@@ -291,8 +301,10 @@ func file{
     domain : felt,
     data : felt,
   ):
-    with_attr error_message("l2_dai_teleport_gateway/invalid-file"):
-      assert what = valid_domains_file
+    auth()
+
+    with_attr error_message("l2_dai_teleport_gateway/file-unrecognized-param"):
+      assert what = 'valid_domains'
     end
 
     with_attr error_message("l2_dai_teleport_gateway/invalid-data"):
@@ -317,14 +329,14 @@ func initiate_teleport{
     amount : felt,
     operator : felt
   ):
-    let (is_open) = _is_open.read()
     with_attr error_message("l2_dai_teleport_gateway/gateway-closed"):
+      let (is_open) = _is_open.read()
       assert is_open = 1
     end
 
     # valid domain check
-    let (valid_domain) = _valid_domains.read(target_domain)
     with_attr error_message("l2_dai_teleport_gateway/invalid-domain"):
+      let (valid_domain) = _valid_domains.read(target_domain)
       assert valid_domain = 1
     end
 
@@ -344,17 +356,7 @@ func initiate_teleport{
 
     let (domain) = _domain.read()
     let (nonce) = read_and_update_nonce()
-
-    let (payload) = alloc()
-    assert payload[0] = FINALIZE_REGISTER_TELEPORT
-    assert payload[1] = domain
-    assert payload[2] = target_domain
-    assert payload[3] = receiver
-    assert payload[4] = operator
-    assert payload[5] = amount
-    assert payload[6] = nonce
     let (timestamp) = get_block_timestamp()
-    assert payload[7] = timestamp
 
     TeleportInitialized.emit(
       source_domain=domain,
@@ -386,10 +388,6 @@ func finalize_register_teleport{
     nonce : felt,
     timestamp : felt
   ):
-    let (is_open) = _is_open.read()
-    with_attr error_message("l2_dai_teleport_gateway/gateway-closed"):
-      assert is_open = 1
-    end
     let (domain) = _domain.read()
 
     let (payload) = alloc()
@@ -410,6 +408,15 @@ func finalize_register_teleport{
       assert amount = teleport.amount
       assert timestamp = teleport.timestamp
     end
+
+    TeleportRegisterFinalized.emit(
+      source_domain=domain,
+      target_domain=target_domain,
+      receiver=receiver,
+      operator=operator,
+      amount=amount,
+      nonce=nonce,
+      timestamp=timestamp)
 
     let (teleport_gateway) = _teleport_gateway.read()
     send_message_to_l1(teleport_gateway, 8, payload)
@@ -434,7 +441,7 @@ func flush{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
-  }(target_domain : felt) -> (res : Uint256):
+  }(target_domain : felt):
 
     let (dai_to_flush : Uint256) = _batched_dai_to_flush.read(target_domain)
     uint256_assert_not_zero(dai_to_flush)
@@ -454,7 +461,7 @@ func flush{
 
     Flushed.emit(target_domain=target_domain, dai=dai_to_flush)
 
-    return (res=dai_to_flush)
+    return ()
 end
 
 func uint256_add_safe{

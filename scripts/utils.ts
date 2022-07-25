@@ -148,21 +148,8 @@ export async function waitForTx(
   return await resolvedTx.wait();
 }
 
-export function getAddress(contract: string, network: string) {
-  console.log(`reading: ./deployments/${network}/${contract}.json`);
-  try {
-    return JSON.parse(
-      fs.readFileSync(`./deployments/${network}/${contract}.json`).toString()
-    ).address;
-  } catch (err) {
-    if (process.env[`${getNetworkUpperCase(network)}_${contract}`]) {
-      return process.env[`${getNetworkUpperCase(network)}_${contract}`];
-    } else {
-      throw Error(
-        `${contract} deployment on ${network} not found, run 'yarn deploy:${network}'`
-      );
-    }
-  }
+export function getAddress(contract: string, NETWORK: string): string {
+  return getRequiredEnvDeployments(`${NETWORK}_${contract}`);
 }
 
 class CustomAccount extends OpenZeppelinAccount {
@@ -204,87 +191,6 @@ export async function getAccount(
   )) as CustomAccount;
   account["estimateAndInvoke"] = CustomAccount.prototype.estimateAndInvoke;
   return account;
-}
-
-export function parseCalldataL1(calldata: string, network: string) {
-  const _calldata = calldata ? calldata.split(",") : [];
-  return _calldata.map((input: string) => {
-    if (input === "l2_dai_bridge") {
-      return getAddress("l2_dai_bridge", network);
-    } else if (input === "L1DAIBridge") {
-      return getAddress("L1DAIBridge", network);
-    } else if (input === "L1DAITeleportGateway") {
-      return getAddress("L1DAITeleportGateway", network);
-    } else if (input === "L1Escrow") {
-      return getAddress("L1Escrow", network);
-    } else if (input === "DAI") {
-      return getAddress("DAI", network);
-    } else if (input === "GOERLI-MASTER-1") {
-      return l1String(input);
-    } else if (input === "GOERLI-SLAVE-STARKNET-1") {
-      return l1String(input);
-    } else if (input === "MAX") {
-      return "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-    } else {
-      return input;
-    }
-  });
-}
-
-function getInputAbi(contract: string, func: string) {
-  const abi = JSON.parse(
-    fs
-      .readFileSync(
-        `./starknet-artifacts/contracts/l2/${contract}.cairo/${contract}.json`
-      )
-      .toString()
-  )["abi"];
-  let res: any[] = [];
-  abi.forEach((_: any) => {
-    if (_.name === func) {
-      res = _.inputs;
-    }
-  });
-  return res;
-}
-
-export function parseCalldataL2(
-  calldata: string,
-  network: string,
-  contract: any,
-  func: string
-) {
-  const _calldata = calldata ? calldata.split(",") : [];
-  const res: Record<string, any> = {};
-  const inputs = getInputAbi(contract, func);
-  for (let i = 0; i < _calldata.length; i++) {
-    const input = _calldata[i];
-    const inputName: string = inputs[i].name;
-    const inputType: string = inputs[i].type;
-    if (input === "L1DAIBridge") {
-      res[inputName] = BigInt(getAddress("L1DAIBridge", network)).toString();
-    } else if (input === "l2_dai_bridge") {
-      res[inputName] = BigInt(getAddress("l2_dai_bridge", network)).toString();
-    } else if (input === "l2_dai_teleport_gateway") {
-      res[inputName] = BigInt(
-        getAddress("l2_dai_teleport_gateway", network)
-      ).toString();
-    } else if (input === "GOERLI-MASTER-1") {
-      res[inputName] = l2String(input);
-    } else if (inputType === "Uint256") {
-      const low =
-        input === "MAX_HALF" ? "0xffffffffffffffffffffffffffffffff" : input;
-      const high =
-        _calldata[i + 1] === "MAX_HALF"
-          ? "0xffffffffffffffffffffffffffffffff"
-          : _calldata[i + 1];
-      res[inputName] = { low, high };
-      i++;
-    } else {
-      res[inputName] = input;
-    }
-  }
-  return res;
 }
 
 export function getSelectorFromName(name: string) {

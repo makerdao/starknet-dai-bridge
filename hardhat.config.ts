@@ -9,7 +9,6 @@ import "./scripts/deployBridge";
 import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
 import "./scripts/deployTeleport";
-import "./scripts/interact";
 import "./scripts/wards";
 
 import { config as dotenvConfig } from "dotenv";
@@ -101,8 +100,8 @@ const config = {
     dockerizedVersion: "0.9.1",
     network: process.env.STARKNET_NETWORK,
     wallets: {
-      user: {
-        accountName: "user",
+      deployer: {
+        accountName: "deployer",
         modulePath:
           "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
         accountPath: "~/.starknet_accounts",
@@ -123,7 +122,7 @@ const config = {
   solidity: {
     compilers: [
       {
-        version: "0.8.13",
+        version: "0.8.14",
         settings: {
           metadata: {
             // Not including the metadata hash
