@@ -3,7 +3,7 @@ import {
   simpleDeploy,
 } from "@makerdao/hardhat-utils";
 import { expect } from "chai";
-import { ethers, network, starknet } from "hardhat";
+import hre, { ethers, network, starknet } from "hardhat";
 import { HttpNetworkConfig } from "hardhat/types";
 
 import {
