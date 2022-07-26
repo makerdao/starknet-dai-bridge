@@ -4,7 +4,7 @@ import { ethers } from "ethers";
 import { task } from "hardhat/config";
 
 import { asDec, SplitUint } from "../test/utils";
-import { getAccount, waitForTx } from "./utils";
+import {getAccount, getRequiredEnv, waitForTx} from "./utils";
 
 const L2_TARGET_DOMAIN = `0x${Buffer.from("GOERLI-MASTER-1", "utf8").toString(
   "hex"
