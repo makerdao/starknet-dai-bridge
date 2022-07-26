@@ -1,15 +1,10 @@
+import { sleep } from "@eth-optimism/core-utils";
 import axios from "axios";
 import { ethers } from "ethers";
 import { task } from "hardhat/config";
 
 import { asDec, SplitUint } from "../test/utils";
-import {
-  getAccount,
-  getRequiredEnv,
-  getRequiredEnvDeployments,
-  waitForTx,
-} from "./utils";
-import {sleep} from "@eth-optimism/core-utils";
+import { getAccount, waitForTx } from "./utils";
 
 const L2_TARGET_DOMAIN = `0x${Buffer.from("GOERLI-MASTER-1", "utf8").toString(
   "hex"
@@ -155,7 +150,7 @@ task("integration", "Test Fast Withdrawal Integration").setAction(
       l2Balance = l2Balance.add(transferAmount);
       let newL2Balance = SplitUint.fromUint(0);
       while (newL2Balance.toUint() < transferAmount) {
-        console.log('Waiting for deposit to reach l2...')
+        console.log("Waiting for deposit to reach l2...");
         await sleep(2000);
         const { res: _newL2Balance } = await l2Dai.call("balanceOf", {
           user: l2Auth.starknetContract.address,
@@ -177,7 +172,7 @@ task("integration", "Test Fast Withdrawal Integration").setAction(
     );
 
     console.log(`\nGetting attestation for tx: ${tx}`);
-    const oracleUrlKey = getRequiredEnv(`${NETWORK}_ORACLE_URL`)
+    const oracleUrlKey = getRequiredEnv(`${NETWORK}_ORACLE_URL`);
     const url = `${oracleUrlKey}/?type=teleport_starknet&index=${tx}`;
     let attestations: Attestation[] = [];
     while (attestations.length === 0) {
