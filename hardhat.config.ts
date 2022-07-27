@@ -10,6 +10,7 @@ import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
 import "./scripts/deployTeleport";
 import "./scripts/wards";
+import "./scripts/testIntegration";
 
 import { config as dotenvConfig } from "dotenv";
 import { NetworkUserConfig } from "hardhat/types";
@@ -35,6 +36,13 @@ if (!mnemonic) {
 const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
 if (!infuraApiKey) {
   throw new Error("Please set your INFURA_API_KEY in a .env file");
+}
+
+let test: string;
+if (process.env.TEST_ENV === "e2e") {
+  test = "e2e";
+} else {
+  test = "l1:*";
 }
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
@@ -88,11 +96,11 @@ const config = {
     },
   },
   starknet: {
-    dockerizedVersion: "0.9.0",
+    dockerizedVersion: "0.9.1",
     network: process.env.STARKNET_NETWORK,
     wallets: {
-      deployer: {
-        accountName: "deployer",
+      user: {
+        accountName: "user",
         modulePath:
           "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
         accountPath: "~/.starknet_accounts",
@@ -108,7 +116,7 @@ const config = {
     starknetArtifacts: "./starknet-artifacts",
   },
   mocha: {
-    grep: process.env.TEST_ENV === "e2e" ? "e2e" : "l1:*",
+    grep: test,
   },
   solidity: {
     compilers: [

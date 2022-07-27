@@ -3,7 +3,7 @@ import {
   simpleDeploy,
 } from "@makerdao/hardhat-utils";
 import { expect } from "chai";
-import { ethers, network, starknet } from "hardhat";
+import hre, { ethers, network, starknet } from "hardhat";
 import { HttpNetworkConfig } from "hardhat/types";
 
 import {
@@ -52,23 +52,31 @@ describe("e2e", async function () {
 
     escrow = await simpleDeploy("L1Escrow", []);
 
-    const registry = await simpleDeployL2("registry", {});
+    const registry = await simpleDeployL2("registry", {}, hre);
     await l2Auth.invoke(registry, "set_L1_address", {
       l1_user: asDec(l1Alice.address),
     });
-    l2Dai = await simpleDeployL2("dai", {
-      ward: asDec(l2Auth.starknetContract.address),
-    });
+    l2Dai = await simpleDeployL2(
+      "dai",
+      {
+        ward: asDec(l2Auth.starknetContract.address),
+      },
+      hre
+    );
 
     const futureL1DAIBridgeAddress = await getAddressOfNextDeployedContract(
       admin
     );
-    l2Bridge = await simpleDeployL2("l2_dai_bridge", {
-      ward: asDec(l2Auth.starknetContract.address),
-      dai: asDec(l2Dai.address),
-      bridge: asDec(futureL1DAIBridgeAddress),
-      registry: asDec(registry.address),
-    });
+    l2Bridge = await simpleDeployL2(
+      "l2_dai_bridge",
+      {
+        ward: asDec(l2Auth.starknetContract.address),
+        dai: asDec(l2Dai.address),
+        bridge: asDec(futureL1DAIBridgeAddress),
+        registry: asDec(registry.address),
+      },
+      hre
+    );
     l1Bridge = await simpleDeploy("L1DAIBridge", [
       mockStarknetMessaging.address,
       dai.address,
@@ -79,12 +87,16 @@ describe("e2e", async function () {
 
     const futureL1DAITeleportGatewayAddress =
       await getAddressOfNextDeployedContract(admin);
-    l2TeleportGateway = await simpleDeployL2("l2_dai_teleport_gateway", {
-      ward: asDec(l2Auth.starknetContract.address),
-      dai: asDec(l2Dai.address),
-      teleport_gateway: asDec(futureL1DAITeleportGatewayAddress),
-      domain: L2_SOURCE_DOMAIN,
-    });
+    l2TeleportGateway = await simpleDeployL2(
+      "l2_dai_teleport_gateway",
+      {
+        ward: asDec(l2Auth.starknetContract.address),
+        dai: asDec(l2Dai.address),
+        teleport_gateway: asDec(futureL1DAITeleportGatewayAddress),
+        domain: L2_SOURCE_DOMAIN,
+      },
+      hre
+    );
     l1TeleportGateway = await simpleDeploy("L1DAITeleportGateway", [
       mockStarknetMessaging.address,
       dai.address,

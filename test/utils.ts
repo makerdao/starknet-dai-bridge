@@ -1,12 +1,12 @@
 import { BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
-import { starknet } from "hardhat";
 import { StarknetContract } from "hardhat/types";
 import fetch from "node-fetch";
 
 import { getSelectorFromName } from "../scripts/utils";
 
 type SplitUintType = { low: bigint; high: bigint };
+type numberish = string | number | bigint | BigNumber;
 
 export class SplitUint {
   res: SplitUintType;
@@ -15,7 +15,7 @@ export class SplitUint {
     this.res = res;
   }
 
-  static fromUint(a: string | number | bigint | BigNumber): SplitUint {
+  static fromUint(a: numberish): SplitUint {
     const bits = asHex(a).padStart(64, "0");
     const res = {
       low: BigInt(`0x${bits.slice(32)}`),
@@ -33,11 +33,19 @@ export class SplitUint {
     return BigInt(`0x${_a[1].toString(16)}${_a[0].toString(16)}`);
   }
 
-  add(a: SplitUint): SplitUint {
+  add(_a: SplitUint | numberish): SplitUint {
+    let a = _a as SplitUint;
+    if (!_a.hasOwnProperty("res")) {
+      a = SplitUint.fromUint(_a as numberish);
+    }
     return SplitUint.fromUint(this.toUint() + a.toUint());
   }
 
-  sub(a: SplitUint): SplitUint {
+  sub(_a: SplitUint | numberish): SplitUint {
+    let a = _a as SplitUint;
+    if (!_a.hasOwnProperty("res")) {
+      a = SplitUint.fromUint(_a as numberish);
+    }
     return SplitUint.fromUint(this.toUint() - a.toUint());
   }
 
@@ -93,8 +101,9 @@ export async function getEvent(eventName: string, contractAddress: string) {
 
 export async function simpleDeployL2(
   name: string,
-  args: object
+  args: object,
+  hre: any
 ): Promise<StarknetContract> {
-  const factory = await starknet.getContractFactory(name);
+  const factory = await hre.starknet.getContractFactory(name);
   return factory.deploy(args);
 }
