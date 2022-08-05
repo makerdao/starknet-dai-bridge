@@ -200,6 +200,16 @@ func wards{
     return (res)
 end
 
+@view
+func teleports{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr
+  }(nonce : felt) -> (res : TeleportData):
+    let (res) = _teleports.read(nonce)
+    return (res)
+end
+
 func auth{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
