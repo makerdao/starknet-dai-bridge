@@ -1,7 +1,7 @@
-import { BigNumber } from "bignumber.js";
 import { getGoerliSdk } from "@dethcrypto/eth-sdk-client";
 import { sleep } from "@eth-optimism/core-utils";
 import { JsonRpcProvider } from "@ethersproject/providers";
+import { BigNumber } from "bignumber.js";
 import { Contract, ethers, Signer } from "ethers";
 import { Interface } from "ethers/lib/utils";
 import fs from "fs";
@@ -261,7 +261,6 @@ task("deploy-teleport-spell-l1", "Deploy L1 spell").setAction(
   }
 );
 
-
 function toMyBigNumber(n: any) {
   return new BigNumber(n.toString());
 }
@@ -331,6 +330,6 @@ task("run-spell", "Deploy L1 spell").setAction(async (_, hre) => {
     signer,
     await goerliSdk.maker.pause_proxy.owner(),
     l1SpellContract,
-    mkrWhaleAddress,
+    mkrWhaleAddress
   );
 });
