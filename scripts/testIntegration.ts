@@ -4,11 +4,10 @@ import { ethers } from "ethers";
 import { task } from "hardhat/config";
 
 import { asDec, SplitUint } from "../test/utils";
-import { getAccount, getRequiredEnv, waitForTx } from "./utils";
+import { getAccount, getRequiredEnv, waitForTx, l1String, l2String } from "./utils";
 
-const L2_TARGET_DOMAIN = `0x${Buffer.from("GOERLI-MASTER-1", "utf8").toString(
-  "hex"
-)}`;
+const L1_TARGET_DOMAIN = l1String("GOERLI-MASTER-1");
+const L2_TARGET_DOMAIN = l2String("GOERLI-MASTER-1");
 
 const MAX = BigInt(2 ** 256) - BigInt(1);
 const MAX_HALF = BigInt(2 ** 128) - BigInt(1);

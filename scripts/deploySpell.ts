@@ -1,3 +1,4 @@
+import { BigNumber } from "bignumber.js";
 import { getGoerliSdk } from "@dethcrypto/eth-sdk-client";
 import { sleep } from "@eth-optimism/core-utils";
 import { JsonRpcProvider } from "@ethersproject/providers";
@@ -14,6 +15,7 @@ import {
   getL1ContractAt,
   getRequiredEnv,
   getRequiredEnvDeployments,
+  waitForTx,
 } from "./utils";
 
 task("create-teleport-spell-l2", "Create L2 spell").setAction(async () => {
@@ -87,7 +89,6 @@ task("create-teleport-spell-l1", "Create L1 spell").setAction(async () => {
   // temporary
   const MCD_DEPLOYMENT =
     getRequiredEnv("OFFICIAL_MCD") === "true" ? officialMCD : customMCD;
-  console.log(getRequiredEnv("OFFICIAL_MCD"));
 
   const spell = `
 // SPDX-License-Identifier: AGPL-3.0-or-later
@@ -208,7 +209,7 @@ contract DssSpellAction is DssAction {
     oracleAuth.addSigners(oracles);
 
     // configure starknet teleport
-    bytes32 slaveDomain = bytes32("ALPHA_GOERLI-SLAVE-STARKNET-1");
+    bytes32 slaveDomain = bytes32("ALPHA-GOERLI-SLAVE-STARKNET-1");
     address constantFees = 0xd40EA2981B350D38281402c058b1Ef1058dbac53;
 
     address slaveDomainGateway = ${l1DAITeleportGateway};
@@ -229,6 +230,7 @@ contract DssSpellAction is DssAction {
 contract L1GoerliAddTeleportDomainSpell is DssExec {
   constructor() DssExec(block.timestamp + 30 days, address(new DssSpellAction())) {}
 }`;
+
   fs.writeFileSync(
     "./contracts/deploy/goerli/L1GoerliAddTeleportDomainSpell.sol",
     spell
@@ -259,7 +261,6 @@ task("deploy-teleport-spell-l1", "Deploy L1 spell").setAction(
   }
 );
 
-import { BigNumber } from "bignumber.js";
 
 function toMyBigNumber(n: any) {
   return new BigNumber(n.toString());
@@ -269,58 +270,22 @@ function encodeHex(_: any) {
   return "0x" + toMyBigNumber(_).toString(16);
 }
 
-export async function mintEther(
-  address: string,
-  provider: JsonRpcProvider,
-  amt = toWad(1000000)
-): Promise<void> {
-  await provider.send("hardhat_setBalance", [address, encodeHex(amt)]);
-}
+const WAD = new BigNumber(10).pow(18);
 
 export function toWad(n: any): BigNumber {
   return toMyBigNumber(n).multipliedBy(WAD);
-}
-
-const WAD = new BigNumber(10).pow(18);
-
-export async function impersonateAccount(
-  address: string,
-  provider: JsonRpcProvider
-): Promise<Signer> {
-  await provider.send("hardhat_impersonateAccount", [address]);
-
-  await mintEther(address, provider);
-
-  const signer = provider.getSigner(address);
-
-  return signer;
-}
-
-async function waitForTx(tx: Promise<any>) {
-  const _ = await tx;
-  return await _.wait();
 }
 
 async function executeDssSpell(
   l1Signer: Signer,
   pauseAddress: string,
   spell: Contract,
-  mkrWhaleAddress: string,
-  network: string
+  mkrWhaleAddress: string
 ) {
-  // execute spell using standard DssSpell procedure
-  let mkrWhale;
-  if (network === "fork") {
-    mkrWhale = await impersonateAccount(
-      mkrWhaleAddress,
-      l1Signer.provider as JsonRpcProvider
-    );
-  } else {
-    const CHIEF_PRIVATE_KEY = getRequiredEnv("CHIEF_PRIVATE_KEY");
-    mkrWhale = new ethers.Wallet(CHIEF_PRIVATE_KEY).connect(
-      l1Signer.provider as JsonRpcProvider
-    );
-  }
+  const CHIEF_PRIVATE_KEY = getRequiredEnv("CHIEF_PRIVATE_KEY");
+  const mkrWhale = new ethers.Wallet(CHIEF_PRIVATE_KEY).connect(
+    l1Signer.provider as JsonRpcProvider
+  );
   const chief = new Contract(
     mkrWhaleAddress,
     new Interface([
@@ -344,66 +309,28 @@ async function executeDssSpell(
   return await waitForTx(spell.connect(mkrWhale).cast());
 }
 
-const toBytes32 = (bn: ethers.BigNumber) => {
-  return ethers.utils.hexlify(ethers.utils.zeroPad(bn.toHexString(), 32));
-};
-
 task("run-spell", "Deploy L1 spell").setAction(async (_, hre) => {
-  const { network, NETWORK } = getNetwork(hre);
-  if (hre.network.name === "fork") {
-    const mkrWhaleAddress = "0x33Ed584fc655b08b2bca45E1C5b5f07c98053bC1";
-    const [signer] = await hre.ethers.getSigners();
-    const L1_DAI_ADDRESS = getRequiredEnv(`${NETWORK}_L1_DAI_ADDRESS`);
-    const balanceWei = hre.ethers.utils.parseEther("200000");
-    await hre.network.provider.request({
-      method: "hardhat_setStorageAt",
-      params: [
-        L1_DAI_ADDRESS,
-        hre.ethers.utils
-          .solidityKeccak256(["uint256", "uint256"], [mkrWhaleAddress, 2])
-          .replace(/(?<=0x)0+/, ""),
-        toBytes32(balanceWei).toString(),
-      ],
-    });
+  const { network } = getNetwork(hre);
+  const [_signer] = await hre.ethers.getSigners();
 
-    const goerliSdk = getGoerliSdk(signer.provider! as any);
+  const mkrWhaleAddress = getRequiredEnv("MKR_WHALE_ADDRESS");
+  const CHIEF_PRIVATE_KEY = getRequiredEnv("CHIEF_PRIVATE_KEY");
+  const signer = new ethers.Wallet(CHIEF_PRIVATE_KEY).connect(
+    _signer.provider as JsonRpcProvider
+  );
 
-    const l1SpellContract = await getL1ContractAt(
-      hre,
-      "L1GoerliAddTeleportDomainSpell",
-      getAddress("L1GoerliAddTeleportDomainSpell", network)
-    );
+  const goerliSdk = getGoerliSdk(signer.provider! as any);
 
-    await executeDssSpell(
-      signer,
-      await goerliSdk.maker.pause_proxy.owner(),
-      l1SpellContract,
-      mkrWhaleAddress,
-      network
-    );
-  } else {
-    const [_signer] = await hre.ethers.getSigners();
-    const mkrWhaleAddress = "0xE305a1ab188416DB9c712dcBd66bd7F611Ad36C7";
+  const l1SpellContract = await getL1ContractAt(
+    hre,
+    "L1GoerliAddTeleportDomainSpell",
+    getAddress("L1GoerliAddTeleportDomainSpell", network)
+  );
 
-    const CHIEF_PRIVATE_KEY = getRequiredEnv("CHIEF_PRIVATE_KEY");
-    const signer = new ethers.Wallet(CHIEF_PRIVATE_KEY).connect(
-      _signer.provider as JsonRpcProvider
-    );
-
-    const goerliSdk = getGoerliSdk(signer.provider! as any);
-
-    const l1SpellContract = await getL1ContractAt(
-      hre,
-      "L1GoerliAddTeleportDomainSpell",
-      getAddress("L1GoerliAddTeleportDomainSpell", network)
-    );
-
-    await executeDssSpell(
-      signer,
-      await goerliSdk.maker.pause_proxy.owner(),
-      l1SpellContract,
-      mkrWhaleAddress,
-      network
-    );
-  }
+  await executeDssSpell(
+    signer,
+    await goerliSdk.maker.pause_proxy.owner(),
+    l1SpellContract,
+    mkrWhaleAddress,
+  );
 });
