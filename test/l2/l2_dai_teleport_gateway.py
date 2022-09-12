@@ -42,7 +42,7 @@ async def test_can_be_called_by_owner(
     is_open = await l2_teleport_gateway.is_open().call()
     assert is_open.result == (1,)
 
-    close = await l2_teleport_gateway.close().invoke(auth_user.contract_address)
+    close = await l2_teleport_gateway.close().execute(auth_user.contract_address)
 
     is_open = await l2_teleport_gateway.is_open().call()
     assert is_open.result == (0,)
@@ -53,12 +53,12 @@ async def test_can_be_called_multiple_times_by_owner(
     auth_user: StarknetContract,
     l2_teleport_gateway: StarknetContract,
 ):
-    close = await l2_teleport_gateway.close().invoke(auth_user.contract_address)
+    close = await l2_teleport_gateway.close().execute(auth_user.contract_address)
 
     is_open = await l2_teleport_gateway.is_open().call()
     assert is_open.result == (0,)
 
-    close = await l2_teleport_gateway.close().invoke(auth_user.contract_address)
+    close = await l2_teleport_gateway.close().execute(auth_user.contract_address)
 
     is_open = await l2_teleport_gateway.is_open().call()
     assert is_open.result == (0,)
@@ -70,7 +70,7 @@ async def test_close_reverts_when_not_called_by_owner(
     user1: StarknetContract,
 ):
     with pytest.raises(StarkException) as err:
-        await l2_teleport_gateway.close().invoke(user1.contract_address)
+        await l2_teleport_gateway.close().execute(user1.contract_address)
     assert "l2_dai_teleport_gateway/not-authorized" in str(err.value)
 
 
@@ -82,7 +82,7 @@ async def test_file_should_not_accept_invalid_what(
     with pytest.raises(StarkException) as err:
         await l2_teleport_gateway.file(
                 TARGET_DOMAIN, TARGET_DOMAIN, 0,
-            ).invoke(auth_user.contract_address)
+            ).execute(auth_user.contract_address)
     assert "l2_dai_teleport_gateway/file-unrecognized-param" in str(err.value)
 
 @pytest.mark.asyncio
@@ -93,12 +93,12 @@ async def test_file_should_not_accept_invalid_data(
     with pytest.raises(StarkException) as err:
         await l2_teleport_gateway.file(
                 VALID_DOMAINS, TARGET_DOMAIN, -1,
-            ).invoke(auth_user.contract_address)
+            ).execute(auth_user.contract_address)
     assert "l2_dai_teleport_gateway/invalid-data" in str(err.value)
     with pytest.raises(StarkException) as err:
         await l2_teleport_gateway.file(
                 VALID_DOMAINS, TARGET_DOMAIN, 2,
-            ).invoke(auth_user.contract_address)
+            ).execute(auth_user.contract_address)
     assert "l2_dai_teleport_gateway/invalid-data" in str(err.value)
 
 @pytest.mark.asyncio
@@ -109,7 +109,7 @@ async def test_file_reverts_when_not_called_by_owner(
     with pytest.raises(StarkException) as err:
         await l2_teleport_gateway.file(
                 VALID_DOMAINS, TARGET_DOMAIN, 0,
-            ).invoke(user1.contract_address)
+            ).execute(user1.contract_address)
     assert "l2_dai_teleport_gateway/not-authorized" in str(err.value)
 
 
@@ -123,12 +123,12 @@ async def test_burns_dai_marks_it_for_future_flush(
     check_balances,
     block_timestamp
 ):
-    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT)).invoke(user1.contract_address)
+    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT)).execute(user1.contract_address)
     tx = await l2_teleport_gateway.initiate_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
             TELEPORT_AMOUNT,
-            user1.contract_address).invoke(user1.contract_address)
+            user1.contract_address).execute(user1.contract_address)
     check_event(
         l2_teleport_gateway,
         "TeleportInitialized",
@@ -174,12 +174,12 @@ async def test_nonce_management(
     check_balances,
     block_timestamp
 ):
-    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT*2)).invoke(user1.contract_address)
+    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT*2)).execute(user1.contract_address)
     tx = await l2_teleport_gateway.initiate_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
             TELEPORT_AMOUNT,
-            user1.contract_address).invoke(user1.contract_address)
+            user1.contract_address).execute(user1.contract_address)
     check_event(
         l2_teleport_gateway,
         "TeleportInitialized",
@@ -198,7 +198,7 @@ async def test_nonce_management(
             TARGET_DOMAIN,
             user1.contract_address,
             TELEPORT_AMOUNT,
-            user1.contract_address).invoke(user1.contract_address)
+            user1.contract_address).execute(user1.contract_address)
     check_event(
         l2_teleport_gateway,
         "TeleportInitialized",
@@ -223,12 +223,12 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
     check_balances,
     block_timestamp
 ):
-    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT)).invoke(user1.contract_address)
+    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT)).execute(user1.contract_address)
     tx = await l2_teleport_gateway.initiate_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
             TELEPORT_AMOUNT,
-            user1.contract_address).invoke(user1.contract_address)
+            user1.contract_address).execute(user1.contract_address)
     check_event(
         l2_teleport_gateway,
         "TeleportInitialized",
@@ -251,7 +251,7 @@ async def test_sends_xchain_message_burns_dai_marks_it_for_future_flush(
             TELEPORT_AMOUNT,
             user1.contract_address,
             0,
-            timestamp).invoke(user1.contract_address)
+            timestamp).execute(user1.contract_address)
 
     check_event(
         l2_teleport_gateway,
@@ -299,7 +299,7 @@ async def test_reverts_when_insufficient_funds(
                 TARGET_DOMAIN,
                 user2.contract_address,
                 100 + TELEPORT_AMOUNT,
-                user2.contract_address).invoke(user2.contract_address)
+                user2.contract_address).execute(user2.contract_address)
     assert "dai/insufficient-balance" in str(err.value)
 
 
@@ -313,7 +313,7 @@ async def test_reverts_when_invalid_amount(
                 TARGET_DOMAIN,
                 user2.contract_address,
                 2**128,
-                user2.contract_address).invoke(user2.contract_address)
+                user2.contract_address).execute(user2.contract_address)
     assert "l2_dai_teleport_gateway/invalid-amount" in str(err.value)
 
 
@@ -324,14 +324,14 @@ async def test_reverts_when_gateway_is_closed(
     user1: StarknetContract,
     user2: StarknetContract,
 ):
-    await l2_teleport_gateway.close().invoke(auth_user.contract_address)
+    await l2_teleport_gateway.close().execute(auth_user.contract_address)
 
     with pytest.raises(StarkException) as err:
         await l2_teleport_gateway.initiate_teleport(
                 TARGET_DOMAIN,
                 user2.contract_address,
                 TELEPORT_AMOUNT,
-                user2.contract_address).invoke(user1.contract_address)
+                user2.contract_address).execute(user1.contract_address)
     assert "l2_dai_teleport_gateway/gateway-closed" in str(err.value)
 
 
@@ -343,14 +343,14 @@ async def test_allows_to_finalize_when_closed(
     auth_user: StarknetContract,
     block_timestamp
 ):
-    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT)).invoke(user1.contract_address)
+    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT)).execute(user1.contract_address)
 
 
     tx = await l2_teleport_gateway.initiate_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
             TELEPORT_AMOUNT,
-            user1.contract_address).invoke(user1.contract_address)
+            user1.contract_address).execute(user1.contract_address)
 
     timestamp = block_timestamp()
 
@@ -368,7 +368,7 @@ async def test_allows_to_finalize_when_closed(
         )
     )
 
-    await l2_teleport_gateway.close().invoke(auth_user.contract_address)
+    await l2_teleport_gateway.close().execute(auth_user.contract_address)
 
     await l2_teleport_gateway.finalize_register_teleport(
             TARGET_DOMAIN,
@@ -376,7 +376,7 @@ async def test_allows_to_finalize_when_closed(
             TELEPORT_AMOUNT,
             user1.contract_address,
             0,
-            timestamp).invoke(user1.contract_address)
+            timestamp).execute(user1.contract_address)
 
 
 @pytest.mark.asyncio
@@ -390,7 +390,7 @@ async def test_reverts_when_domain_is_not_whitelisted(
                 INVALID_DOMAIN,
                 user2.contract_address,
                 TELEPORT_AMOUNT,
-                user2.contract_address).invoke(user1.contract_address)
+                user2.contract_address).execute(user1.contract_address)
     assert "l2_dai_teleport_gateway/invalid-domain" in str(err.value)
 
 
@@ -402,23 +402,23 @@ async def test_flushes_batched_dai(
     dai: StarknetContract,
     user1: StarknetContract,
 ):
-    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT * 2)).invoke(user1.contract_address)
+    await dai.approve(l2_teleport_gateway.contract_address, to_split_uint(TELEPORT_AMOUNT * 2)).execute(user1.contract_address)
     await l2_teleport_gateway.initiate_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
             TELEPORT_AMOUNT,
-            user1.contract_address).invoke(user1.contract_address)
+            user1.contract_address).execute(user1.contract_address)
     await l2_teleport_gateway.initiate_teleport(
             TARGET_DOMAIN,
             user1.contract_address,
             TELEPORT_AMOUNT,
-            user1.contract_address).invoke(user1.contract_address)
+            user1.contract_address).execute(user1.contract_address)
     batched_dai_to_flush = await l2_teleport_gateway.batched_dai_to_flush(TARGET_DOMAIN).call()
     assert batched_dai_to_flush.result == (to_split_uint(TELEPORT_AMOUNT * 2),)
 
     tx = await l2_teleport_gateway.flush(
             TARGET_DOMAIN,
-        ).invoke(user1.contract_address)
+        ).execute(user1.contract_address)
     check_event(
         l2_teleport_gateway,
         "Flushed",
@@ -449,5 +449,5 @@ async def test_cannot_flush_zero_debt(
     assert batched_dai_to_flush.result == (to_split_uint(0),)
 
     with pytest.raises(StarkException) as err:
-        await l2_teleport_gateway.flush(TARGET_DOMAIN).invoke(user1.contract_address)
+        await l2_teleport_gateway.flush(TARGET_DOMAIN).execute(user1.contract_address)
     assert "l2_dai_teleport_gateway/value-is-zero" in str(err.value)

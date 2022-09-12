@@ -77,7 +77,7 @@ def serialize_contract(contract, abi):
     return dict(
         abi=abi,
         contract_address=contract.contract_address,
-        deploy_execution_info=contract.deploy_execution_info,
+        deploy_call_info=contract.deploy_call_info,
     )
 
 
@@ -160,7 +160,7 @@ async def build_copyable_deployment():
     )
     await l2_teleport_gateway.file(
         VALID_DOMAINS, TARGET_DOMAIN, 1,
-    ).invoke(accounts.auth_user.contract_address)
+    ).execute(accounts.auth_user.contract_address)
 
     contract = '''%%lang starknet
         %%builtins pedersen range_check
@@ -169,24 +169,24 @@ async def build_copyable_deployment():
         from starkware.cairo.common.uint256 import Uint256
 
         @contract_interface
-        namespace IDAI:
-          func mint(account: felt, amount: Uint256) -> ():
-          end
-        end
+        namespace IDAI {
+          func mint(account: felt, amount: Uint256) -> () {
+          }
+        }
 
         @external
         func execute{
             syscall_ptr : felt*,
             pedersen_ptr : HashBuiltin*,
             range_check_ptr
-          }():
-            let dai = %s
-            let user = %s
-            let amount = Uint256(low=10, high=0)
-            IDAI.mint(contract_address=dai, account=user, amount=amount)
+          }() {
+            let dai = %s;
+            let user = %s;
+            let amount = Uint256(low=10, high=0);
+            IDAI.mint(contract_address=dai, account=user, amount=amount);
 
-            return ()
-        end''' % (dai.contract_address, accounts.user1.contract_address)
+            return ();
+        }''' % (dai.contract_address, accounts.user1.contract_address)
 
     with open(SPELL_FILE, 'w') as f:
         f.write(contract)
@@ -194,23 +194,23 @@ async def build_copyable_deployment():
     sample_spell = await starknet.declare(source=SPELL_FILE)
 
     await registry.set_L1_address(
-            int(L1_ADDRESS)).invoke(accounts.auth_user.contract_address)
+            int(L1_ADDRESS)).execute(accounts.auth_user.contract_address)
     await registry.set_L1_address(
-            int(L1_ADDRESS)).invoke(accounts.user1.contract_address)
+            int(L1_ADDRESS)).execute(accounts.user1.contract_address)
     await registry.set_L1_address(
-            int(L1_ADDRESS)).invoke(accounts.user2.contract_address)
+            int(L1_ADDRESS)).execute(accounts.user2.contract_address)
     await registry.set_L1_address(
-            int(L1_ADDRESS)).invoke(accounts.user3.contract_address)
+            int(L1_ADDRESS)).execute(accounts.user3.contract_address)
 
     await dai.rely(
             l2_bridge.contract_address,
-        ).invoke(accounts.auth_user.contract_address)
+        ).execute(accounts.auth_user.contract_address)
     await dai.rely(
             l2_governance_relay.contract_address,
-        ).invoke(accounts.auth_user.contract_address)
+        ).execute(accounts.auth_user.contract_address)
     await l2_bridge.rely(
             l2_governance_relay.contract_address,
-        ).invoke(accounts.auth_user.contract_address)
+        ).execute(accounts.auth_user.contract_address)
 
     defs = SimpleNamespace(
         account=compile(ACCOUNT_FILE),
@@ -229,7 +229,7 @@ async def build_copyable_deployment():
 
     await dai.rely(
             l2_bridge.contract_address,
-        ).invoke(accounts.auth_user.contract_address)
+        ).execute(accounts.auth_user.contract_address)
 
     consts = SimpleNamespace(
     )
@@ -237,10 +237,10 @@ async def build_copyable_deployment():
     # intialize two users with 100 DAI
     await dai.mint(
             accounts.user1.contract_address,
-            to_split_uint(100)).invoke(accounts.auth_user.contract_address)
+            to_split_uint(100)).execute(accounts.auth_user.contract_address)
     await dai.mint(
             accounts.user2.contract_address,
-            to_split_uint(100)).invoke(accounts.auth_user.contract_address)
+            to_split_uint(100)).execute(accounts.auth_user.contract_address)
 
     return SimpleNamespace(
         starknet=starknet,
