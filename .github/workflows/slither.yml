@@ -5,6 +5,9 @@ on:
     branches:
       - master
   pull_request:
+name: Slither
+
+on: [push, pull_request]
 
 jobs:
   slither:

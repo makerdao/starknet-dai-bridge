@@ -220,7 +220,12 @@ async def build_copyable_deployment():
         registry=compile(REGISTRY_FILE),
         l2_governance_relay=compile(GOVERNANCE_FILE),
     )
-    os.remove(SPELL_FILE)
+
+    try:
+        os.remove(SPELL_FILE)
+    except OSError as error:
+        # ignoring the error in case of parallel execution
+        pass
 
     await dai.rely(
             l2_bridge.contract_address,

@@ -1,10 +1,6 @@
 name: Tests
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
+on: [push, pull_request]
 
 jobs:
   test:
@@ -60,9 +56,12 @@ jobs:
         run: cp .env.ci .env
 
       - name: Install deps
-        run: pip install -r requirements.txt
+        run: |
+￼          pip install poetry
+￼          if [ -f pyproject.toml ]; then poetry install; fi
 
-      - run: pytest ./test/l2/* --disable-pytest-warnings
+      - name: Run tests
+        run: poetry run pytest ./test/l2/* --disable-pytest-warnings
 
   teste2e:
     name: E2E Unit Tests
@@ -93,7 +92,9 @@ jobs:
       - run: yarn eth-sdk
 
       - name: Install deps
-        run: pip install -r requirements.txt
+        run: |
+￼          pip install poetry
+￼          if [ -f pyproject.toml ]; then poetry install; fi
 
       - run: npx hardhat compile --force
       - run: yarn compile:l2
