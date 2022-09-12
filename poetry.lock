@@ -126,7 +126,7 @@ python-versions = "~=3.7"
 
 [[package]]
 name = "cairo-lang"
-version = "0.9.1"
+version = "0.10.0"
 description = "Compiler and runner for the Cairo language"
 category = "main"
 optional = false
@@ -157,7 +157,7 @@ Web3 = "*"
 
 [[package]]
 name = "cairo-nile"
-version = "0.7.1"
+version = "0.9.0"
 description = "StarkNet/Cairo development toolbelt"
 category = "main"
 optional = false
@@ -1124,7 +1124,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "a09124d39d9f48f9b2763385b3514f1f9817f214aac5c376c1b8300261e55ec6"
+content-hash = "a141b21e846ab8c41f901bf803573e0750dd136b9fdfa6df0d8ce39f28190c7f"
 
 [metadata.files]
 aiohttp = [
@@ -1307,11 +1307,11 @@ cachetools = [
     {file = "cachetools-5.2.0.tar.gz", hash = "sha256:6a94c6402995a99c3970cc7e4884bb60b4a8639938157eeed436098bf9831757"},
 ]
 cairo-lang = [
-    {file = "cairo-lang-0.9.1.zip", hash = "sha256:a34cc1a019330d8eabf70869fd3d92a530af26de70844a42037db4679ac0e1e0"},
+    {file = "cairo-lang-0.10.0.zip", hash = "sha256:ce823747ee9677416118a0ff715ac1f51096a3fd518107d6b22cd2f84895ed12"},
 ]
 cairo-nile = [
-    {file = "cairo-nile-0.7.1.tar.gz", hash = "sha256:2b3a60ccfb3633f138503320e2384dd0877c1d05d7d40068a726ef405ea2c8a7"},
-    {file = "cairo_nile-0.7.1-py3-none-any.whl", hash = "sha256:92b8592045ddf92240ef5b4e655ad4af50e0d4e65a9fe82282eb3fffabc4a763"},
+    {file = "cairo-nile-0.9.0.tar.gz", hash = "sha256:fab4960ecbe3d510a70dcd87de7e7428033965d3729752ee3b76b865fd447722"},
+    {file = "cairo_nile-0.9.0-py3-none-any.whl", hash = "sha256:583119cb61c20baa3e0b9b6664e54fb1d2a1994f425e3c5e436f3db8d17064aa"},
 ]
 certifi = [
     {file = "certifi-2022.6.15.1-py3-none-any.whl", hash = "sha256:43dadad18a7f168740e66944e4fa82c6611848ff9056ad910f8f7a3e46ab89e0"},
