@@ -5,7 +5,7 @@ description = "Starknet DAI bridge"
 authors = ["MakerDAO"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.8,<3.10"
 pytest = "^6.2.5"
 pytest-asyncio = "0.15.1"
 cairo-lang = "0.10.0"
@@ -14,6 +14,7 @@ cairo-nile = "^0.9.0"
 dill = "0.3.4"
 pytest-xdist = "2.4.0"
 pytest-order = "^1.0.1"
+starknet-devnet = "0.3.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
