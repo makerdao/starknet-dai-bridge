@@ -40,6 +40,8 @@
     "test:e2e:ci": "concurrently './scripts/chain.sh' './scripts/test-e2e.sh'",
     "test:l2": "poetry run pytest ./test/l2/* --disable-pytest-warnings",
     "test:integration": "STARKNET_NETWORK=alpha-goerli npx hardhat integration --network goerli",
+    "test:settle": "STARKNET_NETWORK=alpha-goerli npx hardhat settle --network goerli",
+    "test:finalizeRegisterTeleport": "STARKNET_NETWORK=alpha-goerli npx hardhat finalizeRegisterTeleport --network goerli",
     "test:fix": "yarn lint:fix && yarn format:fix && yarn test:l1 && yarn typecheck",
     "inspect-wards:mainnet": "hardhat inspect-wards"
   },
