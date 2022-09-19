@@ -50,9 +50,10 @@ contract L1GovernanceRelay {
   }
 
   // Forward a call to be repeated on L2
-  function relay(uint256 spell) external auth {
+  function relay(uint256 spell) external payable auth {
     uint256[] memory payload = new uint256[](1);
     payload[0] = spell;
-    StarkNetLike(starkNet).sendMessageToL2(l2GovernanceRelay, RELAY_SELECTOR, payload);
+    StarkNetLike(starkNet).sendMessageToL2{value: msg.value}(l2GovernanceRelay, RELAY_SELECTOR, payload);
   }
+
 }

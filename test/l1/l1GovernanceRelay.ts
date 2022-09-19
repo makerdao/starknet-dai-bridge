@@ -41,7 +41,8 @@ describe("L1GovernanceRelay", function () {
         spellAddress,
       } = await setupTest();
 
-      await l1GovernanceRelay.connect(admin).relay(spellAddress);
+      const options = {value: 1}
+      await l1GovernanceRelay.connect(admin).relay(spellAddress, options);
 
       expect(starkNetFake.sendMessageToL2).to.have.been.calledOnce;
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
@@ -53,8 +54,9 @@ describe("L1GovernanceRelay", function () {
     it("reverts when called not by the owner", async () => {
       const { l1Alice, l1GovernanceRelay, spellAddress } = await setupTest();
 
+      const options = {value: 1}
       await expect(
-        l1GovernanceRelay.connect(l1Alice).relay(spellAddress)
+        l1GovernanceRelay.connect(l1Alice).relay(spellAddress, options)
       ).to.be.revertedWith("L1GovernanceRelay/not-authorized");
     });
   });
