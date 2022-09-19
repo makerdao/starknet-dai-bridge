@@ -1,9 +1,8 @@
-import { sleep } from "@eth-optimism/core-utils";
 import axios from "axios";
 import { ethers } from "ethers";
 import { task } from "hardhat/config";
 
-import {asDec, SplitUint, toBytes32} from "../test/utils";
+import { asDec } from "../test/utils";
 import { getAccount, getRequiredEnv, waitForTx } from "./utils";
 
 const L2_TARGET_DOMAIN = `0x${Buffer.from("GOERLI-MASTER-1", "utf8").toString(
@@ -11,9 +10,6 @@ const L2_TARGET_DOMAIN = `0x${Buffer.from("GOERLI-MASTER-1", "utf8").toString(
 )}`;
 
 const L1_TARGET_DOMAIN = ethers.utils.formatBytes32String("GOERLI-MASTER-1");
-
-const MAX = BigInt(2 ** 256) - BigInt(1);
-const MAX_HALF = BigInt(2 ** 128) - BigInt(1);
 
 const oracleAuthIface = new ethers.utils.Interface([
   "function requestMint((bytes32, bytes32, bytes32, bytes32, uint128, uint80, uint48), bytes, uint256, uint256)",
@@ -107,7 +103,7 @@ task("integration", "Test Fast Withdrawal Integration").setAction(
 
     // const transferAmount = 100;
     // const transferAmount = asDec(1000000000000000000);
-    const transferAmount = asDec('4000000000000000000');
+    const transferAmount = asDec("4000000000000000000");
 
     const { res: _l2GatewayAllowance } = await l2Dai.call("allowance", {
       owner: l2Auth.starknetContract.address,
@@ -161,25 +157,23 @@ task("integration", "Test Fast Withdrawal Integration").setAction(
   }
 );
 
-task("settle", "Settle").setAction(
-  async (_, hre) => {
-    const NETWORK = "ALPHA_GOERLI_INT";
-    const [signer] = await hre.ethers.getSigners();
+task("settle", "Settle").setAction(async (_, hre) => {
+  const NETWORK = "ALPHA_GOERLI_INT";
+  const [signer] = await hre.ethers.getSigners();
 
-    const l1TeleportGateway = await getL1Contract(
-      "L1DAITeleportGateway",
-      getRequiredEnv(`${NETWORK}_L1_DAI_TELEPORT_GATEWAY_ADDRESS`),
-      hre
-    );
+  const l1TeleportGateway = await getL1Contract(
+    "L1DAITeleportGateway",
+    getRequiredEnv(`${NETWORK}_L1_DAI_TELEPORT_GATEWAY_ADDRESS`),
+    hre
+  );
 
-    console.log("From");
-    console.log(`\tl1 account: ${signer.address.toString()}`);
-    console.log(`teleport debt: ${await l1TeleportGateway.debt()}`)
+  console.log("From");
+  console.log(`\tl1 account: ${signer.address.toString()}`);
+  console.log(`teleport debt: ${await l1TeleportGateway.debt()}`);
 
-    console.log("Finalising flush");
-    await waitForTx(l1TeleportGateway.finalizeFlush(L1_TARGET_DOMAIN, 200));
-  }
-);
+  console.log("Finalising flush");
+  await waitForTx(l1TeleportGateway.finalizeFlush(L1_TARGET_DOMAIN, 200));
+});
 
 task("finalizeRegisterTeleport", "Finalize register teleport").setAction(
   async (_, hre) => {
@@ -195,7 +189,8 @@ task("finalizeRegisterTeleport", "Finalize register teleport").setAction(
       hre
     );
 
-    const tx = '0x5241661da4c4f224d18f4d430d1f74087d5fc3e13a842fe0f73019314e8d8e6'
+    const tx =
+      "0x5241661da4c4f224d18f4d430d1f74087d5fc3e13a842fe0f73019314e8d8e6";
 
     console.log(`\nGetting attestation for tx: ${tx}`);
     const oracleUrlKey = getRequiredEnv(`${NETWORK}_ORACLE_URL`);
@@ -211,6 +206,6 @@ task("finalizeRegisterTeleport", "Finalize register teleport").setAction(
       l1TeleportGateway.finalizeRegisterTeleport(
         Object.values(parseTeleportGUID(attestations[0].data.event))
       )
-    )
+    );
   }
 );
