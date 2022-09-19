@@ -3,11 +3,9 @@ import { ethers } from "ethers";
 import { task } from "hardhat/config";
 
 import { asDec } from "../test/utils";
-import { getAccount, getRequiredEnv, waitForTx } from "./utils";
+import { getAccount, getRequiredEnv, l2String, waitForTx } from "./utils";
 
-const L2_TARGET_DOMAIN = `0x${Buffer.from("GOERLI-MASTER-1", "utf8").toString(
-  "hex"
-)}`;
+const L2_TARGET_DOMAIN = l2String("GOERLI-MASTER-1");
 
 const L1_TARGET_DOMAIN = ethers.utils.formatBytes32String("GOERLI-MASTER-1");
 
