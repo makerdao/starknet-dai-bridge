@@ -15,6 +15,7 @@ dill = "0.3.4"
 pytest-xdist = "2.4.0"
 pytest-order = "^1.0.1"
 starknet-devnet = "0.3.1"
+slither-analyzer = "0.8.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"

@@ -44,12 +44,11 @@ jobs:
 
       - run: yarn eth-sdk
 
-      - name: Install pip3
+      - name: Install deps
         run: |
-          python -m pip install --upgrade pip
-      - name: Install slither
-        run: |
-          pip3 install slither-analyzer
+           python3.8 -m pip install --upgrade pip
+￼          pip install poetry
+￼          if [ -f pyproject.toml ]; then poetry install; fi
 
       - name: Set up CI env
         run: cp .env.ci .env
