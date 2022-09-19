@@ -4,12 +4,7 @@ import { ethers } from "ethers";
 import { task } from "hardhat/config";
 
 import { asDec, SplitUint } from "../test/utils";
-import {
-  getAccount,
-  getRequiredEnv,
-  l2String,
-  waitForTx,
-} from "./utils";
+import { getAccount, getRequiredEnv, l2String, waitForTx } from "./utils";
 
 const L2_TARGET_DOMAIN = l2String("GOERLI-MASTER-1");
 
