@@ -324,6 +324,13 @@ describe("e2e", async function () {
         amount: teleportAmountL2.toDec()[0],
         operator: asDec(l1Alice.address),
       });
+
+      expect(
+        await l2Dai.call("balanceOf", {
+          user: asDec(l2Auth.starknetContract.address),
+        })
+      ).to.deep.equal(l2AuthBalance.sub(teleportAmountL2));
+
       const [nonce, timestamp] = (
         await getEvent("TeleportInitialized", l2TeleportGateway.address)
       ).slice(-2);
@@ -354,12 +361,6 @@ describe("e2e", async function () {
         .to.emit(teleportRouterFake, "RequestMint")
         .withArgs(Object.values(teleportGUID), eth("0"), eth("0"));
 
-      expect(
-        await l2Dai.call("balanceOf", {
-          user: asDec(l2Auth.starknetContract.address),
-        })
-      ).to.deep.equal(l2AuthBalance.sub(teleportAmountL2));
-
       // check that can't withdraw twice
       try {
         await l2Auth.invoke(l2TeleportGateway, "finalize_register_teleport", {
@@ -377,10 +378,6 @@ describe("e2e", async function () {
     });
 
     it("settle", async () => {
-      const depositAmountL1 = eth("100");
-      await l1Bridge
-        .connect(l1Alice)
-        .deposit(depositAmountL1, l2Auth.starknetContract.address);
       const escrowBalance = await dai.balanceOf(escrow.address);
       const { res } = await l2TeleportGateway.call("batched_dai_to_flush", {
         domain: L2_TARGET_DOMAIN,
