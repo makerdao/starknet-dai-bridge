@@ -11,6 +11,7 @@ import "./scripts/deployEscrowMom";
 import "./scripts/deployTeleport";
 import "./scripts/wards";
 import "./scripts/testIntegration";
+import "./scripts/deployDeployer";
 
 import { config as dotenvConfig } from "dotenv";
 import { NetworkUserConfig } from "hardhat/types";
@@ -101,6 +102,12 @@ const config = {
     wallets: {
       user: {
         accountName: "user",
+        modulePath:
+          "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
+        accountPath: "~/.starknet_accounts",
+      },
+      deployer: {
+        accountName: "deployer",
         modulePath:
           "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
         accountPath: "~/.starknet_accounts",

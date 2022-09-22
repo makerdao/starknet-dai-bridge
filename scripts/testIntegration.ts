@@ -100,8 +100,8 @@ task("integration", "Test Fast Withdrawal Integration").setAction(
     );
 
     // const transferAmount = 100;
-    // const transferAmount = asDec(1000000000000000000);
-    const transferAmount = asDec("4000000000000000000");
+    const transferAmount = asDec(1000000000000000000);
+    // const transferAmount = asDec("4000000000000000000");
 
     const { res: _l2GatewayAllowance } = await l2Dai.call("allowance", {
       owner: l2Auth.starknetContract.address,
