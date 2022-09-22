@@ -12,7 +12,6 @@ import {
   getRequiredEnv,
   printAddresses,
   wards,
-  writeAddresses,
 } from "./utils";
 
 task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
@@ -25,9 +24,7 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   const L1_TELEPORT_ROUTER_ADDRESS = getRequiredEnv(
     `${NETWORK}_L1_TELEPORT_ROUTER_ADDRESS`
   );
-  const L1_ESCROW_ADDRESS = getRequiredEnv(
-    `${NETWORK}_L1_ESCROW_ADDRESS`
-  );
+  const L1_ESCROW_ADDRESS = getRequiredEnv(`${NETWORK}_L1_ESCROW_ADDRESS`);
   const L2_DAI_ADDRESS = getRequiredEnv(`${NETWORK}_L2_DAI_ADDRESS`);
   const L2_GOVERNANCE_RELAY_ADDRESS = getRequiredEnv(
     `${NETWORK}_L2_GOVERNANCE_RELAY_ADDRESS`
@@ -74,8 +71,8 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   );
 
   console.log("Finalizing permissions for l2_dai_teleport_gateway...");
-  console.log("L2_GOVERNANCE_RELAY_ADDRESS:", L2_GOVERNANCE_RELAY_ADDRESS)
-  console.log('l2DAITeleportGateway', l2DAITeleportGateway.address)
+  console.log("L2_GOVERNANCE_RELAY_ADDRESS:", L2_GOVERNANCE_RELAY_ADDRESS);
+  console.log("l2DAITeleportGateway", l2DAITeleportGateway.address);
   await deployer.estimateAndInvoke(l2DAITeleportGateway, "rely", {
     user: asDec(L2_GOVERNANCE_RELAY_ADDRESS),
   });

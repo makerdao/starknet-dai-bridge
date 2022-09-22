@@ -166,7 +166,9 @@ class CustomAccount extends OpenZeppelinAccount {
       options
     );
 
-    const maxFee = BigInt(Math.round(Number(amount) * Number(getRequiredEnv("FEE_MULTIPLIER"))))
+    const maxFee = BigInt(
+      Math.round(Number(amount) * Number(getRequiredEnv("FEE_MULTIPLIER")))
+    );
     return this.invoke(toContract, functionName, calldata, { maxFee });
   }
 }
