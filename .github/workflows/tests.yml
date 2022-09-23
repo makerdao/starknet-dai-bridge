@@ -94,8 +94,8 @@ jobs:
       - name: Install deps
         run: |
            python3.8 -m pip install --upgrade pip
-￼          pip install poetry
-￼          if [ -f pyproject.toml ]; then poetry install; fi
+           pip install poetry
+           if [ -f pyproject.toml ]; then poetry install; fi
 
       - run: npx hardhat compile --force
       - run: yarn compile:l2
