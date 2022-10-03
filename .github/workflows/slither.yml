@@ -11,6 +11,11 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v2
 
+      - name: Set up Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 12
+
       - name: Set up python
         uses: actions/setup-python@v2
         with:
@@ -21,6 +26,9 @@ jobs:
 
       - name: Set up CI env
         run: cp .env.ci .env
+
+      - run: yarn --no-progress --non-interactive --frozen-lockfile
+      - run: yarn eth-sdk
 
       - name: Install deps
         run: |
