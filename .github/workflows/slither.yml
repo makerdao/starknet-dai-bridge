@@ -24,8 +24,8 @@ jobs:
 
       - name: Install deps
         run: |
-￼          pip install poetry
-￼          if [ -f pyproject.toml ]; then poetry install; fi
+          pip install poetry
+          if [ -f pyproject.toml ]; then poetry install; fi
 
       - name: Run Slither
         run: poetry run slither . --filter-paths contracts/deploy\|node_modules/@openzeppelin/contracts\|eth-sdk/abis
