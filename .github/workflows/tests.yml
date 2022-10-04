@@ -74,7 +74,7 @@ jobs:
       - name: Set up node
         uses: actions/setup-node@v2
         with:
-          node-version: 12.x
+          node-version: 16
 
       - name: Set up python
         uses: actions/setup-python@v2
