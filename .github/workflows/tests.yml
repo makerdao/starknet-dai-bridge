@@ -112,4 +112,4 @@ jobs:
       - run: npx hardhat compile --force
       - run: yarn compile:l2
 
-      - run: yarn test:e2e:ci
+      - run: poetry run yarn test:e2e:ci
