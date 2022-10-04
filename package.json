@@ -87,6 +87,7 @@
     "solhint": "^3.3.6",
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.17",
+    "starkscan": "^0.0.2",
     "ts-generator": "^0.1.1",
     "ts-node": "^10.2.1",
     "typechain": "^5.1.2"

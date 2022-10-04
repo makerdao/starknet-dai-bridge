@@ -10,6 +10,7 @@ import {
   getL2ContractAt,
   getNetwork,
   getRequiredEnv,
+  l2String,
   printAddresses,
   wards,
 } from "./utils";
@@ -31,6 +32,9 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   );
   const DENY_DEPLOYER = getRequiredEnv("DENY_DEPLOYER") === "true";
 
+  const L2_SRC_DOMAIN = l2String(getRequiredEnv(`${NETWORK}_SRC_DOMAIN`));
+  const L2_TRG_DOMAIN = l2String(getRequiredEnv(`${NETWORK}_TRG_DOMAIN`));
+
   console.log(`Deploying gateway on ${network}`);
 
   const deployer = await getAccount("deployer", hre);
@@ -47,15 +51,18 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   const futureL1DAITeleportGatewayAddress =
     await getAddressOfNextDeployedContract(l1Signer);
 
-  const L2_SOURCE_DOMAIN = `0x${Buffer.from(
-    `${NETWORK.replace(/[_]/g, "-")}-SLAVE-STARKNET-1`,
-    "utf8"
-  ).toString("hex")}`;
   const l2DAITeleportGateway = await deployL2(hre, "l2_dai_teleport_gateway", {
     ward: asDec(deployer.starknetContract.address),
     dai: asDec(L2_DAI_ADDRESS),
     teleport_gateway: asDec(futureL1DAITeleportGatewayAddress),
-    domain: L2_SOURCE_DOMAIN,
+    domain: L2_SRC_DOMAIN,
+  });
+
+  console.log(`Adding ${L2_TRG_DOMAIN} to valid domains`);
+  await deployer.estimateAndInvoke(l2DAITeleportGateway, "file", {
+    what: l2String('valid_domains'),
+    domain: L2_TRG_DOMAIN,
+    data: 1
   });
 
   const l1DAITeleportGateway = await deployL1(hre, "L1DAITeleportGateway", [
@@ -91,8 +98,8 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   ).to.deep.eq(BigInt(!DENY_DEPLOYER));
 
   const addresses = {
-    L1_DAI_TELEPORT_GATEWAY_ADDRESS: l1DAITeleportGateway.address,
-    L2_DAI_TELEPORT_GATEWAY_ADDRESS: l2DAITeleportGateway.address,
+    L1_DAI_TELEPORT_GATEWAY: l1DAITeleportGateway.address,
+    L2_DAI_TELEPORT_GATEWAY: l2DAITeleportGateway.address,
   };
   printAddresses(hre, addresses);
 });
