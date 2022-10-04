@@ -60,9 +60,9 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
 
   console.log(`Adding ${L2_TRG_DOMAIN} to valid domains`);
   await deployer.estimateAndInvoke(l2DAITeleportGateway, "file", {
-    what: l2String('valid_domains'),
+    what: l2String("valid_domains"),
     domain: L2_TRG_DOMAIN,
-    data: 1
+    data: 1,
   });
 
   const l1DAITeleportGateway = await deployL1(hre, "L1DAITeleportGateway", [
