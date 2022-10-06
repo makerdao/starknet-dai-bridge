@@ -1,6 +1,6 @@
 import axios from "axios";
 import { ethers } from "ethers";
-import { task } from "hardhat/config";
+import { task, types } from "hardhat/config";
 
 import { asDec } from "../test/utils";
 import { getAccount, getRequiredEnv, l2String, waitForTx } from "./utils";
@@ -65,15 +65,17 @@ async function getL2Contract(
   return contractFactory.getContractAt(contractAddress);
 }
 
-task("integration", "Test Fast Withdrawal Integration").setAction(
-  async (_, hre) => {
-    const NETWORK = "ALPHA_GOERLI_INT";
+task("integration", "Test Fast Withdrawal Integration")
+  .addParam("amount", "FW amount", undefined, types.int)
+  .setAction(async ({ amount }, hre) => {
+    const NETWORK = "ALPHA_GOERLI";
     const [signer] = await hre.ethers.getSigners();
     const l2Auth = await getAccount("user", hre);
 
     console.log("From");
     console.log(`\tl2 account: ${l2Auth.starknetContract.address.toString()}`);
     console.log(`\tl1 account: ${signer.address.toString()}`);
+    console.log(`\tamount: ${amount}`);
 
     const l1Dai = await getL1Contract(
       "DAIMock",
@@ -99,9 +101,7 @@ task("integration", "Test Fast Withdrawal Integration").setAction(
       signer
     );
 
-    // const transferAmount = 100;
-    const transferAmount = asDec(1000000000000000000);
-    // const transferAmount = asDec("4000000000000000000");
+    const transferAmount = asDec(amount);
 
     const { res: _l2GatewayAllowance } = await l2Dai.call("allowance", {
       owner: l2Auth.starknetContract.address,
@@ -152,29 +152,31 @@ task("integration", "Test Fast Withdrawal Integration").setAction(
     console.log(`\nL1 Balance:
     Before: ${BigInt(l1Balance.toHexString())}
     After: ${BigInt(newL1Balance.toHexString())}`);
-  }
-);
+  });
 
-task("settle", "Settle").setAction(async (_, hre) => {
-  const NETWORK = "ALPHA_GOERLI_INT";
-  const [signer] = await hre.ethers.getSigners();
+task("settle", "Settle")
+  .addParam("amount", "Settle amount", undefined, types.int)
+  .setAction(async ({ amount }, hre) => {
+    const NETWORK = "ALPHA_GOERLI_INT";
+    const [signer] = await hre.ethers.getSigners();
 
-  const l1TeleportGateway = await getL1Contract(
-    "L1DAITeleportGateway",
-    getRequiredEnv(`${NETWORK}_L1_DAI_TELEPORT_GATEWAY_ADDRESS`),
-    hre
-  );
+    const l1TeleportGateway = await getL1Contract(
+      "L1DAITeleportGateway",
+      getRequiredEnv(`${NETWORK}_L1_DAI_TELEPORT_GATEWAY_ADDRESS`),
+      hre
+    );
 
-  console.log("From");
-  console.log(`\tl1 account: ${signer.address.toString()}`);
-  console.log(`teleport debt: ${await l1TeleportGateway.debt()}`);
+    console.log("From");
+    console.log(`\tl1 account: ${signer.address.toString()}`);
+    console.log(`teleport debt: ${await l1TeleportGateway.debt()}`);
 
-  console.log("Finalising flush");
-  await waitForTx(l1TeleportGateway.finalizeFlush(L1_TARGET_DOMAIN, 200));
-});
+    console.log("Finalising flush");
+    await waitForTx(l1TeleportGateway.finalizeFlush(L1_TARGET_DOMAIN, amount));
+  });
 
-task("finalizeRegisterTeleport", "Finalize register teleport").setAction(
-  async (_, hre) => {
+task("finalizeRegisterTeleport", "Finalize register teleport")
+  .addParam("tx", "Tx hash amount")
+  .setAction(async ({ tx }, hre) => {
     const NETWORK = "ALPHA_GOERLI_INT";
     const [signer] = await hre.ethers.getSigners();
 
@@ -186,9 +188,6 @@ task("finalizeRegisterTeleport", "Finalize register teleport").setAction(
       getRequiredEnv(`${NETWORK}_L1_DAI_TELEPORT_GATEWAY_ADDRESS`),
       hre
     );
-
-    const tx =
-      "0x5241661da4c4f224d18f4d430d1f74087d5fc3e13a842fe0f73019314e8d8e6";
 
     console.log(`\nGetting attestation for tx: ${tx}`);
     const oracleUrlKey = getRequiredEnv(`${NETWORK}_ORACLE_URL`);
@@ -205,5 +204,4 @@ task("finalizeRegisterTeleport", "Finalize register teleport").setAction(
         Object.values(parseTeleportGUID(attestations[0].data.event))
       )
     );
-  }
-);
+  });
