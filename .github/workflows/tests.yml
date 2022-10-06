@@ -76,6 +76,10 @@ jobs:
         with:
           node-version: 12.x
 
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
       - name: Set up python
         uses: actions/setup-python@v2
         with:
@@ -99,4 +103,4 @@ jobs:
       - run: npx hardhat compile --force
       - run: yarn compile:l2
 
-      - run: yarn test:e2e:ci
+      - run: poetry run yarn test:e2e:ci
