@@ -54,12 +54,12 @@ describe("e2e", async function () {
 
     const registry = await simpleDeployL2("registry", {}, hre);
     await l2Auth.invoke(registry, "set_L1_address", {
-      l1_user: asDec(l1Alice.address),
+      l1_user: l1Alice.address,
     });
     l2Dai = await simpleDeployL2(
       "dai",
       {
-        ward: asDec(l2Auth.starknetContract.address),
+        ward: l2Auth.starknetContract.address,
       },
       hre
     );
@@ -70,10 +70,10 @@ describe("e2e", async function () {
     l2Bridge = await simpleDeployL2(
       "l2_dai_bridge",
       {
-        ward: asDec(l2Auth.starknetContract.address),
-        dai: asDec(l2Dai.address),
-        bridge: asDec(futureL1DAIBridgeAddress),
-        registry: asDec(registry.address),
+        ward: l2Auth.starknetContract.address,
+        dai: l2Dai.address,
+        bridge: futureL1DAIBridgeAddress,
+        registry: registry.address,
       },
       hre
     );
@@ -90,9 +90,9 @@ describe("e2e", async function () {
     l2TeleportGateway = await simpleDeployL2(
       "l2_dai_teleport_gateway",
       {
-        ward: asDec(l2Auth.starknetContract.address),
-        dai: asDec(l2Dai.address),
-        teleport_gateway: asDec(futureL1DAITeleportGatewayAddress),
+        ward: l2Auth.starknetContract.address,
+        dai: l2Dai.address,
+        teleport_gateway: futureL1DAITeleportGatewayAddress,
         domain: L2_SOURCE_DOMAIN,
       },
       hre
@@ -122,24 +122,24 @@ describe("e2e", async function () {
     await dai.connect(admin).transfer(l1Alice.address, eth("1000"));
     await dai.connect(admin).transfer(escrow.address, eth("1000"));
     await l2Auth.invoke(l2Dai, "mint", {
-      account: asDec(l2Auth.starknetContract.address),
+      account: l2Auth.starknetContract.address,
       amount: {
         low: l2Eth("10000").toDec()[0],
         high: l2Eth("10000").toDec()[1],
       },
     });
     await l2Auth.invoke(l2Dai, "rely", {
-      user: asDec(l2Bridge.address),
+      user: l2Bridge.address,
     });
     await l2Auth.invoke(l2Dai, "approve", {
-      spender: asDec(l2Bridge.address),
+      spender: l2Bridge.address,
       amount: {
         low: MAX_HALF,
         high: MAX_HALF,
       },
     });
     await l2Auth.invoke(l2Dai, "approve", {
-      spender: asDec(l2TeleportGateway.address),
+      spender: l2TeleportGateway.address,
       amount: {
         low: MAX_HALF,
         high: MAX_HALF,
@@ -155,7 +155,7 @@ describe("e2e", async function () {
       const depositAmountL1 = eth("100");
       const depositAmountL2 = l2Eth("100");
       const { res } = await l2Dai.call("balanceOf", {
-        user: asDec(l2Auth.starknetContract.address),
+        user: l2Auth.starknetContract.address,
       });
       const l2AuthBalance = new SplitUint(res);
 
@@ -169,7 +169,7 @@ describe("e2e", async function () {
       );
       expect(
         await l2Dai.call("balanceOf", {
-          user: asDec(l2Auth.starknetContract.address),
+          user: l2Auth.starknetContract.address,
         })
       ).to.deep.equal(l2AuthBalance.add(depositAmountL2));
     });
@@ -179,11 +179,11 @@ describe("e2e", async function () {
       const withdrawAmountL1 = eth("100");
       const withdrawAmountL2 = l2Eth("100");
       const { res } = await l2Dai.call("balanceOf", {
-        user: asDec(l2Auth.starknetContract.address),
+        user: l2Auth.starknetContract.address,
       });
       const l2AuthBalance = new SplitUint(res);
       await l2Auth.invoke(l2Bridge, "initiate_withdraw", {
-        l1_recipient: asDec(l1Alice.address),
+        l1_recipient: l1Alice.address,
         amount: {
           low: withdrawAmountL2.toDec()[0],
           high: withdrawAmountL2.toDec()[1],
@@ -198,7 +198,7 @@ describe("e2e", async function () {
       );
       expect(
         await l2Dai.call("balanceOf", {
-          user: asDec(l2Auth.starknetContract.address),
+          user: l2Auth.starknetContract.address,
         })
       ).to.deep.equal(l2AuthBalance.sub(withdrawAmountL2));
     });
@@ -210,7 +210,7 @@ describe("e2e", async function () {
         const withdrawAmountL2 = l2Eth("100");
 
         const { res } = await l2Dai.call("balanceOf", {
-          user: asDec(l2Auth.starknetContract.address),
+          user: l2Auth.starknetContract.address,
         });
         const l2AuthBalance = new SplitUint(res);
         await l1Bridge
@@ -228,7 +228,7 @@ describe("e2e", async function () {
         );
         expect(
           await l2Dai.call("balanceOf", {
-            user: asDec(l2Auth.starknetContract.address),
+            user: l2Auth.starknetContract.address,
           })
         ).to.deep.equal(l2AuthBalance.sub(withdrawAmountL2));
       });
@@ -236,7 +236,7 @@ describe("e2e", async function () {
       it("insufficient funds", async () => {
         const currentL1Balance = await dai.balanceOf(l1Alice.address);
         const currentL2Balance = await l2Dai.call("balanceOf", {
-          user: asDec(l2Auth.starknetContract.address),
+          user: l2Auth.starknetContract.address,
         });
         const withdrawAmountL2 = new SplitUint(currentL2Balance.res).add(
           SplitUint.fromUint(1)
@@ -258,7 +258,7 @@ describe("e2e", async function () {
         expect(await dai.balanceOf(l1Alice.address)).to.be.eq(currentL1Balance);
         expect(
           await l2Dai.call("balanceOf", {
-            user: asDec(l2Auth.starknetContract.address),
+            user: l2Auth.starknetContract.address,
           })
         ).to.deep.equal(currentL2Balance);
       });
@@ -266,7 +266,7 @@ describe("e2e", async function () {
       it("insufficient allowance", async () => {
         // set low allowance
         await l2Auth.invoke(l2Dai, "approve", {
-          spender: asDec(l2Bridge.address),
+          spender: l2Bridge.address,
           amount: {
             low: BigInt(0),
             high: BigInt(0),
@@ -275,7 +275,7 @@ describe("e2e", async function () {
 
         const currentL1Balance = await dai.balanceOf(l1Alice.address);
         const currentL2Balance = await l2Dai.call("balanceOf", {
-          user: asDec(l2Auth.starknetContract.address),
+          user: l2Auth.starknetContract.address,
         });
         const withdrawAmountL1 = eth("100");
 
@@ -293,14 +293,14 @@ describe("e2e", async function () {
         expect(await dai.balanceOf(l1Alice.address)).to.be.eq(currentL1Balance);
         expect(
           await l2Dai.call("balanceOf", {
-            user: asDec(l2Auth.starknetContract.address),
+            user: l2Auth.starknetContract.address,
           })
         ).to.deep.equal(currentL2Balance);
 
         // reset allowance
         const MAX_HALF = BigInt(2 ** 128) - BigInt(1);
         await l2Auth.invoke(l2Dai, "approve", {
-          spender: asDec(l2Bridge.address),
+          spender: l2Bridge.address,
           amount: {
             low: MAX_HALF,
             high: MAX_HALF,
@@ -320,14 +320,14 @@ describe("e2e", async function () {
       const teleportAmountL2 = l2Eth("100");
       await l2Auth.invoke(l2TeleportGateway, "initiate_teleport", {
         target_domain: L2_TARGET_DOMAIN,
-        receiver: asDec(l1Alice.address),
+        receiver: l1Alice.address,
         amount: teleportAmountL2.toDec()[0],
-        operator: asDec(l1Alice.address),
+        operator: l1Alice.address,
       });
 
       expect(
         await l2Dai.call("balanceOf", {
-          user: asDec(l2Auth.starknetContract.address),
+          user: l2Auth.starknetContract.address,
         })
       ).to.deep.equal(l2AuthBalance.sub(teleportAmountL2));
 
@@ -336,9 +336,9 @@ describe("e2e", async function () {
       ).slice(-2);
       await l2Auth.invoke(l2TeleportGateway, "finalize_register_teleport", {
         target_domain: L2_TARGET_DOMAIN,
-        receiver: asDec(l1Alice.address),
+        receiver: l1Alice.address,
         amount: teleportAmountL2.toDec()[0],
-        operator: asDec(l1Alice.address),
+        operator: l1Alice.address,
         nonce: parseInt(nonce),
         timestamp: parseInt(timestamp),
       });
@@ -365,9 +365,9 @@ describe("e2e", async function () {
       try {
         await l2Auth.invoke(l2TeleportGateway, "finalize_register_teleport", {
           target_domain: L2_TARGET_DOMAIN,
-          receiver: asDec(l1Alice.address),
+          receiver: l1Alice.address,
           amount: teleportAmountL2.toDec()[0],
-          operator: asDec(l1Alice.address),
+          operator: l1Alice.address,
           nonce,
           timestamp,
         });
