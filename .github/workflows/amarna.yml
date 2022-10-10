@@ -1,4 +1,4 @@
-name: Amarna Analysis
+name: Amarna
 on: [push, pull_request]
 jobs:
   analyze:
