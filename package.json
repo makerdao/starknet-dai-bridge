@@ -29,6 +29,7 @@
     "create-teleport-spell-l2": "hardhat create-teleport-spell-l2",
     "run-spell:goerli": "STARKNET_NETWORK=alpha-goerli hardhat run-spell --network goerli",
     "deploy-bridge-upgrade:mainnet": "STARKNET_NETWORK=alpha-mainnet hardhat deploy-bridge-upgrade --network mainnet",
+    "deploy-bridge-upgrade:goerli": "STARKNET_NETWORK=alpha-goerli hardhat deploy-bridge-upgrade --network goerli",
     "deploy-escrow-mom:goerli": "STARKNET_NETWORK=alpha-goerli hardhat deploy-escrow-mom --network goerli",
     "deploy-escrow-mom:mainnet": "STARKNET_NETWORK=alpha-mainnet hardhat deploy-escrow-mom --network mainnet",
     "send-l2-message": "yarn load-messaging-contract && yarn flush",
