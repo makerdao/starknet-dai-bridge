@@ -13,7 +13,8 @@ function chainId(network: string) {
 }
 
 async function inspectL2Wards(network: string, key: string) {
-  const address = `0x${BigInt(getRequiredEnv(key)).toString(16)}`;
+  // const address = `0x${BigInt(getRequiredEnv(key)).toString(16)}`;
+  const address = getRequiredEnv(key);
 
   const url = `http://starknet.events/api/v1/get_events?chain_id=${chainId(
     network
@@ -170,5 +171,5 @@ task("inspect-wards", "Inspect wards").setAction(async (_, hre) => {
   );
 
   await inspectL2Wards(NETWORK, `${NETWORK}_L2_DAI_ADDRESS`);
-  await inspectL2Wards(NETWORK, `${NETWORK}_L2_DAI_BRIDGE`);
+  await inspectL2Wards(NETWORK, `${NETWORK}_L2_DAI_BRIDGE_ADDRESS`);
 });
