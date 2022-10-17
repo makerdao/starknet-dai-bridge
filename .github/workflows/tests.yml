@@ -14,7 +14,7 @@ jobs:
       - name: Set up node
         uses: actions/setup-node@v2
         with:
-          node-version: 12.x
+          node-version: 16
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -47,7 +47,7 @@ jobs:
       - name: Set up python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
@@ -57,8 +57,8 @@ jobs:
 
       - name: Install deps
         run: |
-          pip install poetry
-          if [ -f pyproject.toml ]; then poetry install; fi
+           pip install poetry
+           if [ -f pyproject.toml ]; then poetry install; fi
 
       - name: Run tests
         run: poetry run pytest ./test/l2/* --disable-pytest-warnings
@@ -74,16 +74,12 @@ jobs:
       - name: Set up node
         uses: actions/setup-node@v2
         with:
-          node-version: 12.x
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
+          node-version: 16
 
       - name: Set up python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
@@ -91,14 +87,27 @@ jobs:
       - name: Set up CI env
         run: cp .env.ci .env
 
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Cache YARN dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-
+
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
       - run: yarn eth-sdk
 
       - name: Install deps
         run: |
-          pip install poetry
-          if [ -f pyproject.toml ]; then poetry install; fi
+           python3.8 -m pip install --upgrade pip
+           pip install poetry
+           if [ -f pyproject.toml ]; then poetry install; fi
 
       - run: npx hardhat compile --force
       - run: yarn compile:l2

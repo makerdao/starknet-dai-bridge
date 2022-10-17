@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { utils } from "ethers";
+import fs from "fs";
 import { task } from "hardhat/config";
 
 import {
@@ -45,6 +46,10 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     const L1_ESM_ADDRESS = getRequiredEnv(`${NETWORK}_L1_ESM_ADDRESS`);
     const DENY_DEPLOYER = getRequiredEnv("DENY_DEPLOYER") === "true";
 
+    const L1_ESCROW_MOM_ADDRESS = getRequiredEnv(
+      `${NETWORK}_L1_ESCROW_MOM_ADDRESS`
+    );
+
     const deployer = await getAccount("deployer", hre);
 
     console.log("From");
@@ -75,18 +80,28 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     const l2GovernanceRelay = await getL2ContractAt(
       hre,
       "l2_governance_relay",
-      getRequiredEnv(`${NETWORK}_L2_GOVERNANCE_RELAY`)
+      getRequiredEnv(`${NETWORK}_L2_GOVERNANCE_RELAY_ADDRESS`)
     );
 
     const registry = await getL2ContractAt(
       hre,
       "registry",
-      getRequiredEnv(`${NETWORK}_REGISTRY_ADDRESS`)
+      getRequiredEnv(`${NETWORK}_L2_REGISTRY_ADDRESS`)
     );
     const l1Escrow = await getL1ContractAt(
       hre,
       "L1Escrow",
       getRequiredEnv(`${NETWORK}_L1_ESCROW_ADDRESS`)
+    );
+
+    const oldL2DAIBridgeAddress = getRequiredEnv(
+      `${NETWORK}_L2_DAI_BRIDGE_ADDRESS`
+    );
+
+    const oldL1DAIBridge = await getL1ContractAt(
+      hre,
+      "L1DAIBridge",
+      getRequiredEnv(`${NETWORK}_L1_DAI_BRIDGE_ADDRESS`)
     );
 
     const futureL1DAIBridgeAddress = await getAddressOfNextDeployedContract(
@@ -122,15 +137,25 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
       "futureL1DAIBridgeAddress != l1DAIBridge.address"
     );
 
-    // This needs to be done in a gov spell
+    // This needs to be done in a l1 gov spell
     // console.log("L1Escrow approving L1DAIBridge...");
     // const MAX = BigInt(2 ** 256) - BigInt(1);
-    // await waitForTx(
-    //   l1Escrow.approve(L1_DAI_ADDRESS, l1DAIBridge.address, MAX, gasOverrides)
-    // );
+    //
+    // l1Escrow.approve(L1_DAI_ADDRESS, l1DAIBridge.address)
+    // l1DAIBridge.close()
+
+    console.log("Setting ceiling...");
+    await waitForTx(
+      l1DAIBridge.setCeiling(await oldL1DAIBridge.ceiling(), gasOverrides)
+    );
+    console.log("Setting max deposit...");
+    await waitForTx(
+      l1DAIBridge.setMaxDeposit(await oldL1DAIBridge.maxDeposit(), gasOverrides)
+    );
 
     console.log("Finalizing permissions for L1DAIBridge...");
     await waitForTx(l1DAIBridge.rely(L1_PAUSE_PROXY_ADDRESS, gasOverrides));
+    await waitForTx(l1DAIBridge.rely(L1_ESCROW_MOM_ADDRESS, gasOverrides));
     await waitForTx(l1DAIBridge.rely(L1_ESM_ADDRESS, gasOverrides));
     if (DENY_DEPLOYER) {
       await waitForTx(
@@ -138,11 +163,9 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
       );
     }
 
-    // This needs to be done in a gov spell
-    // console.log("Finalizing permissions for l2_dai...");
-    // await deployer.invoke(l2DAI, "rely", {
-    //   user: asDec(l2DAIBridge.address),
-    // });
+    // This needs to be done in a l2 gov spell:
+    // l2DAI.rely(l2DAIBridge.address)
+    // l2DAIBridge.close()
 
     console.log("Finalizing permissions for l2_dai_bridge...");
     await deployer.estimateAndInvoke(l2DAIBridge, "rely", {
@@ -155,14 +178,16 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     }
 
     console.log("L1 permission sanity checks...");
-    let l1Wards;
-    if (DENY_DEPLOYER) {
-      l1Wards = [L1_PAUSE_PROXY_ADDRESS, L1_ESM_ADDRESS];
-    } else {
-      l1Wards = [l1Signer.address, L1_PAUSE_PROXY_ADDRESS, L1_ESM_ADDRESS];
-    }
-    expect(await getActiveWards(l1Escrow as any)).to.deep.eq(l1Wards);
-    expect(await getActiveWards(l1DAIBridge as any)).to.deep.eq(l1Wards);
+
+    const l1Wards = [
+      L1_PAUSE_PROXY_ADDRESS,
+      L1_ESCROW_MOM_ADDRESS,
+      L1_ESM_ADDRESS,
+    ];
+
+    expect(await getActiveWards(l1DAIBridge as any)).to.deep.eq(
+      DENY_DEPLOYER ? l1Wards : [l1Signer.address, ...l1Wards]
+    );
 
     console.log("L2 bridge permission sanity checks...");
     expect(await wards(l2DAIBridge, l2GovernanceRelay)).to.deep.eq(BigInt(1));
@@ -170,14 +195,51 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
       BigInt(!DENY_DEPLOYER)
     );
 
-    console.log("L2 dai permission sanity checks...");
-    expect(await wards(l2DAI, l2GovernanceRelay)).to.deep.eq(BigInt(1));
-    expect(await wards(l2DAI, l2DAIBridge)).to.deep.eq(BigInt(1));
-    expect(await wards(l2DAI, deployer.starknetContract)).to.deep.eq(
-      BigInt(!DENY_DEPLOYER)
-    );
+    console.log("Deploying L2 spell...");
 
-    // printAddresses(network);
-    // writeAddresses(hre);
+    const l2Spell = `%lang starknet
+
+    from starkware.cairo.common.cairo_builtins import HashBuiltin
+    from starkware.starknet.common.syscalls import get_caller_address
+
+    @contract_interface
+    namespace DAI {
+        func rely(user: felt) {
+        }
+    }
+
+    @contract_interface
+    namespace Bridge {
+        func close() {
+        }
+    }
+
+    @external
+    func execute{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+        let dai = ${l2DAI.address};
+        let new_bridge = ${l2DAIBridge.address};
+        let old_bridge = ${oldL2DAIBridgeAddress};
+
+        DAI.rely(dai, new_bridge);
+        Bridge.close(old_bridge);
+
+        return ();
+    }`;
+
+    fs.writeFileSync("./contracts/l2/l2_bridge_upgrade_spell.cairo", l2Spell);
+
+    await hre.run("starknet-compile", {
+      paths: ["contracts/l2/l2_bridge_upgrade_spell.cairo"],
+    });
+
+    const spell = await deployL2(hre, "l2_bridge_upgrade_spell", 0, {});
+
+    const addresses = {
+      l1DAIBridge: l1DAIBridge.address,
+      l2DAIBridge: l2DAIBridge.address,
+      spell: spell.address,
+    };
+
+    console.log("addresses:", addresses);
   }
 );

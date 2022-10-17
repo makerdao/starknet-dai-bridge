@@ -50,7 +50,7 @@ async def test_transfer(
 ):
     tx = await dai.transfer(
             user2.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
     check_event(
         dai,
         "Transfer",
@@ -72,7 +72,7 @@ async def test_transfer_to_yourself(
 ):
     tx = await dai.transfer(
         user1.contract_address,
-        to_split_uint(10)).invoke(user1.contract_address)
+        to_split_uint(10)).execute(user1.contract_address)
     check_event(
         dai,
         "Transfer",
@@ -96,11 +96,11 @@ async def test_transfer_from(
 ):
     await dai.approve(
             user3.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
     tx = await dai.transferFrom(
         user1.contract_address,
         user2.contract_address,
-        to_split_uint(10)).invoke(user3.contract_address)
+        to_split_uint(10)).execute(user3.contract_address)
     check_event(
         dai,
         "Transfer",
@@ -123,7 +123,7 @@ async def test_transfer_to_yourself_using_transfer_from(
         user1.contract_address,
         user1.contract_address,
         to_split_uint(10)
-    ).invoke(user1.contract_address)
+    ).execute(user1.contract_address)
     check_event(
         dai,
         "Transfer",
@@ -145,7 +145,7 @@ async def test_should_not_transfer_beyond_balance(
         await dai.transfer(
                 user2.contract_address,
                 to_split_uint(101),
-            ).invoke(user1.contract_address)
+            ).execute(user1.contract_address)
     assert "dai/insufficient-balance" in str(err.value)
 
 
@@ -154,7 +154,7 @@ async def test_should_not_transfer_to_zero_address(
     dai: StarknetContract
 ):
     with pytest.raises(StarkException) as err:
-        await dai.transfer(burn, to_split_uint(10)).invoke()
+        await dai.transfer(burn, to_split_uint(10)).execute()
     assert "dai/invalid-recipient" in str(err.value)
 
 
@@ -163,7 +163,7 @@ async def test_should_not_transfer_to_dai_address(
     dai: StarknetContract,
 ):
     with pytest.raises(StarkException) as err:
-        await dai.transfer(dai.contract_address, to_split_uint(10)).invoke()
+        await dai.transfer(dai.contract_address, to_split_uint(10)).execute()
     assert "dai/invalid-recipient" in str(err.value)
 
 
@@ -176,7 +176,7 @@ async def test_mint(
 ):
     await dai.mint(
             user1.contract_address,
-            to_split_uint(10)).invoke(auth_user.contract_address)
+            to_split_uint(10)).execute(auth_user.contract_address)
 
     await check_balances(110, 100)
 
@@ -188,7 +188,7 @@ async def test_should_not_allow_minting_to_zero_address(
 ):
     with pytest.raises(StarkException) as err:
         await dai.mint(
-                burn, to_split_uint(10)).invoke(auth_user.contract_address)
+                burn, to_split_uint(10)).execute(auth_user.contract_address)
     assert "dai/invalid-recipient" in str(err.value)
 
 
@@ -201,7 +201,7 @@ async def test_should_not_allow_minting_to_dai_address(
         await dai.mint(
                 dai.contract_address,
                 to_split_uint(10),
-            ).invoke(auth_user.contract_address)
+            ).execute(auth_user.contract_address)
     assert "dai/invalid-recipient" in str(err.value)
 
 
@@ -216,7 +216,7 @@ async def test_should_not_allow_minting_to_address_beyond_max(
     with pytest.raises(StarkException) as err:
         await dai.mint(
             user3.contract_address,
-            to_split_uint(2**256-1)).invoke(auth_user.contract_address)
+            to_split_uint(2**256-1)).execute(auth_user.contract_address)
     assert "dai/uint256-overflow" in str(err.value)
 
 
@@ -229,7 +229,7 @@ async def test_burn(
     await dai.burn(
         user1.contract_address,
         to_split_uint(10),
-    ).invoke(user1.contract_address)
+    ).execute(user1.contract_address)
 
     await check_balances(90, 100)
 
@@ -243,7 +243,7 @@ async def test_should_not_burn_beyond_balance(
         await dai.burn(
                 user1.contract_address,
                 to_split_uint(101),
-            ).invoke(user1.contract_address)
+            ).execute(user1.contract_address)
     assert "dai/insufficient-balance" in str(err.value)
 
 
@@ -257,7 +257,7 @@ async def test_should_not_burn_other(
         await dai.burn(
                 user1.contract_address,
                 to_split_uint(10),
-            ).invoke(user2.contract_address)
+            ).execute(user2.contract_address)
     assert "dai/insufficient-allowance" in str(err.value)
 
 
@@ -271,7 +271,7 @@ async def test_deployer_should_not_be_able_to_burn(
         await dai.burn(
             user1.contract_address,
             to_split_uint(10),
-        ).invoke(auth_user.contract_address)
+        ).execute(auth_user.contract_address)
     assert "dai/insufficient-allowance" in str(err.value)
 
 
@@ -283,7 +283,7 @@ async def test_approve(
 ):
     tx = await dai.approve(
             user2.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
     check_event(
         dai,
         "Approval",
@@ -310,11 +310,11 @@ async def test_can_burn_other_if_approved(
 ):
     await dai.approve(
             user2.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
 
     tx = await dai.burn(
             user1.contract_address,
-            to_split_uint(10)).invoke(user2.contract_address)
+            to_split_uint(10)).execute(user2.contract_address)
     check_event(
         dai,
         "Transfer",
@@ -338,7 +338,7 @@ async def test_approve_should_not_accept_invalid_amount(
     with pytest.raises(StarkException) as err:
         await dai.approve(
                 user2.contract_address,
-                (2**128, 2**128)).invoke(user1.contract_address)
+                (2**128, 2**128)).execute(user1.contract_address)
     assert "dai/invalid-amount" in str(err.value)
 
 
@@ -351,7 +351,7 @@ async def test_decrease_allowance_should_not_accept_invalid_amount(
     with pytest.raises(StarkException) as err:
         await dai.decreaseAllowance(
                 user2.contract_address,
-                (2**128, 2**128)).invoke(user1.contract_address)
+                (2**128, 2**128)).execute(user1.contract_address)
     assert "dai/invalid-amount" in str(err.value)
 
 
@@ -364,7 +364,7 @@ async def test_increase_allowance_should_not_accept_invalid_amount(
     with pytest.raises(StarkException) as err:
         await dai.increaseAllowance(
                 user2.contract_address,
-                (2**128, 2**128)).invoke(user1.contract_address)
+                (2**128, 2**128)).execute(user1.contract_address)
     assert "dai/invalid-amount" in str(err.value)
 
 
@@ -374,7 +374,7 @@ async def test_approve_should_not_accept_zero_address(
     user1: StarknetContract,
 ):
     with pytest.raises(StarkException) as err:
-        await dai.approve(0, to_split_uint(1)).invoke(user1.contract_address)
+        await dai.approve(0, to_split_uint(1)).execute(user1.contract_address)
     assert "dai/invalid-recipient" in str(err.value)
 
 
@@ -384,7 +384,7 @@ async def test_decrease_allowance_should_not_accept_zero_addresses(
     user1: StarknetContract,
 ):
     with pytest.raises(StarkException) as err:
-        await dai.decreaseAllowance(0, to_split_uint(0)).invoke(user1.contract_address)
+        await dai.decreaseAllowance(0, to_split_uint(0)).execute(user1.contract_address)
     assert "dai/invalid-recipient" in str(err.value)
 
 
@@ -394,11 +394,11 @@ async def test_increase_allowance_should_not_accept_zero_addresses(
     user1: StarknetContract,
 ):
     with pytest.raises(StarkException) as err:
-        await dai.increaseAllowance(0, to_split_uint(1)).invoke(user1.contract_address)
+        await dai.increaseAllowance(0, to_split_uint(1)).execute(user1.contract_address)
     assert "dai/invalid-recipient" in str(err.value)
 
     with pytest.raises(StarkException) as err:
-        await dai.increaseAllowance(0, to_split_uint(1)).invoke(0)
+        await dai.increaseAllowance(0, to_split_uint(1)).execute(0)
     assert "dai/invalid-recipient" in str(err.value)
 
 
@@ -412,13 +412,13 @@ async def test_transfer_using_transfer_from_and_allowance(
 ):
     await dai.approve(
             user3.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
 
     await dai.transferFrom(
             user1.contract_address,
             user2.contract_address,
             to_split_uint(10),
-        ).invoke(user3.contract_address)
+        ).execute(user3.contract_address)
 
     await check_balances(90, 110)
 
@@ -432,7 +432,7 @@ async def test_should_not_transfer_beyond_allowance(
 ):
     await dai.approve(
             user3.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
 
     allowance = await dai.allowance(
         user1.contract_address,
@@ -443,7 +443,7 @@ async def test_should_not_transfer_beyond_allowance(
             user1.contract_address,
             user2.contract_address,
             to_split_uint(to_uint(allowance.result[0])+1),
-        ).invoke(user3.contract_address)
+        ).execute(user3.contract_address)
     assert "dai/insufficient-allowance" in str(err.value)
 
 
@@ -456,11 +456,11 @@ async def test_burn_using_burn_and_allowance(
 ):
     await dai.approve(
             user2.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
 
     tx = await dai.burn(
             user1.contract_address,
-            to_split_uint(10)).invoke(user2.contract_address)
+            to_split_uint(10)).execute(user2.contract_address)
     check_event(
         dai,
         "Transfer",
@@ -482,7 +482,7 @@ async def test_should_not_burn_beyond_allowance(
 ):
     await dai.approve(
             user2.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
 
     allowance = await dai.allowance(
         user1.contract_address,
@@ -492,7 +492,7 @@ async def test_should_not_burn_beyond_allowance(
         await dai.burn(
                 user1.contract_address,
                 to_split_uint(to_uint(allowance.result[0])+1),
-            ).invoke(user2.contract_address)
+            ).execute(user2.contract_address)
     assert "dai/insufficient-allowance" in str(err.value)
 
 
@@ -504,10 +504,10 @@ async def test_increase_allowance(
 ):
     await dai.approve(
             user2.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
     await dai.increaseAllowance(
             user2.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
 
     allowance = await dai.allowance(
         user1.contract_address,
@@ -523,10 +523,10 @@ async def test_should_not_increase_allowance_beyond_max(
 ):
     await dai.approve(
             user2.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
     with pytest.raises(StarkException) as err:
         await dai.increaseAllowance(
-                user2.contract_address, MAX).invoke(user1.contract_address)
+                user2.contract_address, MAX).execute(user1.contract_address)
     assert "dai/uint256-overflow" in str(err.value)
 
 
@@ -538,10 +538,10 @@ async def test_decrease_allowance(
 ):
     await dai.approve(
             user2.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
     await dai.decreaseAllowance(
             user2.contract_address,
-            to_split_uint(1)).invoke(user1.contract_address)
+            to_split_uint(1)).execute(user1.contract_address)
 
     allowance = await dai.allowance(
         user1.contract_address,
@@ -557,7 +557,7 @@ async def test_should_not_decrease_allowance_beyond_allowance(
 ):
     await dai.approve(
             user2.contract_address,
-            to_split_uint(10)).invoke(user1.contract_address)
+            to_split_uint(10)).execute(user1.contract_address)
 
     allowance = await dai.allowance(
         user1.contract_address,
@@ -567,7 +567,7 @@ async def test_should_not_decrease_allowance_beyond_allowance(
         await dai.decreaseAllowance(
             user2.contract_address,
             to_split_uint(to_uint(allowance.result[0]) + 1),
-        ).invoke(user1.contract_address)
+        ).execute(user1.contract_address)
     assert "dai/insufficient-allowance" in str(err.value)
 
 
@@ -581,12 +581,12 @@ async def test_does_not_decrease_allowance_using_transfer_from(
     check_balances,
 ):
     await dai.approve(
-            user3.contract_address, MAX).invoke(user1.contract_address)
+            user3.contract_address, MAX).execute(user1.contract_address)
     tx = await dai.transferFrom(
             user1.contract_address,
             user2.contract_address,
             to_split_uint(10),
-        ).invoke(user3.contract_address)
+        ).execute(user3.contract_address)
     check_event(
         dai,
         "Transfer",
@@ -613,10 +613,10 @@ async def test_does_not_decrease_allowance_using_burn(
     check_balances,
 ):
     await dai.approve(
-            user3.contract_address, MAX).invoke(user1.contract_address)
+            user3.contract_address, MAX).execute(user1.contract_address)
     tx = await dai.burn(
             user1.contract_address,
-            to_split_uint(10)).invoke(user3.contract_address)
+            to_split_uint(10)).execute(user3.contract_address)
     check_event(
         dai,
         "Transfer",

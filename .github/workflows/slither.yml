@@ -8,32 +8,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
       - name: Set up Node
         uses: actions/setup-node@v2
         with:
-          node-version: 12
+          node-version: 16
 
-      - name: Set up python
+      - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.9
 
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
 
-      - name: Set up CI env
-        run: cp .env.ci .env
+      - name: Cache YARN dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-
 
-      - run: yarn --no-progress --non-interactive --frozen-lockfile
+      - name: Install node dependencies
+        run: yarn install --frozen-lockfile
+
       - run: yarn eth-sdk
 
       - name: Install deps
         run: |
-          pip install poetry
-          if [ -f pyproject.toml ]; then poetry install; fi
+           python3.8 -m pip install --upgrade pip
+           pip install poetry
+           if [ -f pyproject.toml ]; then poetry install; fi
+
+      - name: Set up CI env
+        run: cp .env.ci .env
 
       - name: Run Slither
         run: poetry run slither . --filter-paths contracts/deploy\|node_modules/@openzeppelin/contracts\|eth-sdk/abis
