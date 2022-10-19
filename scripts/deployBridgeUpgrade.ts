@@ -197,42 +197,16 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
 
     console.log("Deploying L2 spell...");
 
-    const l2Spell = `%lang starknet
-
-    from starkware.cairo.common.cairo_builtins import HashBuiltin
-    from starkware.starknet.common.syscalls import get_caller_address
-
-    @contract_interface
-    namespace DAI {
-        func rely(user: felt) {
-        }
-    }
-
-    @contract_interface
-    namespace Bridge {
-        func close() {
-        }
-    }
-
-    @external
-    func execute{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-        let dai = ${l2DAI.address};
-        let new_bridge = ${l2DAIBridge.address};
-        let old_bridge = ${oldL2DAIBridgeAddress};
-
-        DAI.rely(dai, new_bridge);
-        Bridge.close(old_bridge);
-
-        return ();
-    }`;
-
-    fs.writeFileSync("./contracts/l2/l2_bridge_upgrade_spell.cairo", l2Spell);
-
-    await hre.run("starknet-compile", {
-      paths: ["contracts/l2/l2_bridge_upgrade_spell.cairo"],
-    });
-
-    const spell = await deployL2(hre, "l2_bridge_upgrade_spell", 0, {});
+    const spell = await deployL2(
+      hre,
+      "l2_bridge_upgrade_spell",
+      {
+        dai: l2DAI.address,
+        new_bridge: l2DAIBridge.address,
+        old_bridge: oldL2DAIBridgeAddress
+      },
+      deploymentOptions
+    );
 
     const addresses = {
       l1DAIBridge: l1DAIBridge.address,
