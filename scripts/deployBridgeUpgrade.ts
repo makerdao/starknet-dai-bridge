@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import { utils } from "ethers";
-import fs from "fs";
 import { task } from "hardhat/config";
 
 import {
@@ -203,7 +202,7 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
       {
         dai: l2DAI.address,
         new_bridge: l2DAIBridge.address,
-        old_bridge: oldL2DAIBridgeAddress
+        old_bridge: oldL2DAIBridgeAddress,
       },
       deploymentOptions
     );
