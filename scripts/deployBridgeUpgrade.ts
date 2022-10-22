@@ -63,14 +63,14 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     console.log("Deny deployer:", DENY_DEPLOYER);
 
     const gasPrice = getOptionalEnv(`${NETWORK}_GAS_PRICE`);
-    const gasOverrides = gasPrice
-      ? { gasPrice: utils.parseUnits(gasPrice, "gwei") }
-      : {};
+    const gasOverrides = {
+      gasLimit: 2000000,
+      ...(gasPrice ? {gasPrice: utils.parseUnits(gasPrice, "gwei")} : {})
+    };
 
     if (gasOverrides.gasPrice) {
       console.log("Gas price:", gasOverrides.gasPrice.toString());
     }
-
     const l2DAI = await getL2ContractAt(
       hre,
       "dai",
@@ -232,12 +232,12 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
       paths: ["contracts/l2/l2_bridge_upgrade_spell.cairo"],
     });
 
-    const spell = await deployL2(hre, "l2_bridge_upgrade_spell", 0, {});
+    // const spell = await deployL2(hre, "l2_bridge_upgrade_spell", 0, deploymentOptions);
 
     const addresses = {
       l1DAIBridge: l1DAIBridge.address,
       l2DAIBridge: l2DAIBridge.address,
-      spell: spell.address,
+      // spell: spell.address,
     };
 
     console.log("addresses:", addresses);
