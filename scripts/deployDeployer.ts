@@ -2,7 +2,7 @@ import fs from "fs";
 import { task } from "hardhat/config";
 
 // import { getNetwork, save } from "./utils";
-import {getNetwork, getOptionalEnv} from "./utils";
+import { getNetwork, getOptionalEnv } from "./utils";
 
 task("deploy-deployer", "Deploy deployer").setAction(async (_, hre) => {
   const { network, NETWORK } = getNetwork(hre);
@@ -17,14 +17,17 @@ task("deploy-deployer", "Deploy deployer").setAction(async (_, hre) => {
     console.log(`Using token: ${TOKEN}`);
   }
 
-  const deployer = await hre.starknet.deployAccount("OpenZeppelin", deploymentOptions);
+  const deployer = await hre.starknet.deployAccount(
+    "OpenZeppelin",
+    deploymentOptions
+  );
   // save("account-deployer", deployer.starknetContract, network);
 
   console.log("account", {
     address: deployer.address,
     publicKey: deployer.publicKey,
-    privateKey: deployer.privateKey
-  })
+    privateKey: deployer.privateKey,
+  });
 
   fs.writeFileSync(
     `.env.${network}.deployer`,

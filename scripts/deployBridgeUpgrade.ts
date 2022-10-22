@@ -65,7 +65,7 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     const gasPrice = getOptionalEnv(`${NETWORK}_GAS_PRICE`);
     const gasOverrides = {
       gasLimit: 2000000,
-      ...(gasPrice ? {gasPrice: utils.parseUnits(gasPrice, "gwei")} : {})
+      ...(gasPrice ? { gasPrice: utils.parseUnits(gasPrice, "gwei") } : {}),
     };
 
     if (gasOverrides.gasPrice) {
