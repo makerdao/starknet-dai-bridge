@@ -8,7 +8,7 @@ import {
   getAccount,
   getAddressOfNextDeployedContract,
   getL2ContractAt,
-  getNetwork,
+  getNetwork, getOptionalEnv,
   getRequiredEnv,
   l2String,
   printAddresses,
@@ -35,12 +35,27 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   const L2_SRC_DOMAIN = l2String(getRequiredEnv(`${NETWORK}_SRC_DOMAIN`));
   const L2_TRG_DOMAIN = l2String(getRequiredEnv(`${NETWORK}_TRG_DOMAIN`));
 
+  const TOKEN = getOptionalEnv(`${NETWORK}_TOKEN`);
+
+  const deploymentOptions = TOKEN ? { token: TOKEN } : {};
+
+  if (TOKEN) {
+    console.log(`Using token: ${TOKEN}`);
+  }
+
   console.log(`Deploying gateway on ${network}`);
 
   const deployer = await getAccount("deployer", hre);
+
+  console.log("From");
   console.log(
-    `Deploying from account: ${deployer.starknetContract.address.toString()}`
+    `\tl2 account: ${deployer.starknetContract.address.toString()}`
   );
+  console.log(
+    `\tl1 account: ${(await hre.ethers.getSigners())[0].address.toString()}`
+  );
+
+  console.log("Deny deployer:", DENY_DEPLOYER);
 
   const l2GovernanceRelay = await getL2ContractAt(
     hre,
@@ -56,7 +71,7 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
     dai: asDec(L2_DAI_ADDRESS),
     teleport_gateway: asDec(futureL1DAITeleportGatewayAddress),
     domain: L2_SRC_DOMAIN,
-  });
+  }, deploymentOptions);
 
   console.log(`Adding ${L2_TRG_DOMAIN} to valid domains`);
   await deployer.estimateAndInvoke(l2DAITeleportGateway, "file", {

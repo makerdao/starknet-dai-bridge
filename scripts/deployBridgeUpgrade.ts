@@ -154,7 +154,6 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
 
     console.log("Finalizing permissions for L1DAIBridge...");
     await waitForTx(l1DAIBridge.rely(L1_PAUSE_PROXY_ADDRESS, gasOverrides));
-    await waitForTx(l1DAIBridge.rely(L1_ESCROW_MOM_ADDRESS, gasOverrides));
     await waitForTx(l1DAIBridge.rely(L1_ESM_ADDRESS, gasOverrides));
     if (DENY_DEPLOYER) {
       await waitForTx(
