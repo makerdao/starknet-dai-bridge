@@ -163,7 +163,11 @@ task("inspect-wards", "Inspect wards").setAction(async (_, hre) => {
     `${NETWORK}_L1_ESCROW_ADDRESS`,
     startingBlock
   );
-  await inspectL1Wards(hre.ethers, `${NETWORK}_L1_DAI_BRIDGE_ADDRESS`, startingBlock);
+  await inspectL1Wards(
+    hre.ethers,
+    `${NETWORK}_L1_DAI_BRIDGE_ADDRESS`,
+    startingBlock
+  );
   await inspectL1Wards(
     hre.ethers,
     `${NETWORK}_L1_GOVERNANCE_RELAY_ADDRESS`,
