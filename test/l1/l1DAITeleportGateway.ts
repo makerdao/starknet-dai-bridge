@@ -26,14 +26,17 @@ describe("l1:L1DAITeleportGateway", () => {
       escrow,
       l1TeleportGateway,
       l2TeleportGatewayAddress,
+      teleportRouterFake,
     } = await setupTest();
 
     expect(await l1TeleportGateway.starkNet()).to.be.eq(starkNetFake.address);
-    expect(await l1TeleportGateway.dai()).to.be.eq(dai.address);
+    expect(await l1TeleportGateway.l1Token()).to.be.eq(dai.address);
     expect(await l1TeleportGateway.l2DaiTeleportGateway()).to.be.eq(
       l2TeleportGatewayAddress
     );
-    expect(await l1TeleportGateway.escrow()).to.be.eq(escrow.address);
+    expect(await l1TeleportGateway.l1Escrow()).to.be.eq(escrow.address);
+    expect(await l1TeleportGateway.l1TeleportRouter()).to.be.eq(teleportRouterFake.address);
+
 
     expect(await dai.balanceOf(admin.address)).to.be.eq(
       eth((1000000 - 100).toString())
