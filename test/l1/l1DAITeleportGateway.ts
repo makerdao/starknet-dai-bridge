@@ -35,8 +35,9 @@ describe("l1:L1DAITeleportGateway", () => {
       l2TeleportGatewayAddress
     );
     expect(await l1TeleportGateway.l1Escrow()).to.be.eq(escrow.address);
-    expect(await l1TeleportGateway.l1TeleportRouter()).to.be.eq(teleportRouterFake.address);
-
+    expect(await l1TeleportGateway.l1TeleportRouter()).to.be.eq(
+      teleportRouterFake.address
+    );
 
     expect(await dai.balanceOf(admin.address)).to.be.eq(
       eth((1000000 - 100).toString())
