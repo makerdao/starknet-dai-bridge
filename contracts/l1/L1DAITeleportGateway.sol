@@ -58,7 +58,7 @@ interface TeleportRouter {
 contract L1DAITeleportGateway {
   address public immutable starkNet;
   address public immutable l1Token;
-  uint256 public immutable l2DaiTeleportGateway;
+  uint256 public immutable l2TeleportGateway;
   address public immutable l1Escrow;
   TeleportRouter public immutable l1TeleportRouter;
 
@@ -68,14 +68,14 @@ contract L1DAITeleportGateway {
   constructor(
     address _starkNet,
     address _l1Token,
-    uint256 _l2DaiTeleportGateway,
+    uint256 _l2TeleportGateway,
     address _l1Escrow,
     address _l1TeleportRouter
   ) {
 
     starkNet = _starkNet;
     l1Token = _l1Token;
-    l2DaiTeleportGateway = _l2DaiTeleportGateway;
+    l2TeleportGateway = _l2TeleportGateway;
     l1Escrow = _l1Escrow;
     l1TeleportRouter = TeleportRouter(_l1TeleportRouter);
     // Approve the router to pull DAI from this contract during settle() (after the DAI has been pulled by this contract from the escrow)
@@ -90,7 +90,7 @@ contract L1DAITeleportGateway {
     payload[1] = toL2String(targetDomain);
     (payload[2], payload[3]) = toSplitUint(daiToFlush);
 
-    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiTeleportGateway, payload);
+    StarkNetLike(starkNet).consumeMessageFromL2(l2TeleportGateway, payload);
 
     // Pull DAI from the escrow to this contract
     TokenLike(l1Token).transferFrom(l1Escrow, address(this), daiToFlush);
@@ -111,7 +111,7 @@ contract L1DAITeleportGateway {
     payload[6] = uint256(teleport.nonce); // uint80 -> uint256
     payload[7] = uint256(teleport.timestamp); // uint48 -> uint256
 
-    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiTeleportGateway, payload);
+    StarkNetLike(starkNet).consumeMessageFromL2(l2TeleportGateway, payload);
 
     l1TeleportRouter.requestMint(teleport, 0, 0);
   }

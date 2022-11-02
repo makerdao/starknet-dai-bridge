@@ -31,7 +31,7 @@ describe("l1:L1DAITeleportGateway", () => {
 
     expect(await l1TeleportGateway.starkNet()).to.be.eq(starkNetFake.address);
     expect(await l1TeleportGateway.l1Token()).to.be.eq(dai.address);
-    expect(await l1TeleportGateway.l2DaiTeleportGateway()).to.be.eq(
+    expect(await l1TeleportGateway.l2TeleportGateway()).to.be.eq(
       l2TeleportGatewayAddress
     );
     expect(await l1TeleportGateway.l1Escrow()).to.be.eq(escrow.address);
