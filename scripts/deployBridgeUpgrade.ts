@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { utils } from "ethers";
+import fs from "fs";
 import { task } from "hardhat/config";
 
 import {
@@ -45,10 +46,6 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     const L1_ESM_ADDRESS = getRequiredEnv(`${NETWORK}_L1_ESM_ADDRESS`);
     const DENY_DEPLOYER = getRequiredEnv("DENY_DEPLOYER") === "true";
 
-    const L1_ESCROW_MOM_ADDRESS = getRequiredEnv(
-      `${NETWORK}_L1_ESCROW_MOM_ADDRESS`
-    );
-
     const deployer = await getAccount("deployer", hre);
 
     console.log("From");
@@ -62,14 +59,14 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     console.log("Deny deployer:", DENY_DEPLOYER);
 
     const gasPrice = getOptionalEnv(`${NETWORK}_GAS_PRICE`);
-    const gasOverrides = gasPrice
-      ? { gasPrice: utils.parseUnits(gasPrice, "gwei") }
-      : {};
+    const gasOverrides = {
+      gasLimit: 2000000,
+      ...(gasPrice ? { gasPrice: utils.parseUnits(gasPrice, "gwei") } : {}),
+    };
 
     if (gasOverrides.gasPrice) {
       console.log("Gas price:", gasOverrides.gasPrice.toString());
     }
-
     const l2DAI = await getL2ContractAt(
       hre,
       "dai",
@@ -177,11 +174,7 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
 
     console.log("L1 permission sanity checks...");
 
-    const l1Wards = [
-      L1_PAUSE_PROXY_ADDRESS,
-      L1_ESCROW_MOM_ADDRESS,
-      L1_ESM_ADDRESS,
-    ];
+    const l1Wards = [L1_PAUSE_PROXY_ADDRESS, L1_ESM_ADDRESS];
 
     expect(await getActiveWards(l1DAIBridge as any)).to.deep.eq(
       DENY_DEPLOYER ? l1Wards : [l1Signer.address, ...l1Wards]
@@ -195,14 +188,45 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
 
     console.log("Deploying L2 spell...");
 
+    const l2Spell = `%lang starknet
+
+    from starkware.cairo.common.cairo_builtins import HashBuiltin
+    from starkware.starknet.common.syscalls import get_caller_address
+
+    @contract_interface
+    namespace DAI {
+        func rely(user: felt) {
+        }
+    }
+
+    @contract_interface
+    namespace Bridge {
+        func close() {
+        }
+    }
+
+    @external
+    func execute{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+        let dai = ${l2DAI.address};
+        let new_bridge = ${l2DAIBridge.address};
+        let old_bridge = ${oldL2DAIBridgeAddress};
+
+        DAI.rely(dai, new_bridge);
+        Bridge.close(old_bridge);
+
+        return ();
+    }`;
+
+    fs.writeFileSync("./contracts/l2/l2_bridge_upgrade_spell.cairo", l2Spell);
+
+    await hre.run("starknet-compile", {
+      paths: ["contracts/l2/l2_bridge_upgrade_spell.cairo"],
+    });
+
     const spell = await deployL2(
       hre,
       "l2_bridge_upgrade_spell",
-      {
-        dai: l2DAI.address,
-        new_bridge: l2DAIBridge.address,
-        old_bridge: oldL2DAIBridgeAddress,
-      },
+      0,
       deploymentOptions
     );
 
