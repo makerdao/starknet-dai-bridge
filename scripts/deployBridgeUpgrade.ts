@@ -155,7 +155,6 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
 
     console.log("Finalizing permissions for L1DAIBridge...");
     await waitForTx(l1DAIBridge.rely(L1_PAUSE_PROXY_ADDRESS, gasOverrides));
-    await waitForTx(l1DAIBridge.rely(L1_ESCROW_MOM_ADDRESS, gasOverrides));
     await waitForTx(l1DAIBridge.rely(L1_ESM_ADDRESS, gasOverrides));
     if (DENY_DEPLOYER) {
       await waitForTx(
@@ -181,7 +180,6 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
 
     const l1Wards = [
       L1_PAUSE_PROXY_ADDRESS,
-      L1_ESCROW_MOM_ADDRESS,
       L1_ESM_ADDRESS,
     ];
 
@@ -232,12 +230,12 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
       paths: ["contracts/l2/l2_bridge_upgrade_spell.cairo"],
     });
 
-    // const spell = await deployL2(hre, "l2_bridge_upgrade_spell", 0, deploymentOptions);
+    const spell = await deployL2(hre, "l2_bridge_upgrade_spell", 0, deploymentOptions);
 
     const addresses = {
       l1DAIBridge: l1DAIBridge.address,
       l2DAIBridge: l2DAIBridge.address,
-      // spell: spell.address,
+      spell: spell.address,
     };
 
     console.log("addresses:", addresses);
