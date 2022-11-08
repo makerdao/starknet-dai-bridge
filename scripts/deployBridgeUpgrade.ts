@@ -178,10 +178,7 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
 
     console.log("L1 permission sanity checks...");
 
-    const l1Wards = [
-      L1_PAUSE_PROXY_ADDRESS,
-      L1_ESM_ADDRESS,
-    ];
+    const l1Wards = [L1_PAUSE_PROXY_ADDRESS, L1_ESM_ADDRESS];
 
     expect(await getActiveWards(l1DAIBridge as any)).to.deep.eq(
       DENY_DEPLOYER ? l1Wards : [l1Signer.address, ...l1Wards]
@@ -230,7 +227,12 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
       paths: ["contracts/l2/l2_bridge_upgrade_spell.cairo"],
     });
 
-    const spell = await deployL2(hre, "l2_bridge_upgrade_spell", 0, deploymentOptions);
+    const spell = await deployL2(
+      hre,
+      "l2_bridge_upgrade_spell",
+      0,
+      deploymentOptions
+    );
 
     const addresses = {
       l1DAIBridge: l1DAIBridge.address,
