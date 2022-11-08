@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import { utils } from "ethers";
-import fs from "fs";
 import { task } from "hardhat/config";
 
 import {

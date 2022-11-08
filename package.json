@@ -23,6 +23,7 @@
     "deploy-bridge:goerli": "STARKNET_NETWORK=alpha-goerli hardhat deploy-bridge --network goerli",
     "deploy-bridge:mainnet": "STARKNET_NETWORK=alpha-mainnet hardhat deploy-bridge --network mainnet",
     "deploy-teleport:goerli": "STARKNET_NETWORK=alpha-goerli hardhat deploy-teleport --network goerli",
+    "deploy-teleport:mainnet": "STARKNET_NETWORK=alpha-mainnet hardhat deploy-teleport --network mainnet",
     "deploy-teleport-spell-l1:goerli": "STARKNET_NETWORK=alpha-goerli hardhat deploy-teleport-spell-l1 --network goerli",
     "deploy-teleport-spell-l2:goerli": "STARKNET_NETWORK=alpha-goerli hardhat deploy-teleport-spell-l2 --network goerli",
     "create-teleport-spell-l1": "hardhat create-teleport-spell-l1",

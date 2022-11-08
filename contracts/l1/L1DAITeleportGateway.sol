@@ -57,29 +57,29 @@ interface TeleportRouter {
 
 contract L1DAITeleportGateway {
   address public immutable starkNet;
-  address public immutable dai;
-  uint256 public immutable l2DaiTeleportGateway;
-  address public immutable escrow;
-  TeleportRouter public immutable teleportRouter;
+  address public immutable l1Token;
+  uint256 public immutable l2TeleportGateway;
+  address public immutable l1Escrow;
+  TeleportRouter public immutable l1TeleportRouter;
 
   uint256 constant HANDLE_REGISTER_TELEPORT = 0;
   uint256 constant HANDLE_FLUSH = 1;
 
   constructor(
     address _starkNet,
-    address _dai,
-    uint256 _l2DaiTeleportGateway,
-    address _escrow,
-    address _teleportRouter
+    address _l1Token,
+    uint256 _l2TeleportGateway,
+    address _l1Escrow,
+    address _l1TeleportRouter
   ) {
 
     starkNet = _starkNet;
-    dai = _dai;
-    l2DaiTeleportGateway = _l2DaiTeleportGateway;
-    escrow = _escrow;
-    teleportRouter = TeleportRouter(_teleportRouter);
+    l1Token = _l1Token;
+    l2TeleportGateway = _l2TeleportGateway;
+    l1Escrow = _l1Escrow;
+    l1TeleportRouter = TeleportRouter(_l1TeleportRouter);
     // Approve the router to pull DAI from this contract during settle() (after the DAI has been pulled by this contract from the escrow)
-    ApproveLike(_dai).approve(_teleportRouter, type(uint256).max);
+    ApproveLike(_l1Token).approve(_l1TeleportRouter, type(uint256).max);
   }
 
   function finalizeFlush(bytes32 targetDomain, uint256 daiToFlush)
@@ -90,12 +90,12 @@ contract L1DAITeleportGateway {
     payload[1] = toL2String(targetDomain);
     (payload[2], payload[3]) = toSplitUint(daiToFlush);
 
-    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiTeleportGateway, payload);
+    StarkNetLike(starkNet).consumeMessageFromL2(l2TeleportGateway, payload);
 
     // Pull DAI from the escrow to this contract
-    TokenLike(dai).transferFrom(escrow, address(this), daiToFlush);
+    TokenLike(l1Token).transferFrom(l1Escrow, address(this), daiToFlush);
     // The router will pull the DAI from this contract
-    teleportRouter.settle(targetDomain, daiToFlush);
+    l1TeleportRouter.settle(targetDomain, daiToFlush);
   }
 
   function finalizeRegisterTeleport(TeleportGUID calldata teleport)
@@ -111,9 +111,9 @@ contract L1DAITeleportGateway {
     payload[6] = uint256(teleport.nonce); // uint80 -> uint256
     payload[7] = uint256(teleport.timestamp); // uint48 -> uint256
 
-    StarkNetLike(starkNet).consumeMessageFromL2(l2DaiTeleportGateway, payload);
+    StarkNetLike(starkNet).consumeMessageFromL2(l2TeleportGateway, payload);
 
-    teleportRouter.requestMint(teleport, 0, 0);
+    l1TeleportRouter.requestMint(teleport, 0, 0);
   }
 
   function toL2String(bytes32 str) internal pure returns (uint256) {
