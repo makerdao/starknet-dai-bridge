@@ -46,10 +46,6 @@ task("deploy-bridge-upgrade", "Deploy bridge upgrade").setAction(
     const L1_ESM_ADDRESS = getRequiredEnv(`${NETWORK}_L1_ESM_ADDRESS`);
     const DENY_DEPLOYER = getRequiredEnv("DENY_DEPLOYER") === "true";
 
-    const L1_ESCROW_MOM_ADDRESS = getRequiredEnv(
-      `${NETWORK}_L1_ESCROW_MOM_ADDRESS`
-    );
-
     const deployer = await getAccount("deployer", hre);
 
     console.log("From");
