@@ -15,16 +15,16 @@ function chainId(network: string) {
 async function inspectL2Wards(network: string, key: string) {
   // const address = `0x${BigInt(getRequiredEnv(key)).toString(16)}`;
   const address = getRequiredEnv(key);
-
-  const url = `http://starknet.events/api/v1/get_events?chain_id=${chainId(
+  const url = `https://beta.starknet.events/api/v1/get_events?chainId=${chainId(
     network
-  )}&contract=${address}&from_block=0&name=Rely&name=Deny`;
+  )}&contract=${address}&fromBlock=0&toBlock=100000000&name=Rely&name=Deny&page_size=100&page_number=1`;
+  console.log(url);
   const response: any = await axios.get(url);
-  const log = response.data.items.map(
+  const log = response.data.events.map(
     (event: any) =>
       `${event.timestamp} - ${event.name} ${event.parameters[0].value}`
   );
-  const wards = response.data.items.reduce((s: Set<string>, event: any) => {
+  const wards = response.data.events.reduce((s: Set<string>, event: any) => {
     if (event.name === "Rely") {
       s.add(event.parameters[0].value);
     } else {
@@ -176,4 +176,5 @@ task("inspect-wards", "Inspect wards").setAction(async (_, hre) => {
 
   await inspectL2Wards(NETWORK, `${NETWORK}_L2_DAI_ADDRESS`);
   await inspectL2Wards(NETWORK, `${NETWORK}_L2_DAI_BRIDGE_ADDRESS`);
+  await inspectL2Wards(NETWORK, `${NETWORK}_L2_DAI_TELEPORT_GATEWAY_ADDRESS`);
 });
