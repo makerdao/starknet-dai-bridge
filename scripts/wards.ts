@@ -18,8 +18,8 @@ async function inspectL2Wards(network: string, key: string) {
   const url = `https://beta.starknet.events/api/v1/get_events?chainId=${chainId(
     network
   )}&contract=${address}&fromBlock=0&toBlock=100000000&name=Rely&name=Deny&page_size=100&page_number=1`;
-  console.log(url);
   const response: any = await axios.get(url);
+  console.assert(response.data.is_last_page, 'not-last-page')
   const log = response.data.events.map(
     (event: any) =>
       `${event.timestamp} - ${event.name} ${event.parameters[0].value}`
