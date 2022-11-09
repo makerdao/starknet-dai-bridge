@@ -82,7 +82,7 @@ task("deploy-gov-relay-upgrade", "Deploy gov relay upgrade").setAction(
     const futureL1GovRelayAddress = await getAddressOfNextDeployedContract(
       l1Signer
     );
-    
+
     const l2GovernanceRelay = await deployL2(
       hre,
       "l2_governance_relay",
