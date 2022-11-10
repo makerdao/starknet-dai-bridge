@@ -4,19 +4,15 @@ import fs from "fs";
 import { task } from "hardhat/config";
 
 import {
-  asDec,
   deployL1,
   deployL2,
   getAccount,
   getActiveWards,
   getAddressOfNextDeployedContract,
-  getL1ContractAt,
-  getL2ContractAt,
   getNetwork,
   getOptionalEnv,
   getRequiredEnv,
   waitForTx,
-  wards,
 } from "./utils";
 
 task("deploy-gov-relay-upgrade", "Deploy gov relay upgrade").setAction(
@@ -195,7 +191,7 @@ task(
   const spell = await deployL2(hre, spellName, 0, deploymentOptions);
 
   const addresses = {
-    spell: spell,
+    spell: spell.address,
   };
 
   console.log("addresses:", addresses);
