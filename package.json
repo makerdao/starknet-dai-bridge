@@ -8,7 +8,7 @@
   "scripts": {
     "format": "prettier --check \"./**/*.ts\"",
     "format:fix": "prettier --write \"./**/*.ts\"",
-    "amarna": "amarna . -s --disable-inline",
+    "amarna": "amarna contracts -s --disable-inline",
     "lint": "eslint --ext .ts test scripts hardhat.config.ts",
     "lint:fix": "yarn lint --fix",
     "compile:l1": "hardhat compile",
