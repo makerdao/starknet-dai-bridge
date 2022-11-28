@@ -19,8 +19,8 @@ import { resolve } from "path";
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
 const chainIds = {
-  "mainnet": 1,
-  "goerli": 5,
+  mainnet: 1,
+  goerli: 5,
   localhost: 31337,
 };
 
@@ -60,9 +60,7 @@ if (process.env.TEST_ENV === "e2e") {
 }
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url: string = `https://${
-    network
-  }.infura.io/v3/${infuraApiKey}`;
+  const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;
 
   const common = {
     chainId: chainIds[network],
