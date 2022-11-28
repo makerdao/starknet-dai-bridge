@@ -36,22 +36,21 @@ if (!infuraApiKey) {
 }
 
 function getStarknetNetwork() {
-  const i = process.argv.indexOf('--network')
-  if(i == -1) {
-    return 'alpha-goerli'
+  const i = process.argv.indexOf("--network");
+  if (i === -1) {
+    return "alpha-goerli";
   }
-  const network = process.argv[i+1]
-  if(['alpha-goerli', 'alpha-mainnet', 'localhost'].indexOf(network) == -1) {
+  const network = process.argv[i + 1];
+  if (["alpha-goerli", "alpha-mainnet", "localhost"].indexOf(network) === -1) {
     throw new Error(`Wrong network: ${network}`);
   }
 
-  if(network==='localhost') {
-    return 'devnet'
+  if (network === "localhost") {
+    return "devnet";
   }
 
-  return network
+  return network;
 }
-
 
 let test: string;
 if (process.env.TEST_ENV === "e2e") {
@@ -61,17 +60,17 @@ if (process.env.TEST_ENV === "e2e") {
 }
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url: string = `https://${network.split('-')[1]}.infura.io/v3/${infuraApiKey}`;
+  const url: string = `https://${
+    network.split("-")[1]
+  }.infura.io/v3/${infuraApiKey}`;
 
   const common = {
     chainId: chainIds[network],
     url,
     gasMultiplier: 1.5,
   };
-  const ALPHA_MAINNET_PK = process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"]
-  if (
-    network === "alpha-mainnet" && ALPHA_MAINNET_PK
-  ) {
+  const ALPHA_MAINNET_PK = process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"];
+  if (network === "alpha-mainnet" && ALPHA_MAINNET_PK) {
     return {
       ...common,
       accounts: [ALPHA_MAINNET_PK],
@@ -89,7 +88,7 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   };
 }
 
-console.log('getStarknetNetwork', getStarknetNetwork())
+console.log("getStarknetNetwork", getStarknetNetwork());
 
 const config = {
   defaultNetwork: "hardhat",
@@ -99,7 +98,8 @@ const config = {
     localhost: {
       url: "http://127.0.0.1:8545",
     },
-    devnet: { //starknet devnet endpoint
+    devnet: {
+      //starknet devnet endpoint
       url: "http://127.0.0.1:5050",
     },
   },
