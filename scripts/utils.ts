@@ -290,6 +290,9 @@ export async function deployL2(
 }
 
 export function getNetwork(hre: any) {
+
+  console.log('hre.config.network', hre.config.network)
+
   const network = hre.config.starknet.network!;
   assert(
     network === "alpha-mainnet" || network === "alpha-goerli",

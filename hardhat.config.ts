@@ -4,7 +4,6 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
-import "./scripts/deploySpell";
 import "./scripts/deployBridge";
 import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
@@ -20,12 +19,9 @@ import { resolve } from "path";
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
 const chainIds = {
-  goerli: 5,
-  hardhat: 31337,
-  kovan: 42,
-  mainnet: 1,
-  rinkeby: 4,
-  ropsten: 3,
+  "alpha-mainnet": 1,
+  "alpha-goerli": 5,
+  localhost: 31337,
 };
 
 // Ensure that we have all the environment variables we need.
@@ -39,6 +35,24 @@ if (!infuraApiKey) {
   throw new Error("Please set your INFURA_API_KEY in a .env file");
 }
 
+function getStarknetNetwork() {
+  const i = process.argv.indexOf('--network')
+  if(i == -1) {
+    return 'alpha-goerli'
+  }
+  const network = process.argv[i+1]
+  if(['alpha-goerli', 'alpha-mainnet', 'localhost'].indexOf(network) == -1) {
+    throw new Error(`Wrong network: ${network}`);
+  }
+
+  if(network==='localhost') {
+    return 'devnet'
+  }
+
+  return network
+}
+
+
 let test: string;
 if (process.env.TEST_ENV === "e2e") {
   test = "e2e";
@@ -47,21 +61,20 @@ if (process.env.TEST_ENV === "e2e") {
 }
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;
+  const url: string = `https://${network.split('-')[1]}.infura.io/v3/${infuraApiKey}`;
 
   const common = {
     chainId: chainIds[network],
     url,
     gasMultiplier: 1.5,
   };
+  const ALPHA_MAINNET_PK = process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"]
   if (
-    network === "mainnet" &&
-    process.env.STARKNET_NETWORK === "alpha-mainnet" &&
-    process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"]
+    network === "alpha-mainnet" && ALPHA_MAINNET_PK
   ) {
     return {
       ...common,
-      accounts: [process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"]],
+      accounts: [ALPHA_MAINNET_PK],
       gasMultiplier: 3,
     };
   }
@@ -76,29 +89,23 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   };
 }
 
-// const config: HardhatUserConfig = {
+console.log('getStarknetNetwork', getStarknetNetwork())
+
 const config = {
   defaultNetwork: "hardhat",
   networks: {
-    goerli: getChainConfig("goerli"),
-    mainnet: getChainConfig("mainnet"),
+    "alpha-goerli": getChainConfig("alpha-goerli"),
+    "alpha-mainnet": getChainConfig("alpha-mainnet"),
     localhost: {
       url: "http://127.0.0.1:8545",
     },
-    devnet: {
+    devnet: { //starknet devnet endpoint
       url: "http://127.0.0.1:5050",
-    },
-    hardhat: {
-      accounts: {
-        count: 10,
-        mnemonic,
-        path: "m/44'/60'/0'/0",
-      },
     },
   },
   starknet: {
     dockerizedVersion: "0.10.0",
-    network: process.env.STARKNET_NETWORK,
+    network: getStarknetNetwork(),
     wallets: {
       user: {
         accountName: "user",
