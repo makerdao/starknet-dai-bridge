@@ -19,8 +19,8 @@ import { resolve } from "path";
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
 const chainIds = {
-  "alpha-mainnet": 1,
-  "alpha-goerli": 5,
+  "mainnet": 1,
+  "goerli": 5,
   localhost: 31337,
 };
 
@@ -61,7 +61,7 @@ if (process.env.TEST_ENV === "e2e") {
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   const url: string = `https://${
-    network.split("-")[1]
+    network
   }.infura.io/v3/${infuraApiKey}`;
 
   const common = {
@@ -70,7 +70,7 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
     gasMultiplier: 1.5,
   };
   const ALPHA_MAINNET_PK = process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"];
-  if (network === "alpha-mainnet" && ALPHA_MAINNET_PK) {
+  if (network === "mainnet" && ALPHA_MAINNET_PK) {
     return {
       ...common,
       accounts: [ALPHA_MAINNET_PK],
@@ -93,8 +93,8 @@ console.log("getStarknetNetwork", getStarknetNetwork());
 const config = {
   defaultNetwork: "hardhat",
   networks: {
-    "alpha-goerli": getChainConfig("alpha-goerli"),
-    "alpha-mainnet": getChainConfig("alpha-mainnet"),
+    "alpha-goerli": getChainConfig("goerli"),
+    "alpha-mainnet": getChainConfig("mainnet"),
     localhost: {
       url: "http://127.0.0.1:8545",
     },
