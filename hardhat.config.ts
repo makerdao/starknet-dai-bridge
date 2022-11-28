@@ -11,6 +11,7 @@ import "./scripts/deployEscrowMom";
 import "./scripts/deployTeleport";
 import "./scripts/wards";
 import "./scripts/testIntegration";
+import "./scripts/deployGovRelayUpgrade";
 
 import { config as dotenvConfig } from "dotenv";
 import { NetworkUserConfig } from "hardhat/types";

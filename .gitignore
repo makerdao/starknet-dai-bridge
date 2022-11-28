@@ -26,3 +26,4 @@ yarn-error.log
 contracts/l2/dai_rescue_spell.cairo
 eth-sdk/abis
 contracts/deploy/goerli
+deployment-logs
