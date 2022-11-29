@@ -24,7 +24,7 @@ func execute{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() 
     HasWards.rely(bridge, new_gov_relay);
     HasWards.rely(bridge_legacy, new_gov_relay);
     HasWards.rely(teleport_gateway, new_gov_relay);
-    
+
     // old gov relay will be denied in the following spell
 
     return ();
