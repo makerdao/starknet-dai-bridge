@@ -32,7 +32,7 @@ jobs:
 
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
-      - run: yarn eth-sdk
+      # - run: yarn eth-sdk
 
       - run: yarn test:l1
 
@@ -101,7 +101,7 @@ jobs:
 
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
-      - run: yarn eth-sdk
+      # - run: yarn eth-sdk
 
       - name: Install deps
         run: |

@@ -35,7 +35,7 @@ jobs:
       - name: Install node dependencies
         run: yarn install --frozen-lockfile
 
-      - run: yarn eth-sdk
+      # - run: yarn eth-sdk
 
       - name: Install deps
         run: |
@@ -47,4 +47,4 @@ jobs:
         run: cp .env.ci .env
 
       - name: Run Slither
-        run: poetry run slither . --filter-paths contracts/deploy\|node_modules/@openzeppelin/contracts\|eth-sdk/abis
+        run: poetry run slither . --filter-paths contracts/deploy\|node_modules/@openzeppelin/contracts\
