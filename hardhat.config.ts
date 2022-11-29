@@ -9,7 +9,7 @@ import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
 import "./scripts/deployTeleport";
 import "./scripts/wards";
-import "./scripts/testIntegration";
+import "./scripts/testTeleport";
 import "./scripts/deployGovRelayUpgrade";
 
 import { config as dotenvConfig } from "dotenv";
@@ -85,8 +85,6 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
     },
   };
 }
-
-console.log("getStarknetNetwork", getStarknetNetwork());
 
 const config = {
   defaultNetwork: "hardhat",
