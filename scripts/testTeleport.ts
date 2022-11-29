@@ -2,8 +2,14 @@ import axios from "axios";
 import { ethers } from "ethers";
 import { task, types } from "hardhat/config";
 
-import { asDec, split, SplitUint } from "../test/utils";
-import { getAccount, getRequiredEnv, l2String, waitForTx, getNetwork } from "./utils";
+import { asDec } from "../test/utils";
+import {
+  getAccount,
+  getNetwork,
+  getRequiredEnv,
+  l2String,
+  waitForTx,
+} from "./utils";
 
 const oracleAuthIface = new ethers.utils.Interface([
   "function requestMint((bytes32, bytes32, bytes32, bytes32, uint128, uint80, uint48), bytes, uint256, uint256)",
@@ -64,7 +70,6 @@ async function getL2Contract(
 task("teleport-initiate", "Test Fast Withdrawal Integration")
   .addParam("amount", "FW amount", undefined, types.int)
   .setAction(async ({ amount }, hre) => {
-
     const { network, NETWORK } = getNetwork(hre);
 
     const [signer] = await hre.ethers.getSigners();
@@ -81,7 +86,7 @@ task("teleport-initiate", "Test Fast Withdrawal Integration")
 
     const l1Dai = await getL1Contract(
       "DAIMock",
-      getAddress('L1_DAI', NETWORK),
+      getAddress("L1_DAI", NETWORK),
       hre
     );
 
@@ -103,14 +108,14 @@ task("teleport-initiate", "Test Fast Withdrawal Integration")
       signer
     );
 
-    const transferAmount = BigInt(amount)
+    const transferAmount = BigInt(amount);
 
     const { res: l2GatewayAllowance } = await l2Dai.call("allowance", {
       owner: l2Auth.starknetContract.address,
       spender: l2TeleportGateway.address,
     });
 
-    if(transferAmount > l2GatewayAllowance) {
+    if (transferAmount > l2GatewayAllowance) {
       console.log("\nApproving L2 Teleport Gateway");
       await l2Auth.estimateAndInvoke(l2Dai, "approve", {
         spender: asDec(l2TeleportGateway.address),
@@ -158,10 +163,9 @@ task("teleport-initiate", "Test Fast Withdrawal Integration")
     After: ${BigInt(newL1Balance.toHexString())}`);
   });
 
-  task("teleport-requestMint", "mint teleport")
+task("teleport-requestMint", "mint teleport")
   .addParam("tx", "Tx hash amount")
   .setAction(async ({ tx }, hre) => {
-
     const { network, NETWORK } = getNetwork(hre);
 
     const [signer] = await hre.ethers.getSigners();
@@ -188,7 +192,7 @@ task("teleport-initiate", "Test Fast Withdrawal Integration")
 
     console.log("\nCalling oracle auth");
 
-    console.log(attestations.map((_) => _.signatures.ethereum.signature))
+    console.log(attestations.map((_) => _.signatures.ethereum.signature));
 
     await waitForTx(
       l1OracleAuth.requestMint(
@@ -205,7 +209,6 @@ task("teleport-initiate", "Test Fast Withdrawal Integration")
 task("teleport-finalizeFlush", "Finalize flush")
   .addParam("amount", "Flush amount", undefined, types.int)
   .setAction(async ({ amount }, hre) => {
-
     const { network, NETWORK } = getNetwork(hre);
 
     const [signer] = await hre.ethers.getSigners();
@@ -231,7 +234,6 @@ task("teleport-finalizeFlush", "Finalize flush")
 task("teleport-finalizeRegisterTeleport", "Finalize register teleport")
   .addParam("tx", "Tx hash amount")
   .setAction(async ({ tx }, hre) => {
-
     const { network, NETWORK } = getNetwork(hre);
 
     const [signer] = await hre.ethers.getSigners();
@@ -263,6 +265,3 @@ task("teleport-finalizeRegisterTeleport", "Finalize register teleport")
       )
     );
   });
-function asUint(amount: any) {
-  throw new Error("Function not implemented.");
-}
