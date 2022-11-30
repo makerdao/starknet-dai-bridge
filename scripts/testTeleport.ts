@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ethers } from "ethers";
+import { ethers, BigNumber } from "ethers";
 import { task, types } from "hardhat/config";
 
 import { asDec } from "../test/utils";
@@ -204,12 +204,15 @@ task("teleport-requestMint", "mint teleport")
 
     console.log("\nCalling oracle auth");
 
+    const signatures = attestations
+    .map((_) => _.signatures.ethereum)
+    .sort((a, b) => (BigNumber.from(`0x${a.signer}`).lt(BigNumber.from(`0x${b.signer}`)) ? -1 : 1))
+    .map((_) => _.signature)
+
     await waitForTx(
       l1OracleAuth.requestMint(
         Object.values(parseTeleportGUID(attestations[0].data.event)),
-        `0x${attestations
-          .map((_) => _.signatures.ethereum.signature)
-          .join("")}`,
+        `0x${signatures.join("")}`,
         "0x0",
         "0x0"
       )
