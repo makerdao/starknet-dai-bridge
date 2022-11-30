@@ -14,6 +14,7 @@ import {
 const oracleAuthIface = new ethers.utils.Interface([
   "function requestMint((bytes32, bytes32, bytes32, bytes32, uint128, uint80, uint48), bytes, uint256, uint256)",
   "function signers(address) view returns (uint256)",
+  "function threshold() view returns (uint256)",
 ]);
 
 async function waitForL2Tx(txHash: Promise<string>, hre: any): Promise<any> {
@@ -184,15 +185,24 @@ task("teleport-requestMint", "mint teleport")
       attestations = response.data as Attestation[];
     }
 
+    console.log(`\nGot ${attestations.length} attestations`);
+
     const l1OracleAuth = new ethers.Contract(
       getAddress("TELEPORT_ORACLE_AUTH", NETWORK),
       oracleAuthIface,
       signer
     );
 
-    console.log("\nCalling oracle auth");
+    const threshold = await l1OracleAuth.threshold();
 
-    console.log(attestations.map((_) => _.signatures.ethereum.signature));
+    if (attestations.length < threshold) {
+      console.warn(
+        `\nNumer of attestations below the threshold(${threshold})!`
+      );
+      return;
+    }
+
+    console.log("\nCalling oracle auth");
 
     await waitForTx(
       l1OracleAuth.requestMint(
