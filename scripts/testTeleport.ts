@@ -1,9 +1,8 @@
 import axios from "axios";
-import { ethers, BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { task, types } from "hardhat/config";
-import { bnToUint256 } from "starknet/dist/utils/uint256";
 
-import { asDec, split, SplitUint } from "../test/utils";
+import { asDec, SplitUint } from "../test/utils";
 import {
   getAccount,
   getNetwork,
@@ -224,9 +223,13 @@ task("teleport-requestMint", "mint teleport")
 
 function getSignatures(attestations: Attestation[]) {
   return attestations
-  .map((_) => _.signatures.ethereum)
-  .sort((a, b) => (BigNumber.from(`0x${a.signer}`).lt(BigNumber.from(`0x${b.signer}`)) ? -1 : 1))
-  .map((_) => _.signature)
+    .map((_) => _.signatures.ethereum)
+    .sort((a, b) =>
+      BigNumber.from(`0x${a.signer}`).lt(BigNumber.from(`0x${b.signer}`))
+        ? -1
+        : 1
+    )
+    .map((_) => _.signature);
 }
 
 task("teleport-finalizeFlush", "Finalize flush")
