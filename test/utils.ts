@@ -60,7 +60,7 @@ function asHex(a: string | number | bigint | BigNumber): string {
     : BigInt(a).toString(16);
 }
 
-export function split(a: BigNumber): bigint[] {
+export function split(a: numberish): bigint[] {
   return SplitUint.fromUint(a).toArray();
 }
 

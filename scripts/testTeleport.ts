@@ -1,8 +1,9 @@
 import axios from "axios";
 import { ethers, BigNumber } from "ethers";
 import { task, types } from "hardhat/config";
+import { bnToUint256 } from "starknet/dist/utils/uint256";
 
-import { asDec } from "../test/utils";
+import { asDec, split, SplitUint } from "../test/utils";
 import {
   getAccount,
   getNetwork,
@@ -116,11 +117,11 @@ task("teleport-initiate", "Test Fast Withdrawal Integration")
       spender: l2TeleportGateway.address,
     });
 
-    if (transferAmount > l2GatewayAllowance) {
+    if (transferAmount > new SplitUint(l2GatewayAllowance).toUint()) {
       console.log("\nApproving L2 Teleport Gateway");
       await l2Auth.estimateAndInvoke(l2Dai, "approve", {
         spender: asDec(l2TeleportGateway.address),
-        amount: transferAmount,
+        amount: SplitUint.fromUint(transferAmount).res,
       });
     }
 
@@ -131,7 +132,7 @@ task("teleport-initiate", "Test Fast Withdrawal Integration")
       l2Auth.estimateAndInvoke(l2TeleportGateway, "initiate_teleport", {
         target_domain: l2String(TRG_DOMAIN),
         receiver: signer.address,
-        amount: BigInt(amount),
+        amount: transferAmount,
         operator: signer.address,
       }),
       hre
@@ -146,13 +147,20 @@ task("teleport-initiate", "Test Fast Withdrawal Integration")
       attestations = response.data as Attestation[];
     }
 
+    const threshold = await l1OracleAuth.threshold();
+
+    if (attestations.length < threshold) {
+      console.warn(
+        `\nNumer of attestations below the threshold(${threshold})!`
+      );
+      return;
+    }
+
     console.log("\nCalling oracle auth");
     await waitForTx(
       l1OracleAuth.requestMint(
         Object.values(parseTeleportGUID(attestations[0].data.event)),
-        `0x${attestations
-          .map((_) => _.signatures.ethereum.signature)
-          .join("")}`,
+        `0x${getSignatures(attestations).join("")}`,
         "0x0",
         "0x0"
       )
@@ -204,20 +212,22 @@ task("teleport-requestMint", "mint teleport")
 
     console.log("\nCalling oracle auth");
 
-    const signatures = attestations
-    .map((_) => _.signatures.ethereum)
-    .sort((a, b) => (BigNumber.from(`0x${a.signer}`).lt(BigNumber.from(`0x${b.signer}`)) ? -1 : 1))
-    .map((_) => _.signature)
-
     await waitForTx(
       l1OracleAuth.requestMint(
         Object.values(parseTeleportGUID(attestations[0].data.event)),
-        `0x${signatures.join("")}`,
+        `0x${getSignatures(attestations).join("")}`,
         "0x0",
         "0x0"
       )
     );
   });
+
+function getSignatures(attestations: Attestation[]) {
+  return attestations
+  .map((_) => _.signatures.ethereum)
+  .sort((a, b) => (BigNumber.from(`0x${a.signer}`).lt(BigNumber.from(`0x${b.signer}`)) ? -1 : 1))
+  .map((_) => _.signature)
+}
 
 task("teleport-finalizeFlush", "Finalize flush")
   .addParam("amount", "Flush amount", undefined, types.int)
