@@ -32,7 +32,7 @@ jobs:
 
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
-      - run: yarn eth-sdk
+      # - run: yarn eth-sdk
 
       - run: yarn test:l1
 
@@ -101,11 +101,11 @@ jobs:
 
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
-      - run: yarn eth-sdk
+      # - run: yarn eth-sdk
 
       - name: Install deps
         run: |
-           python3.8 -m pip install --upgrade pip
+           python3.9 -m pip install --upgrade pip
            pip install poetry
            if [ -f pyproject.toml ]; then poetry install; fi
 

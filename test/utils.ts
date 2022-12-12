@@ -30,7 +30,7 @@ export class SplitUint {
 
   toUint(): bigint {
     const _a = this.toArray();
-    return BigInt(`0x${_a[1].toString(16)}${_a[0].toString(16)}`);
+    return _a[0] + 2n ** 128n * _a[1];
   }
 
   add(_a: SplitUint | numberish): SplitUint {
@@ -60,7 +60,7 @@ function asHex(a: string | number | bigint | BigNumber): string {
     : BigInt(a).toString(16);
 }
 
-export function split(a: BigNumber): bigint[] {
+export function split(a: numberish): bigint[] {
   return SplitUint.fromUint(a).toArray();
 }
 

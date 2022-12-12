@@ -1,17 +1,20 @@
 import axios from "axios";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { task, types } from "hardhat/config";
 
-import { asDec } from "../test/utils";
-import { getAccount, getRequiredEnv, l2String, waitForTx } from "./utils";
-
-const L2_TARGET_DOMAIN = l2String("GOERLI-MASTER-1");
-
-const L1_TARGET_DOMAIN = ethers.utils.formatBytes32String("GOERLI-MASTER-1");
+import { asDec, SplitUint } from "../test/utils";
+import {
+  getAccount,
+  getNetwork,
+  getRequiredEnv,
+  l2String,
+  waitForTx,
+} from "./utils";
 
 const oracleAuthIface = new ethers.utils.Interface([
   "function requestMint((bytes32, bytes32, bytes32, bytes32, uint128, uint80, uint48), bytes, uint256, uint256)",
   "function signers(address) view returns (uint256)",
+  "function threshold() view returns (uint256)",
 ]);
 
 async function waitForL2Tx(txHash: Promise<string>, hre: any): Promise<any> {
@@ -65,12 +68,17 @@ async function getL2Contract(
   return contractFactory.getContractAt(contractAddress);
 }
 
-task("integration", "Test Fast Withdrawal Integration")
+task("teleport-initiate", "Test Fast Withdrawal Integration")
   .addParam("amount", "FW amount", undefined, types.int)
   .setAction(async ({ amount }, hre) => {
-    const NETWORK = "ALPHA_GOERLI";
+    const { network, NETWORK } = getNetwork(hre);
+
     const [signer] = await hre.ethers.getSigners();
-    const l2Auth = await getAccount("user", hre);
+    const l2Auth = await getAccount("deployer", hre);
+
+    const TRG_DOMAIN = getRequiredEnv(`${NETWORK}_TRG_DOMAIN`);
+
+    console.log(`Testing teleport on:`, network);
 
     console.log("From");
     console.log(`\tl2 account: ${l2Auth.starknetContract.address.toString()}`);
@@ -79,7 +87,7 @@ task("integration", "Test Fast Withdrawal Integration")
 
     const l1Dai = await getL1Contract(
       "DAIMock",
-      getRequiredEnv(`${NETWORK}_L1_DAI_ADDRESS`),
+      getAddress("L1_DAI", NETWORK),
       hre
     );
 
@@ -96,30 +104,32 @@ task("integration", "Test Fast Withdrawal Integration")
     );
 
     const l1OracleAuth = new ethers.Contract(
-      getRequiredEnv(`${NETWORK}_TELEPORT_ORACLE_AUTH_ADDRESS`),
+      getAddress("TELEPORT_ORACLE_AUTH", NETWORK),
       oracleAuthIface,
       signer
     );
 
-    const transferAmount = asDec(amount);
+    const transferAmount = BigInt(amount);
 
-    const { res: _l2GatewayAllowance } = await l2Dai.call("allowance", {
+    const { res: l2GatewayAllowance } = await l2Dai.call("allowance", {
       owner: l2Auth.starknetContract.address,
       spender: l2TeleportGateway.address,
     });
 
-    console.log("\nApproving L2 Teleport Gateway");
-    await l2Auth.estimateAndInvoke(l2Dai, "approve", {
-      spender: asDec(l2TeleportGateway.address),
-      amount: transferAmount,
-    });
+    if (transferAmount > new SplitUint(l2GatewayAllowance).toUint()) {
+      console.log("\nApproving L2 Teleport Gateway");
+      await l2Auth.estimateAndInvoke(l2Dai, "approve", {
+        spender: asDec(l2TeleportGateway.address),
+        amount: SplitUint.fromUint(transferAmount).res,
+      });
+    }
 
     const l1Balance = await l1Dai.balanceOf(signer.address);
 
-    console.log("\nInitiating teleport");
+    console.log(`\nInitiating teleport to: ${TRG_DOMAIN}`);
     const tx = await waitForL2Tx(
       l2Auth.estimateAndInvoke(l2TeleportGateway, "initiate_teleport", {
-        target_domain: L2_TARGET_DOMAIN,
+        target_domain: l2String(TRG_DOMAIN),
         receiver: signer.address,
         amount: transferAmount,
         operator: signer.address,
@@ -136,13 +146,20 @@ task("integration", "Test Fast Withdrawal Integration")
       attestations = response.data as Attestation[];
     }
 
+    const threshold = await l1OracleAuth.threshold();
+
+    if (attestations.length < threshold) {
+      console.warn(
+        `\nNumer of attestations below the threshold(${threshold})!`
+      );
+      return;
+    }
+
     console.log("\nCalling oracle auth");
     await waitForTx(
       l1OracleAuth.requestMint(
         Object.values(parseTeleportGUID(attestations[0].data.event)),
-        `0x${attestations
-          .map((_) => _.signatures.ethereum.signature)
-          .join("")}`,
+        `0x${getSignatures(attestations).join("")}`,
         "0x0",
         "0x0"
       )
@@ -154,11 +171,75 @@ task("integration", "Test Fast Withdrawal Integration")
     After: ${BigInt(newL1Balance.toHexString())}`);
   });
 
-task("settle", "Settle")
-  .addParam("amount", "Settle amount", undefined, types.int)
-  .setAction(async ({ amount }, hre) => {
-    const NETWORK = "ALPHA_GOERLI_INT";
+task("teleport-requestMint", "mint teleport")
+  .addParam("tx", "Tx hash amount")
+  .setAction(async ({ tx }, hre) => {
+    const { network, NETWORK } = getNetwork(hre);
+
     const [signer] = await hre.ethers.getSigners();
+
+    console.log(`Testing requestMint on:`, network);
+
+    console.log("From");
+    console.log(`\tl1 account: ${signer.address.toString()}`);
+
+    console.log(`\nGetting attestation for tx: ${tx}`);
+    const oracleUrlKey = getRequiredEnv(`${NETWORK}_ORACLE_URL`);
+    const url = `${oracleUrlKey}/?type=teleport_starknet&index=${tx}`;
+    let attestations: Attestation[] = [];
+    while (attestations.length === 0) {
+      const response = await axios.get(url);
+      attestations = response.data as Attestation[];
+    }
+
+    console.log(`\nGot ${attestations.length} attestations`);
+
+    const l1OracleAuth = new ethers.Contract(
+      getAddress("TELEPORT_ORACLE_AUTH", NETWORK),
+      oracleAuthIface,
+      signer
+    );
+
+    const threshold = await l1OracleAuth.threshold();
+
+    if (attestations.length < threshold) {
+      console.warn(
+        `\nNumer of attestations below the threshold(${threshold})!`
+      );
+      return;
+    }
+
+    console.log("\nCalling oracle auth");
+
+    await waitForTx(
+      l1OracleAuth.requestMint(
+        Object.values(parseTeleportGUID(attestations[0].data.event)),
+        `0x${getSignatures(attestations).join("")}`,
+        "0x0",
+        "0x0"
+      )
+    );
+  });
+
+function getSignatures(attestations: Attestation[]) {
+  return attestations
+    .map((_) => _.signatures.ethereum)
+    .sort((a, b) =>
+      BigNumber.from(`0x${a.signer}`).lt(BigNumber.from(`0x${b.signer}`))
+        ? -1
+        : 1
+    )
+    .map((_) => _.signature);
+}
+
+task("teleport-finalizeFlush", "Finalize flush")
+  .addParam("amount", "Flush amount", undefined, types.int)
+  .setAction(async ({ amount }, hre) => {
+    const { network, NETWORK } = getNetwork(hre);
+
+    const [signer] = await hre.ethers.getSigners();
+
+    const TRG_DOMAIN = getRequiredEnv(`${NETWORK}_TRG_DOMAIN`);
 
     const l1TeleportGateway = await getL1Contract(
       "L1DAITeleportGateway",
@@ -166,19 +247,24 @@ task("settle", "Settle")
       hre
     );
 
+    console.log(`Testing settle on:`, network);
+
     console.log("From");
     console.log(`\tl1 account: ${signer.address.toString()}`);
     console.log(`teleport debt: ${await l1TeleportGateway.debt()}`);
 
     console.log("Finalising flush");
-    await waitForTx(l1TeleportGateway.finalizeFlush(L1_TARGET_DOMAIN, amount));
+    await waitForTx(l1TeleportGateway.finalizeFlush(TRG_DOMAIN, amount));
   });
 
-task("finalizeRegisterTeleport", "Finalize register teleport")
+task("teleport-finalizeRegisterTeleport", "Finalize register teleport")
   .addParam("tx", "Tx hash amount")
   .setAction(async ({ tx }, hre) => {
-    const NETWORK = "ALPHA_GOERLI_INT";
+    const { network, NETWORK } = getNetwork(hre);
+
     const [signer] = await hre.ethers.getSigners();
+
+    console.log(`Testing finalizeRegisterTeleport on:`, network);
 
     console.log("From");
     console.log(`\tl1 account: ${signer.address.toString()}`);
