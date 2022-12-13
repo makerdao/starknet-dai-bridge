@@ -9,7 +9,7 @@ import hre from "hardhat";
 
 const allowanceLimit = 100;
 
-describe("escrow", () => {
+describe("l1:escrow", () => {
   describe("approve", () => {
     it("sets approval on erc20 tokens", async () => {
       const { l1Alice, dai, escrow } = await setupTest();

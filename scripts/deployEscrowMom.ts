@@ -13,8 +13,6 @@ import {
 } from "./utils";
 
 task("deploy-escrow-mom", "Deploy L1EscrowMom").setAction(async (_, hre) => {
-  const [l1Signer] = await hre.ethers.getSigners();
-
   const { network, NETWORK } = getNetwork(hre);
 
   console.log(`Deploying escrow mom on: ${network}`);
@@ -32,9 +30,6 @@ task("deploy-escrow-mom", "Deploy L1EscrowMom").setAction(async (_, hre) => {
     `\tl1 account: ${(await hre.ethers.getSigners())[0].address.toString()}`
   );
 
-  // @ts-ignore
-  const BLOCK_NUMBER = await l1Signer.provider.getBlockNumber();
-
   const gasPrice = getOptionalEnv(`${NETWORK}_GAS_PRICE`);
   const gasOverrides = gasPrice
     ? { gasPrice: utils.parseUnits(gasPrice, "gwei") }
@@ -47,7 +42,6 @@ task("deploy-escrow-mom", "Deploy L1EscrowMom").setAction(async (_, hre) => {
   const l1EscrowMom = await deployL1(
     hre,
     "L1EscrowMom",
-    BLOCK_NUMBER,
     [L1_ESCROW_ADDRESS, L1_DAI_ADDRESS],
     gasOverrides
   );

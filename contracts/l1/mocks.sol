@@ -13,13 +13,35 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.7.6;
-
+pragma solidity ^0.8.14;
+pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./TeleportGUID.sol";
 
 contract DAIMock is ERC20 {
     constructor () ERC20('DAI', 'DAI') {
         _mint(msg.sender, 1_000_000 * 1 ether);
     }
+}
+
+// slither-disable-next-line missing-inheritance
+contract TeleportRouterMock {
+
+  event RequestMint(TeleportGUID teleportGUID, uint256 maxFeePercentage, uint256 operatorFee);
+  event Settle(bytes32 targetDomain, uint256 batchedDaiToFlush);
+
+  function requestMint(
+    TeleportGUID calldata teleportGUID,
+    uint256 maxFeePercentage,
+    uint256 operatorFee
+  ) external returns (uint256 postFeeAmount, uint256 totalFee) {
+    emit RequestMint(teleportGUID, maxFeePercentage, operatorFee);
+    postFeeAmount = maxFeePercentage;
+    totalFee = operatorFee;
+  }
+
+  function settle(bytes32 targetDomain, uint256 batchedDaiToFlush) external {
+    emit Settle(targetDomain, batchedDaiToFlush);
+  }
 }

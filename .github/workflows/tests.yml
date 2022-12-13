@@ -1,10 +1,6 @@
 name: Tests
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
+on: [push, pull_request]
 
 jobs:
   test:
@@ -18,7 +14,7 @@ jobs:
       - name: Set up node
         uses: actions/setup-node@v2
         with:
-          node-version: 12.x
+          node-version: 16
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -36,6 +32,8 @@ jobs:
 
       - run: yarn --no-progress --non-interactive --frozen-lockfile
 
+      # - run: yarn eth-sdk
+
       - run: yarn test:l1
 
   test2:
@@ -49,7 +47,7 @@ jobs:
       - name: Set up python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
@@ -58,6 +56,60 @@ jobs:
         run: cp .env.ci .env
 
       - name: Install deps
-        run: pip install -r requirements.txt
+        run: |
+           pip install poetry
+           if [ -f pyproject.toml ]; then poetry install; fi
 
-      - run: pytest ./test/l2/* --disable-pytest-warnings
+      - name: Run tests
+        run: poetry run pytest ./test/l2/* --disable-pytest-warnings
+
+  teste2e:
+    name: E2E Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: Set up node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+
+      - name: Set up CI env
+        run: cp .env.ci .env
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Cache YARN dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-
+
+      - run: yarn --no-progress --non-interactive --frozen-lockfile
+
+      # - run: yarn eth-sdk
+
+      - name: Install deps
+        run: |
+           python3.9 -m pip install --upgrade pip
+           pip install poetry
+           if [ -f pyproject.toml ]; then poetry install; fi
+
+      - run: npx hardhat compile --force
+      - run: yarn compile:l2
+
+      - run: poetry run yarn test:e2e:ci

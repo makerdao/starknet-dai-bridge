@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.14;
 
 interface TokenLike {
     function transferFrom(
@@ -30,7 +30,7 @@ interface StarkNetLike {
         uint256 to,
         uint256 selector,
         uint256[] calldata payload
-    ) external returns (bytes32);
+    ) external payable returns (bytes32);
 
     function consumeMessageFromL2(
         uint256 from,
@@ -155,7 +155,7 @@ contract L1DAIBridge {
     function deposit(
         uint256 amount,
         uint256 l2Recipient
-    ) external whenOpen {
+    ) external payable whenOpen {
         emit LogDeposit(msg.sender, amount, l2Recipient);
 
         require(l2Recipient != 0 && l2Recipient != l2Dai && l2Recipient < SN_PRIME, "L1DAIBridge/invalid-address");
@@ -174,7 +174,7 @@ contract L1DAIBridge {
         (payload[1], payload[2]) = toSplitUint(amount);
         payload[3] = uint256(uint160(msg.sender));
 
-        StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, DEPOSIT, payload);
+        StarkNetLike(starkNet).sendMessageToL2{value: msg.value}(l2DaiBridge, DEPOSIT, payload);
     }
 
     function toSplitUint(uint256 value) internal pure returns (uint256, uint256) {
@@ -196,7 +196,7 @@ contract L1DAIBridge {
         TokenLike(dai).transferFrom(escrow, l1Recipient, amount);
     }
 
-    function forceWithdrawal(uint256 amount, uint256 l2Sender) external whenOpen {
+    function forceWithdrawal(uint256 amount, uint256 l2Sender) external payable whenOpen {
         emit LogForceWithdrawal(msg.sender, amount, l2Sender);
 
         uint256[] memory payload = new uint256[](4);
@@ -204,7 +204,7 @@ contract L1DAIBridge {
         payload[1] = uint256(uint160(msg.sender));
         (payload[2], payload[3]) = toSplitUint(amount);
 
-        StarkNetLike(starkNet).sendMessageToL2(l2DaiBridge, FORCE_WITHDRAW, payload);
+        StarkNetLike(starkNet).sendMessageToL2{value: msg.value}(l2DaiBridge, FORCE_WITHDRAW, payload);
     }
 
     function startDepositCancellation(

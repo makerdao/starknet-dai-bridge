@@ -4,29 +4,24 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
-import "./scripts/interact";
-import "./scripts/deployDeployer";
 import "./scripts/deployBridge";
 import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
-import "./scripts/account";
-import "./scripts/fork";
+import "./scripts/deployTeleport";
 import "./scripts/wards";
+import "./scripts/testTeleport";
+import "./scripts/deployGovRelayUpgrade";
 
 import { config as dotenvConfig } from "dotenv";
-// import { HardhatUserConfig } from "hardhat/config";
 import { NetworkUserConfig } from "hardhat/types";
 import { resolve } from "path";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
 const chainIds = {
-  goerli: 5,
-  hardhat: 31337,
-  kovan: 42,
   mainnet: 1,
-  rinkeby: 4,
-  ropsten: 3,
+  goerli: 5,
+  localhost: 31337,
 };
 
 // Ensure that we have all the environment variables we need.
@@ -40,6 +35,30 @@ if (!infuraApiKey) {
   throw new Error("Please set your INFURA_API_KEY in a .env file");
 }
 
+function getStarknetNetwork() {
+  const i = process.argv.indexOf("--network");
+  if (i === -1) {
+    return "alpha-goerli";
+  }
+  const network = process.argv[i + 1];
+  if (["alpha-goerli", "alpha-mainnet", "localhost"].indexOf(network) === -1) {
+    throw new Error(`Wrong network: ${network}`);
+  }
+
+  if (network === "localhost") {
+    return "devnet";
+  }
+
+  return network;
+}
+
+let test: string;
+if (process.env.TEST_ENV === "e2e") {
+  test = "e2e";
+} else {
+  test = "l1:*";
+}
+
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;
 
@@ -48,14 +67,11 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
     url,
     gasMultiplier: 1.5,
   };
-  if (
-    network === "mainnet" &&
-    process.env.STARKNET_NETWORK === "alpha-mainnet" &&
-    process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"]
-  ) {
+  const ALPHA_MAINNET_PK = process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"];
+  if (network === "mainnet" && ALPHA_MAINNET_PK) {
     return {
       ...common,
-      accounts: [process.env["ALPHA_MAINNET_DEPLOYER_PRIVATE_KEY"]],
+      accounts: [ALPHA_MAINNET_PK],
       gasMultiplier: 3,
     };
   }
@@ -70,36 +86,31 @@ function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   };
 }
 
-const config: any = {
+const config = {
   defaultNetwork: "hardhat",
   networks: {
-    goerli: getChainConfig("goerli"),
-    mainnet: getChainConfig("mainnet"),
-    fork: {
+    "alpha-goerli": getChainConfig("goerli"),
+    "alpha-mainnet": getChainConfig("mainnet"),
+    localhost: {
       url: "http://127.0.0.1:8545",
     },
     devnet: {
-      url: "http://127.0.0.1:5000",
-    },
-    hardhat: {
-      forking: {
-        url: `https://mainnet.infura.io/v3/${infuraApiKey}`,
-        enabled: process.env.NODE_ENV !== "test",
-      },
-      accounts: {
-        count: 10,
-        mnemonic,
-        path: "m/44'/60'/0'/0",
-      },
+      //starknet devnet endpoint
+      url: "http://127.0.0.1:5050",
     },
   },
   starknet: {
-    dockerizedVersion: "0.8.1",
-    network:
-      process.env.NODE_ENV !== "test" ? process.env.STARKNET_NETWORK : "devnet",
+    dockerizedVersion: "0.10.0",
+    network: getStarknetNetwork(),
     wallets: {
       user: {
-        accountName: "OpenZeppelin",
+        accountName: "user",
+        modulePath:
+          "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
+        accountPath: "~/.starknet_accounts",
+      },
+      deployer: {
+        accountName: "deployer",
         modulePath:
           "starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount",
         accountPath: "~/.starknet_accounts",
@@ -114,26 +125,13 @@ const config: any = {
     starknetSources: "./contracts",
     starknetArtifacts: "./starknet-artifacts",
   },
+  mocha: {
+    grep: test,
+  },
   solidity: {
     compilers: [
       {
-        version: "0.7.6",
-        settings: {
-          metadata: {
-            // Not including the metadata hash
-            // https://github.com/paulrberg/solidity-template/issues/31
-            bytecodeHash: "none",
-          },
-          // Disable the optimizer when debugging
-          // https://hardhat.org/hardhat-network/#solidity-optimizer-support
-          optimizer: {
-            enabled: true,
-            runs: 800,
-          },
-        },
-      },
-      {
-        version: "0.6.11",
+        version: "0.8.14",
         settings: {
           metadata: {
             // Not including the metadata hash

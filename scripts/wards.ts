@@ -13,17 +13,18 @@ function chainId(network: string) {
 }
 
 async function inspectL2Wards(network: string, key: string) {
-  const address = `0x${BigInt(getRequiredEnv(key)).toString(16)}`;
-
-  const url = `http://starknet.events/api/v1/get_events?chain_id=${chainId(
+  // const address = `0x${BigInt(getRequiredEnv(key)).toString(16)}`;
+  const address = getRequiredEnv(key);
+  const url = `https://beta.starknet.events/api/v1/get_events?chainId=${chainId(
     network
-  )}&contract=${address}&from_block=0&name=Rely&name=Deny`;
+  )}&contract=${address}&fromBlock=0&toBlock=100000000&name=Rely&name=Deny&page_size=100&page_number=1`;
   const response: any = await axios.get(url);
-  const log = response.data.items.map(
+  console.assert(response.data.is_last_page, "not-last-page");
+  const log = response.data.events.map(
     (event: any) =>
       `${event.timestamp} - ${event.name} ${event.parameters[0].value}`
   );
-  const wards = response.data.items.reduce((s: Set<string>, event: any) => {
+  const wards = response.data.events.reduce((s: Set<string>, event: any) => {
     if (event.name === "Rely") {
       s.add(event.parameters[0].value);
     } else {
@@ -162,13 +163,18 @@ task("inspect-wards", "Inspect wards").setAction(async (_, hre) => {
     `${NETWORK}_L1_ESCROW_ADDRESS`,
     startingBlock
   );
-  await inspectL1Wards(hre.ethers, `${NETWORK}_L1_DAI_BRIDGE`, startingBlock);
   await inspectL1Wards(
     hre.ethers,
-    `${NETWORK}_L1_GOVERNANCE_RELAY`,
+    `${NETWORK}_L1_DAI_BRIDGE_ADDRESS`,
+    startingBlock
+  );
+  await inspectL1Wards(
+    hre.ethers,
+    `${NETWORK}_L1_GOVERNANCE_RELAY_ADDRESS`,
     startingBlock
   );
 
   await inspectL2Wards(NETWORK, `${NETWORK}_L2_DAI_ADDRESS`);
-  await inspectL2Wards(NETWORK, `${NETWORK}_L2_DAI_BRIDGE`);
+  await inspectL2Wards(NETWORK, `${NETWORK}_L2_DAI_BRIDGE_ADDRESS`);
+  await inspectL2Wards(NETWORK, `${NETWORK}_L2_DAI_TELEPORT_GATEWAY_ADDRESS`);
 });

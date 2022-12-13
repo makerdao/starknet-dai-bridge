@@ -7,8 +7,11 @@ from types import SimpleNamespace
 import time
 
 from starkware.starknet.compiler.compile import compile_starknet_files
-from starkware.starknet.testing.starknet import Starknet, StarknetContract
+from starkware.starknet.testing.starknet import Starknet, StarknetContract, DeclaredClass
 from starkware.starknet.business_logic.state.state import BlockInfo
+from starkware.starknet.business_logic.execution.objects import Event
+from starkware.starknet.public.abi import get_selector_from_name
+from itertools import chain
 
 from Signer import Signer
 
@@ -18,6 +21,34 @@ sys.stdout = sys.stderr
 SUPER_ADJUDICATOR_L1_ADDRESS = 0
 CONTRACT_SRC = [os.path.dirname(__file__), "..", "..", "contracts", "starknet"]
 
+VALID_DOMAINS = int.from_bytes("valid_domains".encode(), byteorder="big")
+TARGET_DOMAIN = get_selector_from_name("optimism")
+
+###########
+# HELPERS #
+###########
+def check_event(contract, event_name, tx, values):
+    expected_event = Event(
+        from_address=contract.contract_address,
+        keys=[get_selector_from_name(event_name)],
+        data=list(chain(*[e if isinstance(e, tuple) else [e] for e in values]))
+    )
+    assert expected_event in ( tx.raw_events if hasattr(tx, 'raw_events') else tx.get_sorted_events())
+
+
+def to_split_uint(a):
+    return (a & ((1 << 128) - 1), a >> 128)
+
+
+def to_uint(a):
+    return a[0] + (a[1] << 128)
+
+
+async def deploy_account(starknet, signer, source):
+    return await starknet.deploy(
+        source=source,
+        constructor_calldata=[signer.public_key],
+    )
 
 def compile(path):
     return compile_starknet_files(
@@ -32,19 +63,8 @@ def get_block_timestamp(starknet_state):
 
 
 def set_block_timestamp(starknet_state, timestamp):
-    starknet_state.state.block_info = BlockInfo(
-        starknet_state.state.block_info.block_number, timestamp, 0
-    )
-
-
-def to_split_uint(a):
-    return (a & ((1 << 128) - 1), a >> 128)
-
-
-async def deploy_account(starknet, signer, source):
-    return await starknet.deploy(
-        source=source,
-        constructor_calldata=[signer.public_key],
+    starknet_state.state.block_info = BlockInfo.create_for_testing(
+        starknet_state.state.block_info.block_number, timestamp
     )
 
 
@@ -57,7 +77,7 @@ def serialize_contract(contract, abi):
     return dict(
         abi=abi,
         contract_address=contract.contract_address,
-        deploy_execution_info=contract.deploy_execution_info,
+        deploy_call_info=contract.deploy_call_info,
     )
 
 
@@ -79,6 +99,7 @@ L2_CONTRACTS_DIR = os.path.join(os.getcwd(), "contracts/l2")
 ACCOUNT_FILE = os.path.join(L2_CONTRACTS_DIR, "account.cairo")
 DAI_FILE = os.path.join(L2_CONTRACTS_DIR, "dai.cairo")
 BRIDGE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_bridge.cairo")
+TELEPORT_GATEWAY_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_dai_teleport_gateway.cairo")
 SPELL_FILE = os.path.join(L2_CONTRACTS_DIR, "sample_spell.cairo")
 REGISTRY_FILE = os.path.join(L2_CONTRACTS_DIR, "registry.cairo")
 GOVERNANCE_FILE = os.path.join(L2_CONTRACTS_DIR, "l2_governance_relay.cairo")
@@ -128,6 +149,19 @@ async def build_copyable_deployment():
         ],
     )
 
+    l2_teleport_gateway = await starknet.deploy(
+        source=TELEPORT_GATEWAY_FILE,
+        constructor_calldata=[
+            accounts.auth_user.contract_address,
+            dai.contract_address,
+            L1_ADDRESS,
+            get_selector_from_name("starknet"),
+        ],
+    )
+    await l2_teleport_gateway.file(
+        VALID_DOMAINS, TARGET_DOMAIN, 1,
+    ).execute(accounts.auth_user.contract_address)
+
     contract = '''%%lang starknet
         %%builtins pedersen range_check
 
@@ -135,66 +169,67 @@ async def build_copyable_deployment():
         from starkware.cairo.common.uint256 import Uint256
 
         @contract_interface
-        namespace IDAI:
-          func mint(account: felt, amount: Uint256) -> ():
-          end
-        end
+        namespace IDAI {
+          func mint(account: felt, amount: Uint256) -> () {
+          }
+        }
 
         @external
         func execute{
             syscall_ptr : felt*,
             pedersen_ptr : HashBuiltin*,
             range_check_ptr
-          }():
-            let dai = %s
-            let user = %s
-            let amount = Uint256(low=10, high=0)
-            IDAI.mint(contract_address=dai, account=user, amount=amount)
+          }() {
+            let dai = %s;
+            let user = %s;
+            let amount = Uint256(low=10, high=0);
+            IDAI.mint(contract_address=dai, account=user, amount=amount);
 
-            return ()
-        end''' % (dai.contract_address, accounts.user1.contract_address)
+            return ();
+        }''' % (dai.contract_address, accounts.user1.contract_address)
 
     with open(SPELL_FILE, 'w') as f:
         f.write(contract)
 
-    sample_spell = await starknet.deploy(source=SPELL_FILE)
+    sample_spell = await starknet.declare(source=SPELL_FILE)
 
     await registry.set_L1_address(
-            int(L1_ADDRESS)).invoke(accounts.auth_user.contract_address)
+            int(L1_ADDRESS)).execute(accounts.auth_user.contract_address)
     await registry.set_L1_address(
-            int(L1_ADDRESS)).invoke(accounts.user1.contract_address)
+            int(L1_ADDRESS)).execute(accounts.user1.contract_address)
     await registry.set_L1_address(
-            int(L1_ADDRESS)).invoke(accounts.user2.contract_address)
+            int(L1_ADDRESS)).execute(accounts.user2.contract_address)
     await registry.set_L1_address(
-            int(L1_ADDRESS)).invoke(accounts.user3.contract_address)
-
-    print("-------------------------------------------")
-    print(l2_bridge.contract_address)
-    print("-------------------------------------------")
+            int(L1_ADDRESS)).execute(accounts.user3.contract_address)
 
     await dai.rely(
             l2_bridge.contract_address,
-        ).invoke(accounts.auth_user.contract_address)
+        ).execute(accounts.auth_user.contract_address)
     await dai.rely(
             l2_governance_relay.contract_address,
-        ).invoke(accounts.auth_user.contract_address)
+        ).execute(accounts.auth_user.contract_address)
     await l2_bridge.rely(
             l2_governance_relay.contract_address,
-        ).invoke(accounts.auth_user.contract_address)
+        ).execute(accounts.auth_user.contract_address)
 
     defs = SimpleNamespace(
         account=compile(ACCOUNT_FILE),
         dai=compile(DAI_FILE),
         l2_bridge=compile(BRIDGE_FILE),
-        sample_spell=compile(SPELL_FILE),
+        l2_teleport_gateway=compile(TELEPORT_GATEWAY_FILE),
         registry=compile(REGISTRY_FILE),
         l2_governance_relay=compile(GOVERNANCE_FILE),
     )
-    os.remove(SPELL_FILE)
+
+    try:
+        os.remove(SPELL_FILE)
+    except OSError as error:
+        # ignoring the error in case of parallel execution
+        pass
 
     await dai.rely(
             l2_bridge.contract_address,
-        ).invoke(accounts.auth_user.contract_address)
+        ).execute(accounts.auth_user.contract_address)
 
     consts = SimpleNamespace(
     )
@@ -202,23 +237,24 @@ async def build_copyable_deployment():
     # intialize two users with 100 DAI
     await dai.mint(
             accounts.user1.contract_address,
-            to_split_uint(100)).invoke(accounts.auth_user.contract_address)
+            to_split_uint(100)).execute(accounts.auth_user.contract_address)
     await dai.mint(
             accounts.user2.contract_address,
-            to_split_uint(100)).invoke(accounts.auth_user.contract_address)
+            to_split_uint(100)).execute(accounts.auth_user.contract_address)
 
     return SimpleNamespace(
         starknet=starknet,
         consts=consts,
         signers=signers,
+        sample_spell=sample_spell,
         serialized_contracts=dict(
             user1=serialize_contract(accounts.user1, defs.account.abi),
             user2=serialize_contract(accounts.user2, defs.account.abi),
             user3=serialize_contract(accounts.user3, defs.account.abi),
             auth_user=serialize_contract(accounts.auth_user, defs.account.abi),
             dai=serialize_contract(dai, defs.dai.abi),
-            sample_spell=serialize_contract(sample_spell, defs.sample_spell.abi),
             l2_bridge=serialize_contract(l2_bridge, defs.l2_bridge.abi),
+            l2_teleport_gateway=serialize_contract(l2_teleport_gateway, defs.l2_teleport_gateway.abi),
             registry=serialize_contract(registry, defs.registry.abi),
             l2_governance_relay=serialize_contract(l2_governance_relay, defs.l2_governance_relay.abi),
         ),
@@ -241,6 +277,7 @@ async def ctx_factory(copyable_deployment):
         serialized_contracts = copyable_deployment.serialized_contracts
         signers = copyable_deployment.signers
         consts = copyable_deployment.consts
+        sample_spell = copyable_deployment.sample_spell
 
         starknet_state = copyable_deployment.starknet.state.copy()
         contracts = {
@@ -266,6 +303,7 @@ async def ctx_factory(copyable_deployment):
             advance_clock=advance_clock,
             consts=consts,
             execute=execute,
+            sample_spell=sample_spell,
             **contracts,
         )
 
@@ -279,6 +317,10 @@ def ctx(ctx_factory):
 @pytest.fixture(scope="function")
 async def starknet(ctx) -> Starknet:
     return ctx.starknet
+
+@pytest.fixture(scope="function")
+async def block_timestamp(starknet):
+    return lambda: get_block_timestamp(starknet.state)
 
 @pytest.fixture(scope="function")
 async def user1(ctx) -> StarknetContract:
@@ -297,7 +339,7 @@ async def auth_user(ctx) -> StarknetContract:
     return ctx.auth_user
 
 @pytest.fixture(scope="function")
-async def sample_spell(ctx) -> StarknetContract:
+async def sample_spell(ctx) -> DeclaredClass:
     return ctx.sample_spell
 
 @pytest.fixture(scope="function")
@@ -311,6 +353,10 @@ async def l2_governance_relay(ctx) -> StarknetContract:
 @pytest.fixture(scope="function")
 async def l2_bridge(ctx) -> StarknetContract:
     return ctx.l2_bridge
+
+@pytest.fixture(scope="function")
+async def l2_teleport_gateway(ctx) -> StarknetContract:
+    return ctx.l2_teleport_gateway
 
 @pytest.fixture(scope="function")
 async def dai(ctx) -> StarknetContract:

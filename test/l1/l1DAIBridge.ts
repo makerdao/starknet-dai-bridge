@@ -7,8 +7,9 @@ import {
 } from "@makerdao/hardhat-utils";
 import chai, { expect } from "chai";
 import { ethers } from "ethers";
-import { parseEther } from "ethers/lib/utils";
 import hre from "hardhat";
+
+import { eth, split } from "../utils";
 
 chai.use(smock.matchers);
 
@@ -27,7 +28,7 @@ function toSplitUint(value: any) {
   return [BigInt(`0x${bits.slice(32)}`), BigInt(`0x${bits.slice(0, 32)}`)];
 }
 
-describe("L1DAIBridge", function () {
+describe("l1:L1DAIBridge", function () {
   it("initializes properly", async () => {
     const { admin, dai, starkNetFake, escrow, l1Bridge, l2BridgeAddress } =
       await setupTest();
@@ -73,7 +74,10 @@ describe("L1DAIBridge", function () {
 
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
-      await expect(l1Bridge.connect(l1Alice).deposit(depositAmount, l2User))
+      const options = { value: 1 };
+      await expect(
+        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User, options)
+      )
         .to.emit(l1Bridge, "LogDeposit")
         .withArgs(l1Alice.address, depositAmount, l2User);
 
@@ -93,12 +97,13 @@ describe("L1DAIBridge", function () {
 
       const depositAmount = eth("333");
 
+      const options = { value: 1 };
       await expect(
-        l1Bridge.connect(l1Alice).deposit(depositAmount, "0")
+        l1Bridge.connect(l1Alice).deposit(depositAmount, "0", options)
       ).to.be.revertedWith("L1DAIBridge/invalid-address");
 
       await expect(
-        l1Bridge.connect(l1Alice).deposit(depositAmount, l2DaiAddress)
+        l1Bridge.connect(l1Alice).deposit(depositAmount, l2DaiAddress, options)
       ).to.be.revertedWith("L1DAIBridge/invalid-address");
 
       // 2 ** 251 + 17 * 2 ** 192 + 1
@@ -107,13 +112,13 @@ describe("L1DAIBridge", function () {
       );
 
       await expect(
-        l1Bridge.connect(l1Alice).deposit(depositAmount, SN_PRIME)
+        l1Bridge.connect(l1Alice).deposit(depositAmount, SN_PRIME, options)
       ).to.be.revertedWith("L1DAIBridge/invalid-address");
 
       await expect(
         l1Bridge
           .connect(l1Alice)
-          .deposit(depositAmount, ethers.constants.MaxUint256)
+          .deposit(depositAmount, ethers.constants.MaxUint256, options)
       ).to.be.revertedWith("L1DAIBridge/invalid-address");
 
       await expect(
@@ -121,7 +126,8 @@ describe("L1DAIBridge", function () {
           .connect(l1Alice)
           .deposit(
             depositAmount,
-            ethers.constants.MaxUint256.add(SN_PRIME).div(2)
+            ethers.constants.MaxUint256.add(SN_PRIME).div(2),
+            options
           )
       ).to.be.revertedWith("L1DAIBridge/invalid-address");
     });
@@ -139,9 +145,10 @@ describe("L1DAIBridge", function () {
 
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
+      const options = { value: 1 };
       await expect(
-        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
-      ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
+        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User, options)
+      ).to.be.revertedWith("ERC20: insufficient allowance");
     });
     it("reverts when funds too low", async () => {
       const { admin, l1Alice, dai, l1Bridge } = await setupTest();
@@ -154,8 +161,9 @@ describe("L1DAIBridge", function () {
 
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
+      const options = { value: 1 };
       await expect(
-        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
+        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User, options)
       ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
     it("reverts when bridge is closed", async () => {
@@ -167,8 +175,9 @@ describe("L1DAIBridge", function () {
       await l1Bridge.connect(admin).setCeiling(depositAmount);
       await l1Bridge.connect(admin).close();
 
+      const options = { value: 1 };
       await expect(
-        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
+        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User, options)
       ).to.be.revertedWith("L1DAIBridge/closed");
     });
     it("reverts when ceiling is too low", async () => {
@@ -181,8 +190,9 @@ describe("L1DAIBridge", function () {
       await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount);
       await l1Bridge.connect(admin).setCeiling(depositAmount.sub(1));
 
+      const options = { value: 1 };
       await expect(
-        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
+        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User, options)
       ).to.be.revertedWith("L1DAIBridge/above-ceiling");
     });
     it("reverts when ceiling is too low", async () => {
@@ -195,8 +205,9 @@ describe("L1DAIBridge", function () {
       await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount);
       await l1Bridge.connect(admin).setMaxDeposit(depositAmount.sub(1));
 
+      const options = { value: 1 };
       await expect(
-        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User)
+        l1Bridge.connect(l1Alice).deposit(depositAmount, l2User, options)
       ).to.be.revertedWith("L1DAIBridge/above-max-deposit");
     });
     it("properly initiates deposit cancelation", async () => {
@@ -210,7 +221,8 @@ describe("L1DAIBridge", function () {
       await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount);
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
-      await l1Bridge.connect(l1Alice).deposit(depositAmount, l2User);
+      const options = { value: 1 };
+      await l1Bridge.connect(l1Alice).deposit(depositAmount, l2User, options);
 
       const nonce = "1";
       await expect(
@@ -252,7 +264,8 @@ describe("L1DAIBridge", function () {
       await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount);
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
-      await l1Bridge.connect(l1Alice).deposit(depositAmount, l2User);
+      const options = { value: 1 };
+      await l1Bridge.connect(l1Alice).deposit(depositAmount, l2User, options);
 
       const nonce = "1";
 
@@ -313,7 +326,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, ...toSplitUint(withdrawalAmount)]
+        [WITHDRAW, l1Alice.address, ...split(withdrawalAmount)]
       );
     });
     it("sends funds from the escrow to the 3rd party", async () => {
@@ -349,7 +362,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, ...toSplitUint(withdrawalAmount)]
+        [WITHDRAW, l1Alice.address, ...split(withdrawalAmount)]
       );
     });
     it("sends funds from the escrow, even when closed", async () => {
@@ -385,7 +398,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledOnce;
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, ...toSplitUint(withdrawalAmount)]
+        [WITHDRAW, l1Alice.address, ...split(withdrawalAmount)]
       );
     });
     it("reverts when called by not a withdrawal recipient", async () => {
@@ -414,7 +427,7 @@ describe("L1DAIBridge", function () {
         .whenCalledWith(l2BridgeAddress, [
           WITHDRAW,
           l1Bob.address,
-          ...toSplitUint(withdrawalAmount),
+          ...split(withdrawalAmount),
         ])
         .reverts();
 
@@ -424,7 +437,7 @@ describe("L1DAIBridge", function () {
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Bob.address, ...toSplitUint(withdrawalAmount)]
+        [WITHDRAW, l1Bob.address, ...split(withdrawalAmount)]
       );
     });
     it("reverts when called with wrong amount", async () => {
@@ -453,7 +466,7 @@ describe("L1DAIBridge", function () {
         .whenCalledWith(l2BridgeAddress, [
           WITHDRAW,
           l1Alice.address,
-          ...toSplitUint(wrongAmount),
+          ...split(wrongAmount),
         ])
         .reverts();
 
@@ -463,7 +476,7 @@ describe("L1DAIBridge", function () {
 
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
-        [WITHDRAW, l1Alice.address, ...toSplitUint(wrongAmount)]
+        [WITHDRAW, l1Alice.address, ...split(wrongAmount)]
       );
     });
     it("reverts when escrow access was revoked", async () => {
@@ -476,7 +489,7 @@ describe("L1DAIBridge", function () {
 
       await expect(
         l1Bridge.connect(l1Alice).withdraw(withdrawalAmount, l1Alice.address)
-      ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
+      ).to.be.revertedWith("ERC20: insufficient allowance");
     });
   });
   describe("close", function () {
@@ -552,7 +565,10 @@ describe("L1DAIBridge", function () {
       const amount = eth("333");
       const l2User = "123";
 
-      await expect(l1Bridge.connect(l1Alice).forceWithdrawal(amount, l2User))
+      const options = { value: 1 };
+      await expect(
+        l1Bridge.connect(l1Alice).forceWithdrawal(amount, l2User, options)
+      )
         .to.emit(l1Bridge, "LogForceWithdrawal")
         .withArgs(l1Alice.address, amount, l2User);
 
@@ -560,7 +576,7 @@ describe("L1DAIBridge", function () {
       expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
         l2BridgeAddress,
         FORCE_WITHDRAW,
-        [l2User, l1Alice.address, ...toSplitUint(amount)]
+        [l2User, l1Alice.address, ...split(amount)]
       );
     });
     it("reverts when bridge is closed", async () => {
@@ -571,8 +587,9 @@ describe("L1DAIBridge", function () {
 
       await l1Bridge.connect(admin).close();
 
+      const options = { value: 1 };
       await expect(
-        l1Bridge.connect(l1Alice).forceWithdrawal(amount, l2User)
+        l1Bridge.connect(l1Alice).forceWithdrawal(amount, l2User, options)
       ).to.be.revertedWith("L1DAIBridge/closed");
     });
   });
@@ -596,7 +613,9 @@ describe("L1DAIBridge", function () {
 async function setupTest() {
   const [admin, l1Alice, l1Bob] = await hre.ethers.getSigners();
 
-  const starkNetFake = await smock.fake("StarkNetLike");
+  const starkNetFake = await smock.fake(
+    "./contracts/l1/L1DAIBridge.sol:StarkNetLike"
+  );
 
   const dai = await simpleDeploy("DAIMock", []);
 
@@ -624,9 +643,4 @@ async function setupTest() {
     l2BridgeAddress: L2_DAI_BRIDGE_ADDRESS,
     l2DaiAddress: L2_DAI_ADDRESS,
   };
-}
-
-// units
-export function eth(amount: string) {
-  return parseEther(amount);
 }
