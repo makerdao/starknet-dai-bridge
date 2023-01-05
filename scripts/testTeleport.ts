@@ -147,9 +147,14 @@ task("teleport-initiate", "Test Fast Withdrawal Integration")
       attestations = response.data as Attestation[];
     }
 
-    const attestationsDelay = (attestationsStart.getTime() - (new Date()).getTime()) / 1000;
+    const attestationsDelay =
+      (attestationsStart.getTime() - new Date().getTime()) / 1000;
 
-    console.log(`Received ${attestations.length} attestations in ${parseInt(attestationsDelay.toString())}`)
+    console.log(
+      `Received ${attestations.length} attestations in ${parseInt(
+        attestationsDelay.toString()
+      )}`
+    );
 
     const threshold = await l1OracleAuth.threshold();
 

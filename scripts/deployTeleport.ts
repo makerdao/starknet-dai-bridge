@@ -9,7 +9,6 @@ import {
   getAddressOfNextDeployedContract,
   getL2ContractAt,
   getNetwork,
-  getOptionalEnv,
   getRequiredEnv,
   l2String,
   printAddresses,

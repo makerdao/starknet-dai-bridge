@@ -44,9 +44,9 @@ describe("e2e", async function () {
 
     // predeployed account
     l2Auth = await starknet.OpenZeppelinAccount.getAccountFromAddress(
-      '0x7e00d496e324876bbc8531f2d9a82bf154d1a04a50218ee74cdd372f75a551a',
-      '0xe3e70682c2094cac629f6fbed82c07cd'
-    )
+      "0x7e00d496e324876bbc8531f2d9a82bf154d1a04a50218ee74cdd372f75a551a",
+      "0xe3e70682c2094cac629f6fbed82c07cd"
+    );
 
     const mockStarknetMessaging = await starknet.devnet.loadL1MessagingContract(
       networkUrl
@@ -57,7 +57,7 @@ describe("e2e", async function () {
 
     escrow = await simpleDeploy("L1Escrow", []);
 
-    const registry = await simpleDeployL2(l2Auth,"registry", {}, hre);
+    const registry = await simpleDeployL2(l2Auth, "registry", {}, hre);
 
     await l2Auth.invoke(registry, "set_L1_address", {
       l1_user: l1Alice.address,

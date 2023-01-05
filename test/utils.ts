@@ -1,8 +1,8 @@
+import { Account } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 import { BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
-import {HardhatRuntimeEnvironment, StarknetContract} from "hardhat/types";
+import { HardhatRuntimeEnvironment, StarknetContract } from "hardhat/types";
 import fetch from "node-fetch";
-import { Account } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 
 import { getSelectorFromName } from "../scripts/utils";
 
