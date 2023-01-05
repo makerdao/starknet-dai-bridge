@@ -100,7 +100,7 @@ const config = {
     },
   },
   starknet: {
-    dockerizedVersion: "0.10.0",
+    dockerizedVersion: "0.10.3",
     network: getStarknetNetwork(),
     wallets: {
       user: {

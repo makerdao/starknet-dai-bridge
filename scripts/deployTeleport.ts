@@ -36,13 +36,7 @@ task("deploy-teleport", "Deploy teleport").setAction(async (_, hre) => {
   const L2_SRC_DOMAIN = l2String(getRequiredEnv(`${NETWORK}_SRC_DOMAIN`));
   const L2_TRG_DOMAIN = l2String(getRequiredEnv(`${NETWORK}_TRG_DOMAIN`));
 
-  const TOKEN = getOptionalEnv(`${NETWORK}_TOKEN`);
-
-  const deploymentOptions = TOKEN ? { token: TOKEN } : {};
-
-  if (TOKEN) {
-    console.log(`Using token: ${TOKEN}`);
-  }
+  const deploymentOptions = {};
 
   console.log(`Deploying gateway on ${network}`);
 

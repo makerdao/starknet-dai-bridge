@@ -9,13 +9,7 @@ task("deploy-deployer", "Deploy deployer").setAction(async (_, hre) => {
 
   console.log(`Deploying deployer on ${network}`);
 
-  const TOKEN = getOptionalEnv(`${NETWORK}_TOKEN`);
-
-  const deploymentOptions = TOKEN ? { token: TOKEN } : {};
-
-  if (TOKEN) {
-    console.log(`Using token: ${TOKEN}`);
-  }
+  const deploymentOptions = {};
 
   const deployer = await hre.starknet.deployAccount(
     "OpenZeppelin",

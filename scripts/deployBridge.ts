@@ -26,13 +26,7 @@ task("deploy-bridge", "Deploy bridge").setAction(async (_, hre) => {
 
   console.log(`Deploying bridge on: ${network}`);
 
-  const TOKEN = getOptionalEnv(`${NETWORK}_TOKEN`);
-
-  const deploymentOptions = TOKEN ? { token: TOKEN } : {};
-
-  if (TOKEN) {
-    console.log(`Using token: ${TOKEN}`);
-  }
+  const deploymentOptions = {};
 
   const L1_DAI_ADDRESS = getRequiredEnv(`${NETWORK}_L1_DAI_ADDRESS`);
 

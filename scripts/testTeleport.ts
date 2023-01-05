@@ -138,6 +138,7 @@ task("teleport-initiate", "Test Fast Withdrawal Integration")
     );
 
     console.log(`\nGetting attestation for tx: ${tx}`);
+    const attestationsStart = new Date();
     const oracleUrlKey = getRequiredEnv(`${NETWORK}_ORACLE_URL`);
     const url = `${oracleUrlKey}/?type=teleport_starknet&index=${tx}`;
     let attestations: Attestation[] = [];
@@ -145,6 +146,10 @@ task("teleport-initiate", "Test Fast Withdrawal Integration")
       const response = await axios.get(url);
       attestations = response.data as Attestation[];
     }
+
+    const attestationsDelay = (attestationsStart.getTime() - (new Date()).getTime()) / 1000;
+
+    console.log(`Received ${attestations.length} attestations in ${parseInt(attestationsDelay.toString())}`)
 
     const threshold = await l1OracleAuth.threshold();
 
