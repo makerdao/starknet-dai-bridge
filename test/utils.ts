@@ -1,6 +1,7 @@
+import { Account } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 import { BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
-import { StarknetContract } from "hardhat/types";
+import { HardhatRuntimeEnvironment, StarknetContract } from "hardhat/types";
 import fetch from "node-fetch";
 
 import { getSelectorFromName } from "../scripts/utils";
@@ -100,10 +101,12 @@ export async function getEvent(eventName: string, contractAddress: string) {
 }
 
 export async function simpleDeployL2(
+  deployer: Account,
   name: string,
   args: object,
-  hre: any
+  hre: HardhatRuntimeEnvironment
 ): Promise<StarknetContract> {
   const factory = await hre.starknet.getContractFactory(name);
-  return factory.deploy(args);
+  await deployer.declare(factory);
+  return await deployer.deploy(factory, args);
 }

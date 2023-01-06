@@ -185,10 +185,9 @@ export async function getAccount(
       )
       .toString()
   )[network][name];
-  const account = (await hre.starknet.getAccountFromAddress(
+  const account = (await hre.starknet.OpenZeppelinAccount.getAccountFromAddress(
     address,
-    private_key,
-    "OpenZeppelin"
+    private_key
   )) as CustomAccount;
   account["estimateAndInvoke"] = CustomAccount.prototype.estimateAndInvoke;
   return account;

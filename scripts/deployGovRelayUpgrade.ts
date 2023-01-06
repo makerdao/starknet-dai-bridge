@@ -32,13 +32,7 @@ task("deploy-gov-relay-upgrade", "Deploy gov relay upgrade").setAction(
       (await hre.ethers.getSigners())[0].address.toString()
     );
 
-    const TOKEN = getOptionalEnv(`${NETWORK}_TOKEN`);
-
-    const deploymentOptions = TOKEN ? { token: TOKEN } : {};
-
-    if (TOKEN) {
-      console.log(`Using token:`, TOKEN);
-    }
+    const deploymentOptions = {};
 
     const L1_STARKNET_ADDRESS = getRequiredEnv(
       `${NETWORK}_L1_STARKNET_ADDRESS`
@@ -178,9 +172,7 @@ task(
 
   console.log(`Deploying gov relay upgrade spell on: ${network}`);
 
-  const TOKEN = getOptionalEnv(`${NETWORK}_TOKEN`);
-
-  const deploymentOptions = TOKEN ? { token: TOKEN } : {};
+  const deploymentOptions = {};
 
   const { spellName, spellFileName } = spellNames(NETWORK);
 
