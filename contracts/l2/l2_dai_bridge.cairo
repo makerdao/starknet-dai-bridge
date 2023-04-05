@@ -1,5 +1,3 @@
-// amarna: disable=arithmetic-sub,unused-arguments,must-check-caller-address
-//
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2021 Dai Foundation
 // This program is free software: you can redistribute it and/or modify
@@ -15,275 +13,202 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-%lang starknet
+use starknet::ContractAddress;
+use serde::Serde;
+use traits::Into;
+use zeroable::Zeroable;
+use starknet::StorageAccess;
+use starknet::StorageAddress;
+use starknet::StorageBaseAddress;
+use starknet::SyscallResult;
 
-from starkware.cairo.common.alloc import alloc
-from starkware.starknet.common.messages import send_message_to_l1
-from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math import assert_le_felt
-from starkware.starknet.common.syscalls import get_caller_address, get_contract_address
-from starkware.cairo.common.uint256 import Uint256, uint256_le
+#[abi]
+trait IDAI {
+    fn mint(to_address: ContractAddress, value: u256);
+    fn burn(from_address: ContractAddress, value: u256);
+    fn allowance(owner: ContractAddress, spender: ContractAddress) -> u256;
+    fn balanceOf(user: ContractAddress) -> u256;
+}
 
-const FINALIZE_WITHDRAW = 0;
-const MAX_L1_ADDRESS = 2 ** 160 - 1;
+// TODO: remove when available in the standard library.
+// An Ethereum address (160 bits) .
+#[derive(Serde, Copy, Drop)]
+struct EthAddress {
+    address: felt252,
+}
 
-@contract_interface
-namespace IDAI {
-    func mint(to_address: felt, value: Uint256) {
+trait EthAddressTrait {
+    fn new(address: felt252) -> EthAddress;
+}
+
+impl EthAddressImpl of EthAddressTrait {
+    fn new(address: felt252) -> EthAddress {
+        let ETH_ADDRESS_BOUND = u256 { high: 0x100000000_u128, low: 0_u128 }; // 2 ** 160
+
+        assert(address.into() < ETH_ADDRESS_BOUND, 'INVALID_ETHEREUM_ADDRESS');
+        EthAddress { address }
+    }
+}
+impl EthAddressIntoFelt252 of Into<EthAddress, felt252> {
+    fn into(address: EthAddress) -> felt252 {
+        address.address
+    }
+}
+
+impl EthAddressZeroable of Zeroable<EthAddress> {
+    fn zero() -> EthAddress {
+        EthAddressTrait::new(0)
     }
 
-    func burn(from_address: felt, value: Uint256) {
+    #[inline(always)]
+    fn is_zero(self: EthAddress) -> bool {
+        self.address.is_zero()
     }
 
-    func allowance(owner: felt, spender: felt) -> (res: Uint256) {
-    }
-
-    func balanceOf(user: felt) -> (res: Uint256) {
-    }
-}
-
-@contract_interface
-namespace IRegistry {
-    func get_L1_address(l2_address: felt) -> (res: felt) {
+    #[inline(always)]
+    fn is_non_zero(self: EthAddress) -> bool {
+        !self.is_zero()
     }
 }
 
-@event
-func Rely(user: felt) {
-}
-
-@event
-func Deny(user: felt) {
-}
-
-@event
-func Closed() {
-}
-
-@event
-func withdraw_initiated(l1_recipient: felt, amount: Uint256, caller: felt) {
-}
-
-@event
-func deposit_handled(account: felt, amount: Uint256) {
-}
-
-@event
-func force_withdrawal_handled(l1_recipient: felt, amount: Uint256, sender: felt) {
-}
-
-@storage_var
-func _is_open() -> (res: felt) {
-}
-
-@storage_var
-func _dai() -> (res: felt) {
-}
-
-@storage_var
-func _registry() -> (res: felt) {
-}
-
-@storage_var
-func _bridge() -> (res: felt) {
-}
-
-@storage_var
-func _wards(user: felt) -> (res: felt) {
-}
-
-@view
-func is_open{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (res: felt) {
-    let (res) = _is_open.read();
-    return (res,);
-}
-
-@view
-func dai{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (res: felt) {
-    let (res) = _dai.read();
-    return (res,);
-}
-
-@view
-func registry{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (res: felt) {
-    let (res) = _registry.read();
-    return (res,);
-}
-
-@view
-func bridge{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (res: felt) {
-    let (res) = _bridge.read();
-    return (res,);
-}
-
-@view
-func wards{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(user: felt) -> (
-    res: felt
-) {
-    let (res) = _wards.read(user);
-    return (res,);
-}
-
-func auth{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    let (caller) = get_caller_address();
-    let (ward) = _wards.read(caller);
-    with_attr error_message("l2_dai_bridge/not-authorized") {
-        assert ward = 1;
+impl EthAddressStorageAccess of StorageAccess::<EthAddress> {
+    fn read(address_domain: u32, base: StorageBaseAddress) -> SyscallResult<EthAddress> {
+        Result::Ok(
+            EthAddressTrait::new(StorageAccess::<felt252>::read(address_domain, base)?)
+        )
     }
-    return ();
+    fn write(address_domain: u32, base: StorageBaseAddress, value: EthAddress) -> SyscallResult<()> {
+        StorageAccess::<felt252>::write(address_domain, base, value.into())
+    }
 }
 
-@external
-func rely{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(user: felt) {
-    auth();
-    _wards.write(user, 1);
-    Rely.emit(user);
-    return ();
-}
 
-@external
-func deny{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(user: felt) {
-    auth();
-    _wards.write(user, 0);
-    Deny.emit(user);
-    return ();
-}
+#[contract]
+mod L2DAIBridge {
+    use starknet::get_caller_address;
+    use starknet::syscalls::send_message_to_l1_syscall;
+    use starknet::ContractAddress;
+    use starknet::ContractAddressZeroable;
+    use traits::Into;
+    use zeroable::Zeroable;
+    use integer::U128IntoFelt252;
+    use super::EthAddress;
+    use super::EthAddressIntoFelt252;
+    use super::EthAddressSerde;
+    use super::EthAddressTrait;
+    use super::EthAddressZeroable;
+    use super::IDAIDispatcher;
+    use super::IDAIDispatcherTrait;
+    use array::ArrayTrait;
 
-@external
-func close{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    auth();
-    _is_open.write(0);
-    Closed.emit();
-    return ();
-}
+    const FINALIZE_WITHDRAW: felt252 = 0;
 
-@constructor
-func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    ward: felt, dai: felt, bridge: felt, registry: felt
-) {
-    _wards.write(ward, 1);
-    Rely.emit(ward);
-    _is_open.write(1);
-    _dai.write(dai);
-    _bridge.write(bridge);
-    _registry.write(registry);
-
-    return ();
-}
-
-@external
-func initiate_withdraw{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    l1_recipient: felt, amount: Uint256
-) {
-    alloc_locals;
-
-    let (is_open) = _is_open.read();
-    with_attr error_message("l2_dai_bridge/bridge-closed") {
-        assert is_open = 1;
+    struct Storage {
+        _is_open: bool,
+        _dai: ContractAddress,
+        _bridge: EthAddress,
+        _wards: LegacyMap<ContractAddress, bool>,
     }
 
-    let (dai) = _dai.read();
-    let (local caller) = get_caller_address();
+    #[event]
+    fn Rely(user: ContractAddress) {}
 
-    IDAI.burn(dai, caller, amount);
+    #[event]
+    fn Deny(user: ContractAddress) {}
 
-    send_handle_withdraw(l1_recipient, amount);
+    #[event]
+    fn Closed() {}
 
-    withdraw_initiated.emit(l1_recipient, amount, caller);
+    //TODO: conventions for event names changed, align with StarkGate
+    #[event]
+    fn WithdrawInitiated(l1_recipient: EthAddress, amount: u256, caller: ContractAddress) {}
 
-    return ();
-}
+    //TODO: conventions for event names changed, align with StarkGate
+    #[event]
+    fn DepositHandled(account: ContractAddress, amount: u256) {}
 
-@l1_handler
-func handle_deposit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    from_address: felt,
-    l2_recipient: felt,
-    amount_low: felt,
-    amount_high: felt,
-    sender_address: felt,
-) {
-    // l1 msg.sender is ignored
-    // check l1 message sender
-    let (bridge) = _bridge.read();
-    with_attr error_message("l2_dai_bridge/message-not-from-bridge") {
-        assert from_address = bridge;
+    #[view]
+    fn is_open() -> bool {
+        _is_open::read()
     }
 
-    let amount = Uint256(low=amount_low, high=amount_high);
-    let (dai) = _dai.read();
-    IDAI.mint(dai, l2_recipient, amount);
-
-    deposit_handled.emit(l2_recipient, amount);
-
-    return ();
-}
-
-@l1_handler
-func handle_force_withdrawal{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    from_address: felt, l2_sender: felt, l1_recipient: felt, amount_low: felt, amount_high: felt
-) {
-    alloc_locals;
-
-    let amount = Uint256(low=amount_low, high=amount_high);
-    force_withdrawal_handled.emit(l1_recipient, amount, l2_sender);
-
-    // check l1 message sender
-    let (bridge) = _bridge.read();
-    with_attr error_message("l2_dai_bridge/message-not-from-bridge") {
-        assert from_address = bridge;
+    #[view]
+    fn dai() -> ContractAddress {
+        _dai::read()
     }
 
-    // check l1 recipient address
-    let (registry) = _registry.read();
-    let (_l1_recipient) = IRegistry.get_L1_address(registry, l2_sender);
-    if (_l1_recipient != l1_recipient) {
-        return ();
+    #[view]
+    fn bridge() -> EthAddress {
+        _bridge::read()
     }
 
-    let (local dai) = _dai.read();
-
-    // check l2 DAI balance
-    let (balance) = IDAI.balanceOf(dai, l2_sender);
-    let (balance_check) = uint256_le(amount, balance);
-    if (balance_check == 0) {
-        return ();
+    #[view]
+    fn wards(user: ContractAddress) -> bool {
+        _wards::read(user)
     }
 
-    // check allowance
-    let (contract_address) = get_contract_address();
-    let (allowance) = IDAI.allowance(dai, l2_sender, contract_address);
-    let (allowance_check) = uint256_le(amount, allowance);
-    if (allowance_check == 0) {
-        return ();
+    fn auth() {
+        assert(_wards::read(get_caller_address()), 'l2_dai_bridge/not-authorized');
     }
 
-    IDAI.burn(dai, l2_sender, amount);
-    send_handle_withdraw(l1_recipient, amount);
-
-    return ();
-}
-
-func send_handle_withdraw{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    l1_recipient: felt, amount: Uint256
-) {
-    // check valid L1 address
-    assert_l1_address(l1_recipient);
-
-    let (payload) = alloc();
-    assert payload[0] = FINALIZE_WITHDRAW;
-    assert payload[1] = l1_recipient;
-    assert payload[2] = amount.low;
-    assert payload[3] = amount.high;
-
-    let (bridge) = _bridge.read();
-
-    send_message_to_l1(bridge, 4, payload);
-    return ();
-}
-
-func assert_l1_address{range_check_ptr}(l1_address: felt) {
-    with_attr error_message("l2_dai_bridge/invalid-l1-address") {
-        assert_le_felt(l1_address, MAX_L1_ADDRESS);
+    #[external]
+    fn rely(user: ContractAddress) {
+        auth();
+        _wards::write(user, true);
+        Rely(user);
     }
-    return ();
+
+    #[external]
+    fn deny(user: ContractAddress) {
+        auth();
+        _wards::write(user, false);
+        Deny(user);
+    }
+
+    #[external]
+    fn close() {
+        auth();
+        _is_open::write(false);
+        Closed();
+    }
+
+    #[constructor]
+    fn constructor(ward: ContractAddress, dai: ContractAddress, bridge: EthAddress) {
+        _wards::write(ward, true);
+        Rely(ward);
+        _is_open::write(true);
+        _dai::write(dai);
+        _bridge::write(bridge);
+    }
+
+    #[external]
+    fn initiate_withdraw(l1_recipient: EthAddress, amount: u256) {
+        assert(_is_open::read(), 'l2_dai_bridge/bridge-closed');
+
+        let caller = get_caller_address();
+
+        IDAIDispatcher { contract_address: _dai::read() }.burn(caller, amount);
+
+        let mut payload: Array<felt252> = ArrayTrait::new();
+        payload.append(FINALIZE_WITHDRAW);
+        payload.append(l1_recipient.into());
+        payload.append(amount.low.into());
+        payload.append(amount.high.into());
+
+        send_message_to_l1_syscall(_bridge::read().into(), payload.span());
+
+        WithdrawInitiated(l1_recipient, amount, caller);
+    }
+
+    #[l1_handler]
+    fn handle_deposit(from_address: felt252, l2_recipient: ContractAddress, amount: u256, sender_address: EthAddress) {
+
+        // l1 msg.sender is ignored
+
+        assert(from_address == _bridge::read().into(), 'l2_dai_bridge/not-from-bridge');
+
+        IDAIDispatcher { contract_address: _dai::read() }.mint(l2_recipient, amount);
+
+        DepositHandled(l2_recipient, amount);
+    }
 }

@@ -1,5 +1,3 @@
-// amarna: disable=arithmetic-sub,must-check-caller-address,must-check-overflow
-//
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2021 Dai Foundation
 // This program is free software: you can redistribute it and/or modify
@@ -15,364 +13,197 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-%lang starknet
+#[contract]
+mod Dai {
+    use starknet::get_caller_address;
+    use starknet::get_contract_address;
+    use starknet::ContractAddress;
+    use starknet::ContractAddressZeroable;
+    use zeroable::Zeroable;
+    use integer::BoundedInt;
 
-from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
-from starkware.cairo.common.math import assert_not_equal, assert_not_zero
-from starkware.starknet.common.syscalls import get_caller_address, get_contract_address
-from starkware.cairo.common.uint256 import (
-    Uint256,
-    uint256_add,
-    uint256_sub,
-    uint256_eq,
-    uint256_le,
-    uint256_check,
-)
-
-const ALL_ONES = 2 ** 128 - 1;
-
-@event
-func Rely(user: felt) {
-}
-
-@event
-func Deny(user: felt) {
-}
-
-@event
-func Transfer(sender: felt, recipient: felt, value: Uint256) {
-}
-
-@event
-func Approval(owner: felt, spender: felt, value: Uint256) {
-}
-
-@storage_var
-func _wards(user: felt) -> (res: felt) {
-}
-
-@storage_var
-func _balances(user: felt) -> (res: Uint256) {
-}
-
-@storage_var
-func _total_supply() -> (res: Uint256) {
-}
-
-@storage_var
-func _allowances(owner: felt, spender: felt) -> (res: Uint256) {
-}
-
-@view
-func decimals{}() -> (res: felt) {
-    return (18,);
-}
-
-@view
-func name{}() -> (res: felt) {
-    return ('Dai Stablecoin',);
-}
-
-@view
-func symbol{}() -> (res: felt) {
-    return ('DAI',);
-}
-
-@view
-func totalSupply{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
-    res: Uint256
-) {
-    let (res) = _total_supply.read();
-    return (res,);
-}
-
-@view
-func balanceOf{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(user: felt) -> (
-    res: Uint256
-) {
-    let (res) = _balances.read(user=user);
-    return (res,);
-}
-
-@view
-func allowance{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    owner: felt, spender: felt
-) -> (res: Uint256) {
-    let (res) = _allowances.read(owner, spender);
-    return (res,);
-}
-
-@view
-func wards{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(user: felt) -> (
-    res: felt
-) {
-    let (res) = _wards.read(user);
-    return (res,);
-}
-
-@constructor
-func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(ward: felt) {
-    _wards.write(ward, 1);
-    Rely.emit(ward);
-    return ();
-}
-
-@external
-func mint{
-    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
-}(account: felt, amount: Uint256) {
-    auth();
-
-    // check valid recipient
-    with_attr error_message("dai/invalid-recipient") {
-        assert_not_zero(account);
-        let (contract_address) = get_contract_address();
-        assert_not_equal(account, contract_address);
+    struct Storage {
+        _name: felt252,               // TODO: change to char type when available
+        _symbol: felt252,             // TODO: change to char type when available
+        _total_supply: u256,
+        _balances: LegacyMap<ContractAddress, u256>,
+        _allowances: LegacyMap<(ContractAddress, ContractAddress), u256>,
+        _wards: LegacyMap<ContractAddress, bool>,
     }
 
-    // check valid amount
-    with_attr error_message("dai/invalid-amount") {
-        uint256_check(amount);
+    #[event]
+    fn Rely(user: ContractAddress) {}
+
+    #[event]
+    fn Deny(user: ContractAddress) {}
+
+    #[event]
+    fn Transfer(sender: ContractAddress, recipient: ContractAddress, value: u256) {}
+
+    #[event]
+    fn Approval(owner: ContractAddress, spender: ContractAddress, value: u256) {}
+
+    #[view]
+    fn decimals() -> u8 {
+        18_u8
     }
 
-    // update balance
-    let (balance) = _balances.read(account);
-    // overflow check disabled since later amount + total_supply is checked for overflow
-    // and total_supply >= balance
-    let (new_balance, _) = uint256_add(balance, amount);
-    _balances.write(account, new_balance);
-
-    // update total supply
-    let (total) = _total_supply.read();
-    let (new_total) = uint256_add_safe(total, amount);
-    _total_supply.write(new_total);
-
-    Transfer.emit(0, account, amount);
-
-    return ();
-}
-
-@external
-func burn{
-    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
-}(account: felt, amount: Uint256) {
-    alloc_locals;
-
-    let (local caller) = get_caller_address();
-
-    // check valid amount
-    with_attr error_message("dai/invalid-amount") {
-        uint256_check(amount);
+    #[view]
+    fn name() -> felt252 {
+        _name::read()
     }
 
-    // update balance
-    let (local balance) = _balances.read(account);
-
-    with_attr error_message("dai/insufficient-balance") {
-        assert_uint256_le(amount, balance);
+    #[view]
+    fn symbol() -> felt252 {
+        _symbol::read()
     }
-    let (new_balance) = uint256_sub(balance, amount);
-    _balances.write(account, new_balance);
 
-    // decrease supply
-    let (local total_supply) = _total_supply.read();
+    #[view]
+    fn totalSupply() -> u256 {
+        _total_supply::read()
+    }
 
-    // underflow check disabled since amount <= balance <= total_supply
-    let (new_total_supply) = uint256_sub(total_supply, amount);
-    _total_supply.write(new_total_supply);
+    #[view]
+    fn balanceOf(user: ContractAddress) -> u256 {
+        _balances::read(user)
+    }
 
-    Transfer.emit(account, 0, amount);
+    #[view]
+    fn allowance(owner: ContractAddress, spender: ContractAddress) -> u256 {
+        _allowances::read((owner, spender))
+    }
 
-    if (caller != account) {
-        let (allowance) = _allowances.read(account, caller);
-        let MAX = Uint256(low=ALL_ONES, high=ALL_ONES);
-        let (eq) = uint256_eq(allowance, MAX);
-        if (eq == 0) {
-            with_attr error_message("dai/insufficient-allowance") {
-                assert_uint256_le(amount, allowance);
+    #[view]
+    fn wards(user: ContractAddress) -> bool {
+        _wards::read(user)
+    }
+
+    fn auth() {
+        assert(_wards::read(get_caller_address()), 'dai/not-authorized');
+    }
+
+    // fn zero() -> u256 {
+    //     u256 { low: 0_u128, high: 0_u128 }
+    // }
+
+    #[external]
+    fn rely(user: ContractAddress) {
+        auth();
+        _wards::write(user, true);
+        Rely(user);
+    }
+
+    #[external]
+    fn deny(user: ContractAddress) {
+        auth();
+        _wards::write(user, false);
+        Deny(user);
+    }
+
+    #[constructor]
+    fn constructor(ward: ContractAddress) {
+        _wards::write(ward, true);
+        Rely(ward);
+    }
+
+    #[external]
+    fn mint(account: ContractAddress, amount: u256) {
+        auth();
+
+        assert(account.is_non_zero(), 'dai/invalid-recipient');
+        assert(account != get_contract_address(), 'dai/invalid-recipient');
+
+        _balances::write(account, _balances::read(account) + amount);
+        // TODO: no need for safe math here
+        _total_supply::write(_total_supply::read() + amount);
+
+        Transfer(Zeroable::zero(), account, amount);
+    }
+
+    #[external]
+    fn burn(account: ContractAddress, amount: u256) {
+
+        let balance = _balances::read(account);
+        assert(balance >= amount, 'dai/insufficient-balance');
+
+        _balances::write(account, balance - amount);
+
+        // TODO: no need for safe math here
+        _total_supply::write(_total_supply::read() - amount);
+
+        Transfer(account, Zeroable::zero(), amount);
+
+        let caller = get_caller_address();
+
+        if(caller != account) {
+            let allowance = _allowances::read((account, caller));
+            if(allowance != BoundedInt::max()) {
+                assert(allowance >= amount, 'dai/insufficient-allowance');
+                _allowances::write((account, caller), allowance - amount);
             }
-            let (new_allowance) = uint256_sub(allowance, amount);
-            _allowances.write(account, caller, new_allowance);
-            return ();
-        } else {
-            return ();
         }
     }
 
-    return ();
-}
+    #[external]
+    fn transfer(recipient: ContractAddress, amount: u256) -> bool {
+        _transfer(get_caller_address(), recipient, amount);
+        true
+    }
 
-@external
-func rely{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(user: felt) {
-    auth();
-    _wards.write(user, 1);
-    Rely.emit(user);
-    return ();
-}
+    #[external]
+    fn transferFrom(sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool {
 
-@external
-func deny{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(user: felt) {
-    auth();
-    _wards.write(user, 0);
-    Deny.emit(user);
-    return ();
-}
+        _transfer(sender, recipient, amount);
 
-@external
-func transfer{
-    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
-}(recipient: felt, amount: Uint256) -> (res: felt) {
-    let (caller) = get_caller_address();
-    _transfer(caller, recipient, amount);
-
-    return (res=1);
-}
-
-@external
-func transferFrom{
-    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
-}(sender: felt, recipient: felt, amount: Uint256) -> (res: felt) {
-    alloc_locals;
-
-    let (local caller) = get_caller_address();
-    _transfer(sender, recipient, amount);
-
-    if (caller != sender) {
-        let (allowance) = _allowances.read(sender, caller);
-        let MAX = Uint256(low=ALL_ONES, high=ALL_ONES);
-        let (max_allowance) = uint256_eq(allowance, MAX);
-        if (max_allowance == 0) {
-            with_attr error_message("dai/insufficient-allowance") {
-                assert_uint256_le(amount, allowance);
+        let caller = get_caller_address();
+        if(caller != sender) {
+            let allowance = _allowances::read((sender, caller));
+            if(allowance != BoundedInt::max()) {
+                assert(allowance >= amount, 'dai/insufficient-allowance');
+                _allowances::write((sender, caller), allowance - amount);
             }
-            let (new_allowance: Uint256) = uint256_sub(allowance, amount);
-            _allowances.write(sender, caller, new_allowance);
-            return (res=1);
-        } else {
-            return (res=1);
         }
-    }
-    return (res=1);
-}
-
-@external
-func approve{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    spender: felt, amount: Uint256
-) -> (res: felt) {
-    with_attr error_message("dai/invalid-amount") {
-        uint256_check(amount);
-    }
-    let (caller) = get_caller_address();
-    _approve(caller, spender, amount);
-
-    return (res=1);
-}
-
-@external
-func increaseAllowance{
-    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
-}(spender: felt, amount: Uint256) -> (res: felt) {
-    alloc_locals;
-
-    with_attr error_message("dai/invalid-amount") {
-        uint256_check(amount);
-    }
-    let (local caller) = get_caller_address();
-    let (allowance) = _allowances.read(caller, spender);
-    let (new_allowance) = uint256_add_safe(amount, allowance);
-    _approve(caller, spender, new_allowance);
-    return (res=1);
-}
-
-@external
-func decreaseAllowance{
-    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
-}(spender: felt, amount: Uint256) -> (res: felt) {
-    alloc_locals;
-
-    with_attr error_message("dai/invalid-amount") {
-        uint256_check(amount);
-    }
-    let (local caller) = get_caller_address();
-    let (local allowance) = _allowances.read(caller, spender);
-    with_attr error_message("dai/insufficient-allowance") {
-        assert_uint256_le(amount, allowance);
-    }
-    let (new_allowance) = uint256_sub(allowance, amount);
-    _approve(caller, spender, new_allowance);
-    return (res=1);
-}
-
-func auth{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    let (caller) = get_caller_address();
-
-    let (ward) = _wards.read(caller);
-    with_attr error_message("dai/not-authorized") {
-        assert ward = 1;
+        true
     }
 
-    return ();
-}
-
-func _transfer{
-    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
-}(sender: felt, recipient: felt, amount: Uint256) {
-    alloc_locals;
-
-    // check valid amount
-    with_attr error_message("dai/invalid-amount") {
-        uint256_check(amount);
+    #[external]
+    fn approve(spender: ContractAddress, amount: u256) -> bool {
+        _approve(get_caller_address(), spender, amount);
+        true
     }
 
-    with_attr error_message("dai/invalid-recipient") {
-        assert_not_zero(recipient);
-        let (contract_address) = get_contract_address();
-        assert_not_equal(recipient, contract_address);
+    #[external]
+    fn increaseAllowance(spender: ContractAddress, amount: u256) -> bool {
+        let caller = get_caller_address();
+        _approve(caller, spender, _allowances::read((caller, spender)) + amount);
+        true
     }
 
-    // decrease sender balance
-    let (local sender_balance) = _balances.read(sender);
-    with_attr error_message("dai/insufficient-balance") {
-        assert_uint256_le(amount, sender_balance);
+    #[external]
+    fn decreaseAllowance(spender: ContractAddress, amount: u256) -> bool {
+        let caller = get_caller_address();
+        _approve(caller, spender, _allowances::read((caller, spender)) - amount);
+        true
     }
-    let (new_balance) = uint256_sub(sender_balance, amount);
-    _balances.write(sender, new_balance);
 
-    // increase recipient balance
-    let (recipient_balance) = _balances.read(recipient);
-    let (sum) = uint256_add_safe(recipient_balance, amount);
-    _balances.write(recipient, sum);
+    fn _transfer(sender: ContractAddress, recipient: ContractAddress, amount: u256) {
 
-    Transfer.emit(sender, recipient, amount);
+        assert(recipient.is_non_zero(), 'dai/invalid-recipient');
+        assert(recipient != get_contract_address(), 'dai/invalid-recipient');
 
-    return ();
-}
+        let sender_balance = _balances::read(sender);
+        assert(sender_balance >= amount, 'dai/insufficient-balance');
 
-func _approve{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    caller: felt, spender: felt, amount: Uint256
-) {
-    with_attr error_message("dai/invalid-recipient") {
-        assert_not_zero(spender);
+        _balances::write(sender, sender_balance - amount);
+        _balances::write(recipient, _balances::read(recipient) + amount);
+
+        Transfer(sender, recipient, amount);
     }
-    _allowances.write(caller, spender, amount);
-    Approval.emit(caller, spender, amount);
-    return ();
-}
 
-func uint256_add_safe{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    a: Uint256, b: Uint256
-) -> (sum: Uint256) {
-    let (sum, carry) = uint256_add(a, b);
-    with_attr error_message("dai/uint256-overflow") {
-        assert carry = 0;
+    fn _approve(caller: ContractAddress, spender: ContractAddress, amount: u256) {
+        assert(spender.is_non_zero(), 'dai/invalid-recipient');
+        _allowances::write((caller, spender), amount);
+        Approval(caller, spender, amount);
     }
-    return (sum,);
-}
 
-func assert_uint256_le{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    a: Uint256, b: Uint256
-) {
-    let (is_le) = uint256_le(a, b);
-    assert is_le = 1;
-    return ();
 }
