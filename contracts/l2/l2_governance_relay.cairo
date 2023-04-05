@@ -13,37 +13,86 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-%lang starknet
+use traits::Into;
+use starknet::StorageAccess;
+use starknet::StorageAddress;
+use starknet::StorageBaseAddress;
+use starknet::SyscallResult;
 
-from starkware.cairo.common.cairo_builtins import HashBuiltin
+#[abi]
+trait ISpell {
+    fn execute();
+}
 
-@contract_interface
-namespace ISpell {
-    func execute() {
+// TODO: remove when available in the standard library.
+// An Ethereum address (160 bits) .
+#[derive(Serde, Copy, Drop)]
+struct EthAddress {
+    address: felt252,
+}
+
+trait EthAddressTrait {
+    fn new(address: felt252) -> EthAddress;
+}
+
+impl EthAddressImpl of EthAddressTrait {
+    fn new(address: felt252) -> EthAddress {
+        let ETH_ADDRESS_BOUND = u256 { high: 0x100000000_u128, low: 0_u128 }; // 2 ** 160
+
+        assert(address.into() < ETH_ADDRESS_BOUND, 'INVALID_ETHEREUM_ADDRESS');
+        EthAddress { address }
+    }
+}
+impl EthAddressIntoFelt252 of Into<EthAddress, felt252> {
+    fn into(address: EthAddress) -> felt252 {
+        address.address
     }
 }
 
-@storage_var
-func _l1_governance_relay() -> (res: felt) {
+impl EthAddressStorageAccess of StorageAccess::<EthAddress> {
+    fn read(address_domain: u32, base: StorageBaseAddress) -> SyscallResult<EthAddress> {
+        Result::Ok(
+            EthAddressTrait::new(StorageAccess::<felt252>::read(address_domain, base)?)
+        )
+    }
+    fn write(address_domain: u32, base: StorageBaseAddress, value: EthAddress) -> SyscallResult<()> {
+        StorageAccess::<felt252>::write(address_domain, base, value.into())
+    }
 }
 
-@constructor
-func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    l1_governance_relay: felt
-) {
-    _l1_governance_relay.write(l1_governance_relay);
+#[contract]
+mod L2GovernanceDelay {
+    use starknet::get_caller_address;
+    use starknet::get_contract_address;
+    use starknet::ClassHash;
+    use super::ISpellDispatcherTrait;
+    use super::ISpellDispatcher;
+    use super::ISpellLibraryDispatcher;
+    use traits::Into;
+    use integer::U128IntoFelt252;
+    use super::EthAddress;
+    use super::EthAddressIntoFelt252;
+    use super::EthAddressTrait;
 
-    return ();
-}
+    struct Storage {
+        _l1_governance_relay: EthAddress
+    }
 
-@l1_handler
-func relay{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    from_address: felt, spell: felt
-) {
-    let (l1_governance_relay) = _l1_governance_relay.read();
-    assert l1_governance_relay = from_address;
+    #[view]
+    fn l1_governance_relay() -> EthAddress {
+        _l1_governance_relay::read()
+    }
 
-    ISpell.library_call_execute(spell);
+    #[constructor]
+    fn constructor(l1_governance_relay: EthAddress) {
+        _l1_governance_relay::write(l1_governance_relay);
+    }
 
-    return ();
+    #[l1_handler]
+    fn relay(from_address: felt252, spell: ClassHash) {
+        let l1_governance_relay = _l1_governance_relay::read();
+        assert(_l1_governance_relay::read().into() == from_address, 'l2_gov_relay/not-from-l1_relay');
+
+        ISpellLibraryDispatcher { class_hash: spell }.execute();
+    }
 }
