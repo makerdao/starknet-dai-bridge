@@ -82,6 +82,18 @@ impl EthAddressStorageAccess of StorageAccess::<EthAddress> {
     }
 }
 
+// impl IDAIDispatcherStorageAccess of StorageAccess::<IDAIDispatcher> {
+//     fn read(address_domain: u32, base: StorageBaseAddress) -> SyscallResult<IDAIDispatcher> {
+//         Result::Ok(
+//             IDAIDispatcher {
+//                 contract_address: StorageAccess::<ContractAddress>::read(address_domain, base)?
+//             }
+//         )
+//     }
+//     fn write(address_domain: u32, base: StorageBaseAddress, value: IDAIDispatcher) -> SyscallResult<()> {
+//         StorageAccess::<ContractAddress>::write(address_domain, base, value.contract_address)
+//     }
+// }
 
 #[contract]
 mod L2DAIBridge {
@@ -105,7 +117,7 @@ mod L2DAIBridge {
 
     struct Storage {
         _is_open: bool,
-        _dai: ContractAddress,
+        _dai: IDAIDispatcher,
         _bridge: EthAddress,
         _wards: LegacyMap<ContractAddress, bool>,
     }
@@ -134,7 +146,7 @@ mod L2DAIBridge {
 
     #[view]
     fn dai() -> ContractAddress {
-        _dai::read()
+        _dai::read().contract_address
     }
 
     #[view]
@@ -177,7 +189,7 @@ mod L2DAIBridge {
         _wards::write(ward, true);
         Rely(ward);
         _is_open::write(true);
-        _dai::write(dai);
+        _dai::write(IDAIDispatcher { contract_address: dai });
         _bridge::write(bridge);
     }
 
@@ -187,7 +199,7 @@ mod L2DAIBridge {
 
         let caller = get_caller_address();
 
-        IDAIDispatcher { contract_address: _dai::read() }.burn(caller, amount);
+        _dai::read().burn(caller, amount);
 
         let mut payload: Array<felt252> = ArrayTrait::new();
         payload.append(FINALIZE_WITHDRAW);
@@ -201,13 +213,13 @@ mod L2DAIBridge {
     }
 
     #[l1_handler]
-    fn handle_deposit(from_address: felt252, l2_recipient: ContractAddress, amount: u256, sender_address: EthAddress) {
+    fn handle_deposit(from_address: felt252, l2_recipient: ContractAddress, amount: u256, sender: EthAddress) {
 
         // l1 msg.sender is ignored
 
         assert(from_address == _bridge::read().into(), 'l2_dai_bridge/not-from-bridge');
 
-        IDAIDispatcher { contract_address: _dai::read() }.mint(l2_recipient, amount);
+        _dai::read().mint(l2_recipient, amount);
 
         DepositHandled(l2_recipient, amount);
     }

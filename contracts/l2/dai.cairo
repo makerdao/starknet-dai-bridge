@@ -82,10 +82,6 @@ mod Dai {
         assert(_wards::read(get_caller_address()), 'dai/not-authorized');
     }
 
-    // fn zero() -> u256 {
-    //     u256 { low: 0_u128, high: 0_u128 }
-    // }
-
     #[external]
     fn rely(user: ContractAddress) {
         auth();
