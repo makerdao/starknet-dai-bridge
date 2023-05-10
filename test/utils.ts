@@ -1,6 +1,6 @@
 import { BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
-import { StarknetContract } from "hardhat/types";
+import { Account, StarknetContract } from "hardhat/types";
 import fetch from "node-fetch";
 
 import { getSelectorFromName } from "../scripts/utils";
@@ -100,10 +100,18 @@ export async function getEvent(eventName: string, contractAddress: string) {
 }
 
 export async function simpleDeployL2(
+  account: Account,
   name: string,
   args: object,
   hre: any
 ): Promise<StarknetContract> {
-  const factory = await hre.starknet.getContractFactory(name);
-  return factory.deploy(args);
+  // const factory = await hre.starknet.getContractFactory(name);
+  // return factory.deploy(args);
+
+  const contractFactory = await hre.starknet.getContractFactory(name);
+  const txHash = await account.declare(contractFactory, { maxFee: 10000000000000000 });
+  const classHash = await contractFactory.getClassHash();
+
+  return await account.deploy(contractFactory, args, { maxFee: 10000000000000000 });
+
 }

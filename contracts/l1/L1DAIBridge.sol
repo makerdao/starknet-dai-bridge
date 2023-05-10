@@ -196,17 +196,6 @@ contract L1DAIBridge {
         TokenLike(dai).transferFrom(escrow, l1Recipient, amount);
     }
 
-    function forceWithdrawal(uint256 amount, uint256 l2Sender) external payable whenOpen {
-        emit LogForceWithdrawal(msg.sender, amount, l2Sender);
-
-        uint256[] memory payload = new uint256[](4);
-        payload[0] = l2Sender;
-        payload[1] = uint256(uint160(msg.sender));
-        (payload[2], payload[3]) = toSplitUint(amount);
-
-        StarkNetLike(starkNet).sendMessageToL2{value: msg.value}(l2DaiBridge, FORCE_WITHDRAW, payload);
-    }
-
     function startDepositCancellation(
         uint256 amount,
         uint256 l2Recipient,

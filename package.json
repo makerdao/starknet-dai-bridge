@@ -11,10 +11,10 @@
     "lint": "eslint --ext .ts test scripts hardhat.config.ts",
     "lint:fix": "yarn lint --fix",
     "compile:l1": "hardhat compile",
-    "compile:l2": "hardhat starknet-compile",
+    "compile:l2": "hardhat starknet-compile --add-pythonic-hints",
     "compile": "yarn compile:l1 && yarn compile:l2",
     "chain:l1": "hardhat node",
-    "chain:l2": "starknet-devnet",
+    "chain:l2": "starknet-devnet --cairo-compiler-manifest /home/maciejka/projects/maker/cairo/Cargo.toml",
     "chain": "concurrently 'yarn chain:l1' 'yarn chain:l2'",
     "chain:ci": "concurrently 'NODE_ENV=test yarn chain:l1' 'yarn chain:l2'",
     "test:l1": "NODE_ENV=test TEST_ENV=l1 hardhat test",
@@ -63,6 +63,9 @@
     "ethereum-waffle": "^4.0.10"
   },
   "resolutions": {
-    "hardhat/**/@ethereumjs/tx": "3.5.0"
+    "hardhat/**/@ethereumjs/tx": "3.5.0",
+    "string-width": "4.2.3",
+    "strip-ansi": "6.0.1",
+    "wrap-ansi": "7.0.0"
   }
 }

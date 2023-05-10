@@ -7,7 +7,6 @@ authors = ["MakerDAO"]
 [tool.poetry.dependencies]
 python = ">=3.9,<3.10"
 cairo-lang = "0.11.0.2"
-lark = "0.11.3"
 dill = "0.3.4"
 starknet-devnet = "0.5.1"
 slither-analyzer = "0.8.3"
