@@ -18,7 +18,6 @@ mod Dai {
     use starknet::get_caller_address;
     use starknet::get_contract_address;
     use starknet::ContractAddress;
-    use starknet::ContractAddressZeroable;
     use zeroable::Zeroable;
     use integer::BoundedInt;
 

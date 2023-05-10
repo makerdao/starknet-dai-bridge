@@ -8,10 +8,12 @@ import {
 import chai, { expect } from "chai";
 import { ethers } from "ethers";
 import hre from "hardhat";
+import { solidity } from "ethereum-waffle";
 
 import { eth, split } from "../utils";
 
 chai.use(smock.matchers);
+chai.use(solidity);
 
 const MAX_UINT256 = hre.ethers.constants.MaxUint256;
 const DEPOSIT = parseFixed(

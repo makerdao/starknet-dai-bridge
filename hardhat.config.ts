@@ -1,9 +1,7 @@
-import "hardhat-gas-reporter";
-import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
-import "solidity-coverage";
 import "@shardlabs/starknet-hardhat-plugin";
+
 import "./scripts/deployBridge";
 import "./scripts/deployBridgeUpgrade";
 import "./scripts/deployEscrowMom";
@@ -100,8 +98,11 @@ const config = {
     },
   },
   starknet: {
-    dockerizedVersion: "0.10.0",
+    venv: "active",
+    // dockerizedVersion: "0.11.0.2",
+    cairo1BinDir: "../cairo/target/release",
     network: getStarknetNetwork(),
+
     wallets: {
       user: {
         accountName: "user",
@@ -122,7 +123,7 @@ const config = {
     cache: "./cache",
     sources: "./contracts",
     tests: "./test",
-    starknetSources: "./contracts",
+    starknetSources: "./contracts/l2",
     starknetArtifacts: "./starknet-artifacts",
   },
   mocha: {
@@ -142,7 +143,7 @@ const config = {
           // https://hardhat.org/hardhat-network/#solidity-optimizer-support
           optimizer: {
             enabled: true,
-            runs: 800,
+            runs: 200,
           },
         },
       },
