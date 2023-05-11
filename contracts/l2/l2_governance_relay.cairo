@@ -25,16 +25,16 @@ trait ISpell {
     fn execute();
 }
 
-impl EthAddressStorageAccess of StorageAccess::<EthAddress> {
-    fn read(address_domain: u32, base: StorageBaseAddress) -> SyscallResult<EthAddress> {
-        Result::Ok(
-            EthAddress { address: StorageAccess::<felt252>::read(address_domain, base)?}
-        )
-    }
-    fn write(address_domain: u32, base: StorageBaseAddress, value: EthAddress) -> SyscallResult<()> {
-        StorageAccess::<felt252>::write(address_domain, base, value.into())
-    }
-}
+// impl EthAddressStorageAccess of StorageAccess::<EthAddress> {
+//     fn read(address_domain: u32, base: StorageBaseAddress) -> SyscallResult<EthAddress> {
+//         Result::Ok(
+//             EthAddress { address: StorageAccess::<felt252>::read(address_domain, base)?}
+//         )
+//     }
+//     fn write(address_domain: u32, base: StorageBaseAddress, value: EthAddress) -> SyscallResult<()> {
+//         StorageAccess::<felt252>::write(address_domain, base, value.into())
+//     }
+// }
 
 #[contract]
 mod L2GovernanceDelay {
@@ -43,7 +43,7 @@ mod L2GovernanceDelay {
     use super::ISpellLibraryDispatcher;
     use traits::Into;
     use starknet::EthAddress;
-    use super::EthAddressStorageAccess;
+    // use super::EthAddressStorageAccess;
 
     struct Storage {
         _l1_governance_relay: EthAddress
@@ -61,7 +61,6 @@ mod L2GovernanceDelay {
 
     #[l1_handler]
     fn relay(from_address: felt252, spell: ClassHash) {
-        let l1_governance_relay = _l1_governance_relay::read();
         assert(_l1_governance_relay::read().into() == from_address, 'l2_gov_relay/not-from-l1_relay');
 
         ISpellLibraryDispatcher { class_hash: spell }.execute();

@@ -69,11 +69,7 @@ export function toBytes32(a: string): string {
 }
 
 export function eth(amount: string) {
-  return parseEther(amount);
-}
-
-export function l2Eth(amount: string): SplitUint {
-  return SplitUint.fromUint(parseEther(amount).toHexString());
+  return parseEther(amount).toBigInt();
 }
 
 export function asDec(a: string | number | bigint): string {

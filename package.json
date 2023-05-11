@@ -33,7 +33,7 @@
     "@nomiclabs/hardhat-ethers": "^2.2.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "@openzeppelin/contracts": "^4.8.3",
-    "@shardlabs/starknet-hardhat-plugin": "^v0.8.0-alpha.1",
+    "@shardlabs/starknet-hardhat-plugin": "^v0.8.0-alpha.2",
     "@types/lodash": "^4.14.191",
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.11.13",

@@ -102,7 +102,7 @@ const config = {
     // dockerizedVersion: "0.11.0.2",
     cairo1BinDir: "../cairo/target/release",
     network: getStarknetNetwork(),
-
+    requestTimeout: 90_000,
     wallets: {
       user: {
         accountName: "user",
