@@ -22,8 +22,6 @@ mod Dai {
     use integer::BoundedInt;
 
     struct Storage {
-        _name: felt252,               // TODO: change to char type when available
-        _symbol: felt252,             // TODO: change to char type when available
         _total_supply: u256,
         _balances: LegacyMap<ContractAddress, u256>,
         _allowances: LegacyMap<(ContractAddress, ContractAddress), u256>,
@@ -49,21 +47,21 @@ mod Dai {
 
     #[view]
     fn name() -> felt252 {
-        _name::read()
+        'Dai Stablecoin'
     }
 
     #[view]
     fn symbol() -> felt252 {
-        _symbol::read()
+        'DAI'
     }
 
     #[view]
-    fn totalSupply() -> u256 {
+    fn total_supply() -> u256 {
         _total_supply::read()
     }
 
     #[view]
-    fn balanceOf(user: ContractAddress) -> u256 {
+    fn balance_of(user: ContractAddress) -> u256 {
         _balances::read(user)
     }
 
@@ -102,17 +100,17 @@ mod Dai {
     }
 
     #[external]
-    fn mint(account: ContractAddress, amount: u256) {
+    fn mint(recipient: ContractAddress, amount: u256) {
         auth();
 
-        assert(account.is_non_zero(), 'dai/invalid-recipient');
-        assert(account != get_contract_address(), 'dai/invalid-recipient');
+        assert(recipient.is_non_zero(), 'dai/invalid-recipient');
+        assert(recipient != get_contract_address(), 'dai/invalid-recipient');
 
-        _balances::write(account, _balances::read(account) + amount);
+        _balances::write(recipient, _balances::read(recipient) + amount);
         // TODO: no need for safe math here
         _total_supply::write(_total_supply::read() + amount);
 
-        Transfer(Zeroable::zero(), account, amount);
+        Transfer(Zeroable::zero(), recipient, amount);
     }
 
     #[external]
@@ -146,7 +144,7 @@ mod Dai {
     }
 
     #[external]
-    fn transferFrom(sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool {
+    fn transfer_from(sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool {
 
         _transfer(sender, recipient, amount);
 
@@ -168,14 +166,14 @@ mod Dai {
     }
 
     #[external]
-    fn increaseAllowance(spender: ContractAddress, amount: u256) -> bool {
+    fn increase_allowance(spender: ContractAddress, amount: u256) -> bool {
         let caller = get_caller_address();
         _approve(caller, spender, _allowances::read((caller, spender)) + amount);
         true
     }
 
     #[external]
-    fn decreaseAllowance(spender: ContractAddress, amount: u256) -> bool {
+    fn decrease_allowance(spender: ContractAddress, amount: u256) -> bool {
         let caller = get_caller_address();
         _approve(caller, spender, _allowances::read((caller, spender)) - amount);
         true

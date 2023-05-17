@@ -53,9 +53,14 @@ function getStarknetNetwork() {
 let test: string;
 if (process.env.TEST_ENV === "e2e") {
   test = "e2e";
-} else {
-  test = "l1:*";
 }
+if (process.env.TEST_ENV === "l2") {
+  test = "/^l2:.*/";
+} else {
+  test = "/^l1:.*/";
+}
+
+console.log("test", test);
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
   const url: string = `https://${network}.infura.io/v3/${infuraApiKey}`;

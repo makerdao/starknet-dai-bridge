@@ -7,32 +7,20 @@ import hre, { ethers, network, starknet } from "hardhat";
 import { HttpNetworkConfig } from "hardhat/types";
 import { Account } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 
-import {
-  asDec,
-  eth,
-  getEvent,
-  simpleDeployL2,
-  SplitUint,
-  toBytes32,
-} from "../utils";
-
-const L1_TARGET_DOMAIN = ethers.utils.formatBytes32String("1");
-const L2_TARGET_DOMAIN = `0x${Buffer.from("1", "utf8").toString("hex")}`;
-const L1_SOURCE_DOMAIN = ethers.utils.formatBytes32String("2");
-const L2_SOURCE_DOMAIN = `0x${Buffer.from("2", "utf8").toString("hex")}`;
-// Cairo encoding of "valid_domains"
-const VALID_DOMAINS = "9379074284324409537785911406195";
+import { eth, simpleDeployL2 } from "../utils";
 
 export async function snPredeployedAccounts(n: number): Promise<Account[]> {
-  return Promise.all((await hre.starknet.devnet.getPredeployedAccounts()).slice(0, n)
-  .map(async ({ address, private_key }) => {
-    return await hre.starknet.OpenZeppelinAccount.getAccountFromAddress(
-      address,
-      private_key
-    );
-  }));
+  return Promise.all(
+    (await hre.starknet.devnet.getPredeployedAccounts())
+      .slice(0, n)
+      .map(async ({ address, private_key }) => {
+        return await hre.starknet.OpenZeppelinAccount.getAccountFromAddress(
+          address,
+          private_key
+        );
+      })
+  );
 }
-
 
 describe("e2e", async function () {
   this.timeout(900_000); // eslint-disable-line
@@ -43,9 +31,7 @@ describe("e2e", async function () {
   let dai: any;
   let escrow: any;
   let l1Bridge: any;
-  let l1TeleportGateway: any;
   let l2Bridge: any;
-  let l2TeleportGateway: any;
   let l2Dai: any;
   let teleportRouterFake: any;
 
@@ -77,7 +63,6 @@ describe("e2e", async function () {
     const futureL1DAIBridgeAddress = await getAddressOfNextDeployedContract(
       admin
     );
-
 
     l2Bridge = await simpleDeployL2(
       l2Auth,
@@ -125,23 +110,28 @@ describe("e2e", async function () {
       const currentL1Balance = BigInt(await dai.balanceOf(l1Alice.address));
       const depositAmountL1 = eth("100");
       const depositAmountL2 = eth("100");
-      const {response: l2AuthBalance} = await l2Dai.call("balanceOf", {
+      const { response: l2AuthBalance } = await l2Dai.call("balanceOf", {
         user: l2Auth.address,
       });
 
       await l1Bridge
         .connect(l1Alice)
-        .deposit(depositAmountL1, l2Auth.address, {value: 1000});
+        .deposit(depositAmountL1, l2Auth.address, { value: 1000 });
       await starknet.devnet.flush();
       await starknet.devnet.flush();
 
       expect(await dai.balanceOf(l1Alice.address)).to.be.eq(
         currentL1Balance - depositAmountL1
       );
-      const { response: l2BalanceAfterDeposit } = await l2Dai.call("balanceOf", {
-        user: l2Auth.address,
-      });
-      expect(l2BalanceAfterDeposit).to.deep.equal(l2AuthBalance + depositAmountL2);
+      const { response: l2BalanceAfterDeposit } = await l2Dai.call(
+        "balanceOf",
+        {
+          user: l2Auth.address,
+        }
+      );
+      expect(l2BalanceAfterDeposit).to.deep.equal(
+        l2AuthBalance + depositAmountL2
+      );
     });
 
     it("withdraw", async () => {
@@ -164,11 +154,16 @@ describe("e2e", async function () {
       expect(await dai.balanceOf(l1Alice.address)).to.be.eq(
         currentL1Balance.add(withdrawAmountL1)
       );
-      const { response: l2BalanceAfterWidthdraw } = await l2Dai.call("balanceOf", {
-        user: l2Auth.address,
-      });
+      const { response: l2BalanceAfterWidthdraw } = await l2Dai.call(
+        "balanceOf",
+        {
+          user: l2Auth.address,
+        }
+      );
 
-      expect(l2BalanceAfterWidthdraw).to.deep.equal(l2AuthBalance - withdrawAmountL2);
+      expect(l2BalanceAfterWidthdraw).to.deep.equal(
+        l2AuthBalance - withdrawAmountL2
+      );
     });
   });
 });

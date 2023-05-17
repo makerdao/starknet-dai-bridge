@@ -31,16 +31,16 @@ trait IDAI {
     fn balanceOf(user: ContractAddress) -> u256;
 }
 
-// impl EthAddressStorageAccess of StorageAccess::<EthAddress> {
-//     fn read(address_domain: u32, base: StorageBaseAddress) -> SyscallResult<EthAddress> {
-//         Result::Ok(
-//             EthAddress { address: StorageAccess::<felt252>::read(address_domain, base)?}
-//         )
-//     }
-//     fn write(address_domain: u32, base: StorageBaseAddress, value: EthAddress) -> SyscallResult<()> {
-//         StorageAccess::<felt252>::write(address_domain, base, value.into())
-//     }
-// }
+impl EthAddressStorageAccess of StorageAccess::<EthAddress> {
+    fn read(address_domain: u32, base: StorageBaseAddress) -> SyscallResult<EthAddress> {
+        Result::Ok(
+            EthAddress { address: StorageAccess::<felt252>::read(address_domain, base)?}
+        )
+    }
+    fn write(address_domain: u32, base: StorageBaseAddress, value: EthAddress) -> SyscallResult<()> {
+        StorageAccess::<felt252>::write(address_domain, base, value.into())
+    }
+}
 
 #[contract]
 mod L2DAIBridge {
@@ -54,7 +54,7 @@ mod L2DAIBridge {
     use starknet::EthAddressIntoFelt252;
     use starknet::EthAddressSerde;
     use starknet::EthAddressZeroable;
-    // use super::EthAddressStorageAccess;
+    use super::EthAddressStorageAccess;
     use super::IDAIDispatcher;
     use super::IDAIDispatcherTrait;
     use array::ArrayTrait;

@@ -105,9 +105,12 @@ export async function simpleDeployL2(
   // return factory.deploy(args);
 
   const contractFactory = await hre.starknet.getContractFactory(name);
-  const txHash = await account.declare(contractFactory, { maxFee: 10000000000000000 });
+  const txHash = await account.declare(contractFactory, {
+    maxFee: 10000000000000000,
+  });
   const classHash = await contractFactory.getClassHash();
 
-  return await account.deploy(contractFactory, args, { maxFee: 10000000000000000 });
-
+  return await account.deploy(contractFactory, args, {
+    maxFee: 10000000000000000,
+  });
 }
