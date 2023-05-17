@@ -1,3 +1,4 @@
+import hre from "hardhat";
 import { BigNumber } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 import { Account, StarknetContract } from "hardhat/types";
@@ -114,3 +115,12 @@ export async function simpleDeployL2(
     maxFee: 10000000000000000,
   });
 }
+
+export function strToFelt(str: string): string {
+  const substr = str.split("");
+  return (
+    "0x" + substr.reduce((memo, c) => memo + c.charCodeAt(0).toString(16), "")
+  );
+}
+
+export const MAX = 2n ** 256n - 1n;
