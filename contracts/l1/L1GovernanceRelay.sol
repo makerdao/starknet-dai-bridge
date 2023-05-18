@@ -49,11 +49,21 @@ contract L1GovernanceRelay {
     l2GovernanceRelay = _l2GovernanceRelay;
   }
 
-  // Forward a call to be repeated on L2
-  function relay(uint256 spell) external payable auth {
-    uint256[] memory payload = new uint256[](1);
-    payload[0] = spell;
-    StarkNetLike(starkNet).sendMessageToL2{value: msg.value}(l2GovernanceRelay, RELAY_SELECTOR, payload);
+  // Allow contract to receive ether
+  receive() external payable {}
+
+  // Allow governance to reclaim stored ether
+  function reclaim(address receiver, uint256 amount) external auth {
+    (bool sent, ) = receiver.call{value: amount}("");
+    require(sent, "L1GovernanceRelay/failed-to-send-ether");
   }
 
+  // Forward a call to be repeated on L2
+  function relay(uint256 spell, uint256 l2Gas) external payable auth {
+    uint256[] memory payload = new uint256[](1);
+    payload[0] = spell;
+    StarkNetLike(starkNet).sendMessageToL2{value: l2Gas}(
+      l2GovernanceRelay, RELAY_SELECTOR, payload
+    );
+  }
 }
