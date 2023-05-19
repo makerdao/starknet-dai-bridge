@@ -23,7 +23,7 @@ export async function snPredeployedAccounts2(n: number): Promise<Account[]> {
   return accounts;
 }
 
-describe.only("l2:bridge", async function () {
+describe("l2:bridge", async function () {
   this.timeout(900_000); // eslint-disable-line
 
   let l2Auth: Account;
