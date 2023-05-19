@@ -26,7 +26,7 @@ const FORCE_WITHDRAW = parseFixed(
 const WITHDRAW = 0;
 
 function toSplitUint(value: any) {
-  const bits = value.toBigInt().toString(16).padStart(64, "0");
+  const bits = value.toString(16).padStart(64, "0");
   return [BigInt(`0x${bits.slice(32)}`), BigInt(`0x${bits.slice(0, 32)}`)];
 }
 
@@ -49,7 +49,6 @@ describe("l1:L1DAIBridge", function () {
       "close()",
       "deposit(uint256,uint256)",
       "withdraw(uint256,address)",
-      "forceWithdrawal(uint256,uint256)",
       "setCeiling(uint256)",
       "setMaxDeposit(uint256)",
       "startDepositCancellation(uint256,uint256,uint256)",
@@ -141,9 +140,7 @@ describe("l1:L1DAIBridge", function () {
       const l2User = "123";
 
       await dai.connect(admin).transfer(l1Alice.address, depositAmount);
-      await dai
-        .connect(l1Alice)
-        .approve(l1Bridge.address, depositAmount.sub(1));
+      await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount - 1n);
 
       await l1Bridge.connect(admin).setCeiling(depositAmount);
 
@@ -158,7 +155,7 @@ describe("l1:L1DAIBridge", function () {
       const depositAmount = eth("333");
       const l2User = "123";
 
-      await dai.connect(admin).transfer(l1Alice.address, depositAmount.sub(1));
+      await dai.connect(admin).transfer(l1Alice.address, depositAmount - 1n);
       await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount);
 
       await l1Bridge.connect(admin).setCeiling(depositAmount);
@@ -190,7 +187,7 @@ describe("l1:L1DAIBridge", function () {
 
       await dai.connect(admin).transfer(l1Alice.address, depositAmount);
       await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount);
-      await l1Bridge.connect(admin).setCeiling(depositAmount.sub(1));
+      await l1Bridge.connect(admin).setCeiling(depositAmount - 1n);
 
       const options = { value: 1 };
       await expect(
@@ -205,7 +202,7 @@ describe("l1:L1DAIBridge", function () {
 
       await dai.connect(admin).transfer(l1Alice.address, depositAmount);
       await dai.connect(l1Alice).approve(l1Bridge.address, depositAmount);
-      await l1Bridge.connect(admin).setMaxDeposit(depositAmount.sub(1));
+      await l1Bridge.connect(admin).setMaxDeposit(depositAmount - 1n);
 
       const options = { value: 1 };
       await expect(
@@ -463,7 +460,7 @@ describe("l1:L1DAIBridge", function () {
       expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
       expect(await dai.balanceOf(escrow.address)).to.be.eq(withdrawalAmount);
 
-      const wrongAmount = withdrawalAmount.sub(1);
+      const wrongAmount = withdrawalAmount - 1n;
       starkNetFake.consumeMessageFromL2
         .whenCalledWith(l2BridgeAddress, [
           WITHDRAW,
@@ -557,42 +554,6 @@ describe("l1:L1DAIBridge", function () {
       await expect(
         l1Bridge.connect(l1Alice).setMaxDeposit(1)
       ).to.be.revertedWith("L1DAIBridge/not-authorized");
-    });
-  });
-  describe("forceWithdrawal", function () {
-    it("sends a message to l2, emits event", async () => {
-      const { l1Alice, starkNetFake, l1Bridge, l2BridgeAddress } =
-        await setupTest();
-
-      const amount = eth("333");
-      const l2User = "123";
-
-      const options = { value: 1 };
-      await expect(
-        l1Bridge.connect(l1Alice).forceWithdrawal(amount, l2User, options)
-      )
-        .to.emit(l1Bridge, "LogForceWithdrawal")
-        .withArgs(l1Alice.address, amount, l2User);
-
-      expect(starkNetFake.sendMessageToL2).to.have.been.calledOnce;
-      expect(starkNetFake.sendMessageToL2).to.have.been.calledWith(
-        l2BridgeAddress,
-        FORCE_WITHDRAW,
-        [l2User, l1Alice.address, ...split(amount)]
-      );
-    });
-    it("reverts when bridge is closed", async () => {
-      const { l1Alice, admin, l1Bridge } = await setupTest();
-
-      const amount = eth("333");
-      const l2User = "123";
-
-      await l1Bridge.connect(admin).close();
-
-      const options = { value: 1 };
-      await expect(
-        l1Bridge.connect(l1Alice).forceWithdrawal(amount, l2User, options)
-      ).to.be.revertedWith("L1DAIBridge/closed");
     });
   });
   testAuth({

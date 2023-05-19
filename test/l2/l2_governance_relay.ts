@@ -23,7 +23,7 @@ export async function snPredeployedAccounts2(n: number): Promise<Account[]> {
   return accounts;
 }
 
-describe.only("l2:relay", async function () {
+describe("l2:relay", async function () {
   this.timeout(900_000); // eslint-disable-line
 
   let l2Auth: Account;
@@ -120,7 +120,7 @@ describe.only("l2:relay", async function () {
   });
 
   describe("l2:governance relay", async () => {
-    it.only("relay", async () => {
+    it("relay", async () => {
       const spellSrc = `
 use starknet::ContractAddress;
 
@@ -186,6 +186,23 @@ fn constructor() {
       expect(receipt.status).to.be.eq("ACCEPTED_ON_L2");
 
       await checkBalances(eth("110"), eth("100"));
+    });
+    it("relay fails when called by unauthorized contract", async () => {
+      const { transaction_hash } = await hre.starknet.devnet.sendMessageToL2(
+        l2GovRelay.address,
+        "relay",
+        l1Recipient,
+        [BigInt(1234)],
+        0n,
+        1n
+      );
+      const receipt = await hre.starknet.getTransactionReceipt(
+        transaction_hash
+      );
+      expect(receipt.status).to.be.eq("REJECTED");
+      expect(
+        (receipt as any).transaction_failure_reason.error_message
+      ).to.include(strToFelt("l2_gov_relay/not-from-l1_relay"));
     });
   });
 });

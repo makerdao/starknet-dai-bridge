@@ -37,7 +37,7 @@ impl EthAddressStorageAccess of StorageAccess::<EthAddress> {
 }
 
 #[contract]
-mod L2GovernanceDelay {
+mod L2GovernanceRelay {
     use starknet::ClassHash;
     use super::ISpellDispatcherTrait;
     use super::ISpellLibraryDispatcher;
