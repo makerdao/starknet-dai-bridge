@@ -17,7 +17,7 @@ const L2_TARGET_DOMAIN = `0x${Buffer.from("1", "utf8").toString("hex")}`;
 const L1_SOURCE_DOMAIN = hre.ethers.utils.formatBytes32String("2");
 const L2_SOURCE_DOMAIN = `0x${Buffer.from("2", "utf8").toString("hex")}`;
 
-describe.skip("l1:L1DAITeleportGateway", () => {
+describe("l1:L1DAITeleportGateway", () => {
   it("initializes properly", async () => {
     const {
       admin,
