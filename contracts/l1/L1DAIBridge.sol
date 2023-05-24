@@ -183,13 +183,14 @@ contract L1DAIBridge {
       return (low, high);
     }
 
+
     // slither-disable-next-line similar-names
     function withdraw(uint256 amount, address l1Recipient) external {
         emit LogWithdrawal(l1Recipient, amount);
 
         uint256[] memory payload = new uint256[](4);
         payload[0] = HANDLE_WITHDRAW;
-        payload[1] = uint256(uint160(msg.sender));
+        payload[1] = uint256(uint160(l1Recipient));
         (payload[2], payload[3]) = toSplitUint(amount);
 
         StarkNetLike(starkNet).consumeMessageFromL2(l2DaiBridge, payload);

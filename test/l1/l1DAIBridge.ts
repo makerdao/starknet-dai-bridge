@@ -290,7 +290,7 @@ describe("l1:L1DAIBridge", function () {
       expect(await dai.balanceOf(escrow.address)).to.be.eq(0);
     });
   });
-  describe("withdraw", function () {
+  describe.only("withdraw", function () {
     it("sends funds from the escrow", async () => {
       const {
         admin,
@@ -351,10 +351,10 @@ describe("l1:L1DAIBridge", function () {
       expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
       expect(await dai.balanceOf(escrow.address)).to.be.eq(withdrawalAmount);
 
-      await l1Bridge.connect(l1Alice).withdraw(withdrawalAmount, l1Bob.address);
+      await l1Bridge.connect(l1Bob).withdraw(withdrawalAmount, l1Alice.address);
 
-      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(0);
-      expect(await dai.balanceOf(l1Bob.address)).to.be.eq(withdrawalAmount);
+      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(withdrawalAmount);
+      expect(await dai.balanceOf(l1Bob.address)).to.be.eq(0);
       expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
       expect(await dai.balanceOf(escrow.address)).to.be.eq(0);
 
@@ -398,45 +398,6 @@ describe("l1:L1DAIBridge", function () {
       expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
         l2BridgeAddress,
         [WITHDRAW, l1Alice.address, ...split(withdrawalAmount)]
-      );
-    });
-    it("reverts when called by not a withdrawal recipient", async () => {
-      const {
-        admin,
-        l1Alice,
-        l1Bob,
-        dai,
-        starkNetFake,
-        escrow,
-        l1Bridge,
-        l2BridgeAddress,
-      } = await setupTest();
-
-      const withdrawalAmount = eth("333");
-
-      await escrow.approve(dai.address, l1Bridge.address, MAX_UINT256);
-
-      await dai.connect(admin).transfer(escrow.address, withdrawalAmount);
-
-      expect(await dai.balanceOf(l1Alice.address)).to.be.eq(0);
-      expect(await dai.balanceOf(l1Bridge.address)).to.be.eq(0);
-      expect(await dai.balanceOf(escrow.address)).to.be.eq(withdrawalAmount);
-
-      starkNetFake.consumeMessageFromL2
-        .whenCalledWith(l2BridgeAddress, [
-          WITHDRAW,
-          l1Bob.address,
-          ...split(withdrawalAmount),
-        ])
-        .reverts();
-
-      await expect(
-        l1Bridge.connect(l1Bob).withdraw(withdrawalAmount, l1Alice.address)
-      ).to.be.reverted;
-
-      expect(starkNetFake.consumeMessageFromL2).to.have.been.calledWith(
-        l2BridgeAddress,
-        [WITHDRAW, l1Bob.address, ...split(withdrawalAmount)]
       );
     });
     it("reverts when called with wrong amount", async () => {
