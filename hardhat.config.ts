@@ -51,10 +51,10 @@ function getStarknetNetwork() {
 }
 
 let test: string;
+console.log("process.env.TEST_ENV", process.env.TEST_ENV);
 if (process.env.TEST_ENV === "e2e") {
   test = "e2e";
-}
-if (process.env.TEST_ENV === "l2") {
+} else if (process.env.TEST_ENV === "l2") {
   test = "/^l2:.*/";
 } else {
   test = "/^l1:.*/";

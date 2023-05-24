@@ -13,12 +13,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use traits::Into;
+use traits::{Into,TryInto};
+use option::{Option, OptionTrait};
 use starknet::StorageAccess;
 use starknet::StorageAddress;
 use starknet::StorageBaseAddress;
 use starknet::SyscallResult;
 use starknet::EthAddress;
+use starknet::EthAddressIntoFelt252;
+use starknet::Felt252TryIntoEthAddress;
 
 #[abi]
 trait ISpell {
@@ -33,6 +36,26 @@ impl EthAddressStorageAccess of StorageAccess::<EthAddress> {
     }
     fn write(address_domain: u32, base: StorageBaseAddress, value: EthAddress) -> SyscallResult<()> {
         StorageAccess::<felt252>::write(address_domain, base, value.into())
+    }
+    fn read_at_offset_internal(
+        address_domain: u32, base: StorageBaseAddress, offset: u8
+    ) -> SyscallResult<EthAddress> {
+        Result::Ok(
+            StorageAccess::<felt252>::read_at_offset_internal(address_domain, base, offset)?
+                .try_into()
+                .expect('Non EthAddress')
+        )
+    }
+    fn write_at_offset_internal(
+        address_domain: u32, base: StorageBaseAddress, offset: u8, value: EthAddress
+    ) -> SyscallResult<()> {
+        StorageAccess::<felt252>::write_at_offset_internal(
+            address_domain, base, offset, value.into()
+        )
+    }
+    #[inline(always)]
+    fn size_internal(value: EthAddress) -> u8 {
+        1_u8
     }
 }
 

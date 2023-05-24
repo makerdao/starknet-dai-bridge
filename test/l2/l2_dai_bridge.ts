@@ -214,4 +214,29 @@ describe("l2:bridge", async function () {
     });
     await checkBalances(eth("100"), eth("110"));
   });
+
+  it("deposit should work when closed", async () => {
+    await l2Auth.invoke(l2Bridge, "close");
+
+    const { transaction_hash: txHash } = await starknet.devnet.sendMessageToL2(
+      l2Bridge.address,
+      "handle_deposit",
+      l1BridgeAddress,
+      [BigInt(bob.address), eth("10"), 0n, 0n],
+      0,
+      1n
+    );
+    const receipt = await starknet.getTransactionReceipt(txHash);
+    const decodedEvents = l2Bridge.decodeEvents(receipt.events);
+
+    expect(decodedEvents[0]).to.deep.eq({
+      name: "DepositHandled",
+      data: {
+        account: BigInt(bob.address),
+        amount: eth("10"),
+      },
+    });
+    await checkBalances(eth("100"), eth("110"));
+  });
+
 });

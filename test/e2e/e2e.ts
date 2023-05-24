@@ -7,7 +7,7 @@ import hre, { ethers, network, starknet } from "hardhat";
 import { HttpNetworkConfig } from "hardhat/types";
 import { Account } from "@shardlabs/starknet-hardhat-plugin/dist/src/account";
 
-import { eth, simpleDeployL2 } from "../utils";
+import { eth, simpleDeployL2, getEvent, toBytes32 } from "../utils";
 
 export async function snPredeployedAccounts(n: number): Promise<Account[]> {
   return Promise.all(
@@ -22,6 +22,13 @@ export async function snPredeployedAccounts(n: number): Promise<Account[]> {
   );
 }
 
+const L1_TARGET_DOMAIN = ethers.utils.formatBytes32String("1");
+const L2_TARGET_DOMAIN = `0x${Buffer.from("1", "utf8").toString("hex")}`;
+const L1_SOURCE_DOMAIN = ethers.utils.formatBytes32String("2");
+const L2_SOURCE_DOMAIN = `0x${Buffer.from("2", "utf8").toString("hex")}`;
+// Cairo encoding of "valid_domains"
+const VALID_DOMAINS = "9379074284324409537785911406195";
+
 describe("e2e", async function () {
   this.timeout(900_000); // eslint-disable-line
   let admin: any;
@@ -33,6 +40,8 @@ describe("e2e", async function () {
   let l1Bridge: any;
   let l2Bridge: any;
   let l2Dai: any;
+  let l1TeleportGateway: any;
+  let l2TeleportGateway: any;
   let teleportRouterFake: any;
 
   before(async function () {
@@ -71,7 +80,6 @@ describe("e2e", async function () {
         ward: l2Auth.address,
         dai: l2Dai.address,
         bridge: futureL1DAIBridgeAddress,
-        // registry: registry.address,
       },
       hre
     );
@@ -84,14 +92,45 @@ describe("e2e", async function () {
       l2Bridge.address,
     ]);
 
+    const futureL1DAITeleportGatewayAddress =
+      await getAddressOfNextDeployedContract(admin);
+    l2TeleportGateway = await simpleDeployL2(
+      l2Auth,
+      "l2_dai_teleport_gateway",
+      {
+        ward: l2Auth.starknetContract.address,
+        dai: l2Dai.address,
+        teleport_gateway: futureL1DAITeleportGatewayAddress,
+        domain: L2_SOURCE_DOMAIN,
+      },
+      hre
+    );
+    l1TeleportGateway = await simpleDeploy("L1DAITeleportGateway", [
+      mockStarknetMessaging.address,
+      dai.address,
+      l2TeleportGateway.address,
+      escrow.address,
+      teleportRouterFake.address,
+    ]);
+
     const MAX = 2n ** 256n - 1n;
     await escrow.connect(admin).approve(dai.address, l1Bridge.address, MAX);
+    await escrow
+      .connect(admin)
+      .approve(dai.address, l1TeleportGateway.address, MAX);
+
+    await l2Auth.invoke(l2TeleportGateway, "file", {
+      what: VALID_DOMAINS,
+      domain: L2_TARGET_DOMAIN,
+      data: true,
+    });
+
     await l1Bridge.connect(admin).setCeiling(MAX);
     await dai.connect(admin).approve(l1Bridge.address, MAX);
     await dai.connect(admin).transfer(l1Alice.address, eth("1000"));
     await dai.connect(admin).transfer(escrow.address, eth("1000"));
     await l2Auth.invoke(l2Dai, "mint", {
-      account: l2Auth.address,
+      recipient: l2Auth.address,
       amount: eth("1000"),
     });
     await l2Auth.invoke(l2Dai, "rely", {
@@ -101,6 +140,11 @@ describe("e2e", async function () {
       spender: l2Bridge.address,
       amount: MAX,
     });
+    await l2Auth.invoke(l2Dai, "approve", {
+      spender: l2TeleportGateway.address,
+      amount: MAX,
+    });
+
     await dai.connect(l1Alice).approve(l1Bridge.address, MAX);
     await dai.connect(l1Bob).approve(l1Bridge.address, MAX);
   });
@@ -164,6 +208,123 @@ describe("e2e", async function () {
       expect(l2BalanceAfterWidthdraw).to.deep.equal(
         l2AuthBalance - withdrawAmountL2
       );
+    });
+  });
+
+  describe("teleport", async () => {
+    it("slow path", async () => {
+      const { response: l2AuthBalance } = await l2Dai.call("balance_of", {
+        user: l2Auth.starknetContract.address,
+      });
+
+      const teleportAmount = eth("100");
+
+      await l2Auth.invoke(l2TeleportGateway, "initiate_teleport", {
+        target_domain: L2_TARGET_DOMAIN,
+        receiver: l1Alice.address,
+        amount: teleportAmount,
+        operator: l1Alice.address,
+      });
+
+      const { response: balanceAfterTeleport } = await l2Dai.call(
+        "balance_of",
+        {
+          user: l2Auth.starknetContract.address,
+        }
+      );
+      expect(balanceAfterTeleport).to.deep.equal(
+        l2AuthBalance - teleportAmount
+      );
+
+      const [nonce, timestamp] = (
+        await getEvent("TeleportInitialized", l2TeleportGateway.address)
+      ).slice(-2);
+      await l2Auth.invoke(l2TeleportGateway, "finalize_register_teleport", {
+        target_domain: L2_TARGET_DOMAIN,
+        receiver: l1Alice.address,
+        amount: teleportAmount,
+        operator: l1Alice.address,
+        nonce: parseInt(nonce),
+        timestamp: parseInt(timestamp),
+      });
+      await starknet.devnet.flush();
+
+      const teleportGUID = {
+        sourceDomain: toBytes32(L1_SOURCE_DOMAIN), // bytes32
+        targetDomain: toBytes32(L1_TARGET_DOMAIN), // bytes32
+        receiver: toBytes32(l1Alice.address), // bytes32
+        operator: toBytes32(l1Alice.address), // bytes32
+        amount: teleportAmount, // uint128
+        nonce: parseInt(nonce), // uint80
+        timestamp: parseInt(timestamp), // uint48
+      };
+      await expect(
+        l1TeleportGateway
+          .connect(l1Alice)
+          .finalizeRegisterTeleport(teleportGUID)
+      )
+        .to.emit(teleportRouterFake, "RequestMint")
+        .withArgs(Object.values(teleportGUID), eth("0"), eth("0"));
+
+      // check that can't withdraw twice
+      try {
+        await l2Auth.invoke(l2TeleportGateway, "finalize_register_teleport", {
+          target_domain: L2_TARGET_DOMAIN,
+          receiver: l1Alice.address,
+          amount: teleportAmount,
+          operator: l1Alice.address,
+          nonce,
+          timestamp,
+        });
+        expect(true).to.be.eq(false);
+      } catch {
+        expect(true).to.be.eq(true);
+      }
+    });
+
+    it("settle", async () => {
+      const escrowBalance = await dai.balanceOf(escrow.address);
+
+      await l2Auth.invoke(l2TeleportGateway, "initiate_teleport", {
+        target_domain: L2_TARGET_DOMAIN,
+        receiver: l1Alice.address,
+        amount: eth("100"),
+        operator: l1Alice.address,
+      });
+
+      const { response: daiToFlush } = await l2TeleportGateway.call(
+        "batched_dai_to_flush",
+        {
+          domain: L2_TARGET_DOMAIN,
+        }
+      );
+
+      expect(daiToFlush).to.not.eq(0n);
+
+      await l2Auth.invoke(l2TeleportGateway, "flush", {
+        target_domain: L2_TARGET_DOMAIN,
+      });
+      await starknet.devnet.flush();
+
+      await expect(
+        l1TeleportGateway
+          .connect(l1Alice)
+          .finalizeFlush(L1_TARGET_DOMAIN, daiToFlush)
+      )
+        .to.emit(teleportRouterFake, "Settle")
+        .withArgs(L1_TARGET_DOMAIN, daiToFlush);
+
+      expect(await dai.balanceOf(escrow.address)).to.be.eq(
+        BigInt(escrowBalance) - daiToFlush
+      );
+
+      const { response: daiToFlushAfter } = await l2TeleportGateway.call(
+        "batched_dai_to_flush",
+        {
+          domain: L2_TARGET_DOMAIN,
+        }
+      );
+      expect(daiToFlushAfter).to.deep.eq(eth("0"));
     });
   });
 });
