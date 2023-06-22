@@ -13,79 +13,40 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use traits::{Into,TryInto};
-use option::{Option, OptionTrait};
-use starknet::StorageAccess;
-use starknet::StorageAddress;
-use starknet::StorageBaseAddress;
-use starknet::SyscallResult;
-use starknet::EthAddress;
-use starknet::EthAddressIntoFelt252;
-use starknet::Felt252TryIntoEthAddress;
-
-#[abi]
-trait ISpell {
-    fn execute();
+#[starknet::interface]
+trait ISpell<TContractState> {
+    fn execute(self: @TContractState);
 }
 
-impl EthAddressStorageAccess of StorageAccess::<EthAddress> {
-    fn read(address_domain: u32, base: StorageBaseAddress) -> SyscallResult<EthAddress> {
-        Result::Ok(
-            EthAddress { address: StorageAccess::<felt252>::read(address_domain, base)?}
-        )
-    }
-    fn write(address_domain: u32, base: StorageBaseAddress, value: EthAddress) -> SyscallResult<()> {
-        StorageAccess::<felt252>::write(address_domain, base, value.into())
-    }
-    fn read_at_offset_internal(
-        address_domain: u32, base: StorageBaseAddress, offset: u8
-    ) -> SyscallResult<EthAddress> {
-        Result::Ok(
-            StorageAccess::<felt252>::read_at_offset_internal(address_domain, base, offset)?
-                .try_into()
-                .expect('Non EthAddress')
-        )
-    }
-    fn write_at_offset_internal(
-        address_domain: u32, base: StorageBaseAddress, offset: u8, value: EthAddress
-    ) -> SyscallResult<()> {
-        StorageAccess::<felt252>::write_at_offset_internal(
-            address_domain, base, offset, value.into()
-        )
-    }
-    #[inline(always)]
-    fn size_internal(value: EthAddress) -> u8 {
-        1_u8
-    }
-}
-
-#[contract]
+#[starknet::contract]
 mod L2GovernanceRelay {
     use starknet::ClassHash;
     use super::ISpellDispatcherTrait;
     use super::ISpellLibraryDispatcher;
     use traits::Into;
     use starknet::EthAddress;
-    use super::EthAddressStorageAccess;
 
+    #[storage]
     struct Storage {
-        _l1_governance_relay: EthAddress
-    }
-
-    #[view]
-    fn l1_governance_relay() -> EthAddress {
-        _l1_governance_relay::read()
+        l1_governance_relay: EthAddress
     }
 
     #[constructor]
-    fn constructor(l1_governance_relay: EthAddress) {
-        _l1_governance_relay::write(l1_governance_relay);
+    fn constructor(ref self: ContractState, l1_governance_relay: EthAddress) {
+        self.l1_governance_relay.write(l1_governance_relay);
+    }
+
+    #[generate_trait]
+    #[external(v0)]
+    impl L2GovernanceRelay of IL2GovernanceRelay {
+        fn get_l1_governance_relay(self: @ContractState) -> EthAddress {
+            self.l1_governance_relay.read()
+        }
     }
 
     #[l1_handler]
-    fn relay(from_address: felt252, spell: ClassHash) {
-        assert(_l1_governance_relay::read().into() == from_address, 'l2_gov_relay/not-from-l1_relay');
-
+    fn relay(ref self: ContractState, from_address: felt252, spell: ClassHash) {
+        assert(self.l1_governance_relay.read().into() == from_address, 'l2_gov_relay/not-from-l1_relay');
         ISpellLibraryDispatcher { class_hash: spell }.execute();
     }
 }

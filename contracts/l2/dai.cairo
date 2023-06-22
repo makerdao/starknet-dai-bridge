@@ -12,8 +12,33 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+use starknet::ContractAddress;
 
-#[contract]
+#[starknet::interface]
+trait IDai<C> {
+    fn wards(self: @C, user: ContractAddress) -> bool;
+    fn rely(ref self: C, user: ContractAddress);
+    fn deny(ref self: C, user: ContractAddress);
+    fn mint(ref self: C, recipient: ContractAddress, amount: u256);
+    fn burn(ref self: C, account: ContractAddress, amount: u256);
+    fn name(self: @C) -> felt252;
+    fn symbol(self: @C) -> felt252;
+    fn decimals(self: @C) -> u8;
+    fn total_supply(self: @C) -> u256;
+    fn balance_of(self: @C, account: ContractAddress) -> u256;
+    fn allowance(self: @C, owner: ContractAddress, spender: ContractAddress) -> u256;
+    fn transfer(ref self: C, recipient: ContractAddress, amount: u256);
+    fn transfer_from(
+        ref self: C, sender: ContractAddress, recipient: ContractAddress, amount: u256
+    );
+    fn approve(ref self: C, spender: ContractAddress, amount: u256);
+    fn increase_allowance(ref self: C, spender: ContractAddress, added_value: u256);
+    fn decrease_allowance(
+        ref self: C, spender: ContractAddress, subtracted_value: u256
+    );
+}
+
+#[starknet::contract]
 mod Dai {
     use starknet::get_caller_address;
     use starknet::get_contract_address;
@@ -21,6 +46,7 @@ mod Dai {
     use zeroable::Zeroable;
     use integer::BoundedInt;
 
+    #[storage]
     struct Storage {
         _total_supply: u256,
         _balances: LegacyMap<ContractAddress, u256>,
@@ -29,174 +55,183 @@ mod Dai {
     }
 
     #[event]
-    fn Rely(user: ContractAddress) {}
-
-    #[event]
-    fn Deny(user: ContractAddress) {}
-
-    #[event]
-    fn Transfer(sender: ContractAddress, recipient: ContractAddress, value: u256) {}
-
-    #[event]
-    fn Approval(owner: ContractAddress, spender: ContractAddress, value: u256) {}
-
-    #[view]
-    fn decimals() -> u8 {
-        18_u8
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        Rely: Rely,
+        Deny: Deny,
+        Transfer: Transfer,
+        Approval: Approval,
     }
 
-    #[view]
-    fn name() -> felt252 {
-        'Dai Stablecoin'
+    #[derive(Drop, starknet::Event)]
+    struct Rely {
+        user: ContractAddress
     }
 
-    #[view]
-    fn symbol() -> felt252 {
-        'DAI'
+    #[derive(Drop, starknet::Event)]
+    struct Deny {
+        user: ContractAddress
     }
 
-    #[view]
-    fn total_supply() -> u256 {
-        _total_supply::read()
+    #[derive(Drop, starknet::Event)]
+    struct Transfer {
+        from: ContractAddress,
+        to: ContractAddress,
+        value: u256
     }
 
-    #[view]
-    fn balance_of(user: ContractAddress) -> u256 {
-        _balances::read(user)
-    }
-
-    #[view]
-    fn allowance(owner: ContractAddress, spender: ContractAddress) -> u256 {
-        _allowances::read((owner, spender))
-    }
-
-    #[view]
-    fn wards(user: ContractAddress) -> bool {
-        _wards::read(user)
-    }
-
-    fn auth() {
-        assert(_wards::read(get_caller_address()), 'dai/not-authorized');
-    }
-
-    #[external]
-    fn rely(user: ContractAddress) {
-        auth();
-        _wards::write(user, true);
-        Rely(user);
-    }
-
-    #[external]
-    fn deny(user: ContractAddress) {
-        auth();
-        _wards::write(user, false);
-        Deny(user);
+    #[derive(Drop, starknet::Event)]
+    struct Approval {
+        owner: ContractAddress,
+        spender: ContractAddress,
+        value: u256
     }
 
     #[constructor]
-    fn constructor(ward: ContractAddress) {
-        _wards::write(ward, true);
-        Rely(ward);
+    fn constructor(ref self: ContractState, ward: ContractAddress) {
+        self._wards.write(ward, true);
+        self.emit(Event::Rely(Rely { user: ward }));
     }
 
-    #[external]
-    fn mint(recipient: ContractAddress, amount: u256) {
-        auth();
+    #[external(v0)]
+    impl IDaiImpl of super::IDai<ContractState> {
+        fn name(self: @ContractState) -> felt252 {
+            'Dai Stablecoin'
+        }
 
-        assert(recipient.is_non_zero(), 'dai/invalid-recipient');
-        assert(recipient != get_contract_address(), 'dai/invalid-recipient');
+        fn symbol(self: @ContractState) -> felt252 {
+            'DAI'
+        }
 
-        _balances::write(recipient, _balances::read(recipient) + amount);
-        // TODO: no need for safe math here
-        _total_supply::write(_total_supply::read() + amount);
+        fn decimals(self: @ContractState) -> u8 {
+            18_u8
+        }
 
-        Transfer(Zeroable::zero(), recipient, amount);
-    }
+        fn total_supply(self: @ContractState) -> u256 {
+            self._total_supply.read()
+        }
 
-    #[external]
-    fn burn(account: ContractAddress, amount: u256) {
+        fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
+            self._balances.read(account)
+        }
 
-        let balance = _balances::read(account);
-        assert(balance >= amount, 'dai/insufficient-balance');
+        fn allowance(self: @ContractState, owner: ContractAddress, spender: ContractAddress) -> u256 {
+            self._allowances.read((owner, spender))
+        }
 
-        _balances::write(account, balance - amount);
+        fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> () {
+            self.transfer_helper(get_caller_address(), recipient, amount);
+        }
 
-        // TODO: no need for safe math here
-        _total_supply::write(_total_supply::read() - amount);
+        fn transfer_from(ref self: ContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256) -> () {
 
-        Transfer(account, Zeroable::zero(), amount);
+            self.transfer_helper(sender, recipient, amount);
 
-        let caller = get_caller_address();
+            let caller = get_caller_address();
+            if(caller != sender) {
+                let allowance = self._allowances.read((sender, caller));
+                if(allowance != BoundedInt::max()) {
+                    assert(allowance >= amount, 'dai/insufficient-allowance');
+                    self._allowances.write((sender, caller), allowance - amount);
+                }
+            }
+        }
 
-        if(caller != account) {
-            let allowance = _allowances::read((account, caller));
-            if(allowance != BoundedInt::max()) {
-                assert(allowance >= amount, 'dai/insufficient-allowance');
-                _allowances::write((account, caller), allowance - amount);
+        fn approve(ref self: ContractState, spender: ContractAddress, amount: u256) -> () {
+            self.approve_helper(get_caller_address(), spender, amount);
+        }
+
+        fn increase_allowance(ref self: ContractState, spender: ContractAddress, added_value: u256) -> () {
+            let caller = get_caller_address();
+            self.approve_helper(caller, spender, self._allowances.read((caller, spender)) + added_value);
+        }
+
+        fn decrease_allowance(ref self: ContractState, spender: ContractAddress, subtracted_value: u256) -> () {
+            let caller = get_caller_address();
+            self.approve_helper(caller, spender, self._allowances.read((caller, spender)) - subtracted_value);
+        }
+
+        fn wards(self: @ContractState, user: ContractAddress) -> bool {
+            self._wards.read(user)
+        }
+
+        fn rely(ref self: ContractState, user: ContractAddress) {
+            self.auth();
+            self._wards.write(user, true);
+            self.emit(Event::Rely( Rely { user }));
+        }
+
+        fn deny(ref self: ContractState, user: ContractAddress) {
+            self.auth();
+            self._wards.write(user, false);
+            self.emit(Event::Deny(Deny { user }));
+        }
+
+        fn mint(ref self: ContractState, recipient: ContractAddress, amount: u256) {
+            self.auth();
+
+            assert(recipient.is_non_zero(), 'dai/invalid-recipient');
+            assert(recipient != get_contract_address(), 'dai/invalid-recipient');
+
+            self._balances.write(recipient, self._balances.read(recipient) + amount);
+            // TODO: no need for safe math here
+            self._total_supply.write(self._total_supply.read() + amount);
+
+            self.emit(Event::Transfer(
+                Transfer { from: Zeroable::zero(), to: recipient, value: amount }
+            ));
+        }
+
+        fn burn(ref self: ContractState, account: ContractAddress, amount: u256) {
+
+            let balance = self._balances.read(account);
+            assert(balance >= amount, 'dai/insufficient-balance');
+
+            self._balances.write(account, balance - amount);
+
+            self._total_supply.write(self._total_supply.read() - amount);
+
+            self.emit(Event::Transfer(
+                Transfer { from: account, to: Zeroable::zero(), value: amount }
+            ));
+
+            let caller = get_caller_address();
+
+            if(caller != account) {
+                let allowance = self._allowances.read((account, caller));
+                if(allowance != BoundedInt::max()) {
+                    assert(allowance >= amount, 'dai/insufficient-allowance');
+                    self._allowances.write((account, caller), allowance - amount);
+                }
             }
         }
     }
 
-    #[external]
-    fn transfer(recipient: ContractAddress, amount: u256) -> bool {
-        _transfer(get_caller_address(), recipient, amount);
-        true
-    }
+    #[generate_trait]
+    impl PrivateImpl of PrivateTrait {
 
-    #[external]
-    fn transfer_from(sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool {
-
-        _transfer(sender, recipient, amount);
-
-        let caller = get_caller_address();
-        if(caller != sender) {
-            let allowance = _allowances::read((sender, caller));
-            if(allowance != BoundedInt::max()) {
-                assert(allowance >= amount, 'dai/insufficient-allowance');
-                _allowances::write((sender, caller), allowance - amount);
-            }
+        fn auth(self: @ContractState) {
+            assert(self._wards.read(get_caller_address()), 'dai/not-authorized');
         }
-        true
+
+        fn transfer_helper(ref self: ContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256) {
+
+            assert(recipient.is_non_zero(), 'dai/invalid-recipient');
+            assert(recipient != get_contract_address(), 'dai/invalid-recipient');
+
+            let sender_balance = self._balances.read(sender);
+            assert(sender_balance >= amount, 'dai/insufficient-balance');
+
+            self._balances.write(sender, sender_balance - amount);
+            self._balances.write(recipient, self._balances.read(recipient) + amount);
+
+            self.emit(Event::Transfer(Transfer { from: sender, to: recipient, value: amount}));
+        }
+
+        fn approve_helper(ref self: ContractState, caller: ContractAddress, spender: ContractAddress, amount: u256) {
+            assert(spender.is_non_zero(), 'dai/invalid-recipient');
+            self._allowances.write((caller, spender), amount);
+            self.emit(Event::Approval( Approval {owner: caller, spender, value: amount}));
+        }
     }
-
-    #[external]
-    fn approve(spender: ContractAddress, amount: u256) -> bool {
-        _approve(get_caller_address(), spender, amount);
-        true
-    }
-
-    #[external]
-    fn increase_allowance(spender: ContractAddress, amount: u256) -> bool {
-        let caller = get_caller_address();
-        _approve(caller, spender, _allowances::read((caller, spender)) + amount);
-        true
-    }
-
-    #[external]
-    fn decrease_allowance(spender: ContractAddress, amount: u256) -> bool {
-        let caller = get_caller_address();
-        _approve(caller, spender, _allowances::read((caller, spender)) - amount);
-        true
-    }
-
-    fn _transfer(sender: ContractAddress, recipient: ContractAddress, amount: u256) {
-
-        assert(recipient.is_non_zero(), 'dai/invalid-recipient');
-        assert(recipient != get_contract_address(), 'dai/invalid-recipient');
-
-        let sender_balance = _balances::read(sender);
-        assert(sender_balance >= amount, 'dai/insufficient-balance');
-
-        _balances::write(sender, sender_balance - amount);
-        _balances::write(recipient, _balances::read(recipient) + amount);
-
-        Transfer(sender, recipient, amount);
-    }
-
-    fn _approve(caller: ContractAddress, spender: ContractAddress, amount: u256) {
-        assert(spender.is_non_zero(), 'dai/invalid-recipient');
-        _allowances::write((caller, spender), amount);
-        Approval(caller, spender, amount);
-    }
-
 }

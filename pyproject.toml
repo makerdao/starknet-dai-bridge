@@ -6,9 +6,9 @@ authors = ["MakerDAO"]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.10"
-cairo-lang = "0.11.0.2"
+cairo-lang = "0.11.2"
 dill = "0.3.4"
-starknet-devnet = "0.5.1"
+starknet-devnet = "0.5.3"
 slither-analyzer = "0.8.3"
 
 [tool.poetry.dev-dependencies]

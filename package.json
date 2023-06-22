@@ -14,7 +14,7 @@
     "compile:l2": "hardhat starknet-compile --add-pythonic-hints",
     "compile": "yarn compile:l1 && yarn compile:l2",
     "chain:l1": "hardhat node",
-    "chain:l2": "starknet-devnet --cairo-compiler-manifest /home/maciejka/projects/maker/cairo/Cargo.toml",
+    "chain:l2": "starknet-devnet --sierra-compiler-path /home/maciejka/projects/maker/cairo/target/release/sierra-compile",
     "chain": "concurrently 'yarn chain:l1' 'yarn chain:l2'",
     "chain:ci": "concurrently 'NODE_ENV=test yarn chain:l1' 'yarn chain:l2'",
     "test:l1": "NODE_ENV=test TEST_ENV=l1 hardhat test",

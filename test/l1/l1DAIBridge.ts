@@ -290,7 +290,7 @@ describe("l1:L1DAIBridge", function () {
       expect(await dai.balanceOf(escrow.address)).to.be.eq(0);
     });
   });
-  describe.only("withdraw", function () {
+  describe("withdraw", function () {
     it("sends funds from the escrow", async () => {
       const {
         admin,

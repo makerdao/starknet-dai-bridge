@@ -13,62 +13,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use serde::Serde;
-use traits::{Into, TryInto};
-use option::{Option, OptionTrait};
-use zeroable::Zeroable;
 use starknet::ContractAddress;
-use starknet::StorageAccess;
-use starknet::StorageAddress;
-use starknet::StorageBaseAddress;
-use starknet::SyscallResult;
-use starknet::EthAddress;
-use starknet::EthAddressIntoFelt252;
-use starknet::Felt252TryIntoEthAddress;
 
-#[abi]
-trait IBurnable {
-    fn burn(from_address: ContractAddress, value: u256);
+#[starknet::interface]
+trait IBurnable<C> {
+    fn burn(ref self: C, from_address: ContractAddress, value: u256);
 }
 
-impl EthAddressStorageAccess of StorageAccess::<EthAddress> {
-    fn read(address_domain: u32, base: StorageBaseAddress) -> SyscallResult<EthAddress> {
-        Result::Ok(
-            EthAddress { address: StorageAccess::<felt252>::read(address_domain, base)?}
-        )
-    }
-    fn write(address_domain: u32, base: StorageBaseAddress, value: EthAddress) -> SyscallResult<()> {
-        StorageAccess::<felt252>::write(address_domain, base, value.into())
-    }
-    fn read_at_offset_internal(
-        address_domain: u32, base: StorageBaseAddress, offset: u8
-    ) -> SyscallResult<EthAddress> {
-        Result::Ok(
-            StorageAccess::<felt252>::read_at_offset_internal(address_domain, base, offset)?
-                .try_into()
-                .expect('Non EthAddress')
-        )
-    }
-    fn write_at_offset_internal(
-        address_domain: u32, base: StorageBaseAddress, offset: u8, value: EthAddress
-    ) -> SyscallResult<()> {
-        StorageAccess::<felt252>::write_at_offset_internal(
-            address_domain, base, offset, value.into()
-        )
-    }
-    #[inline(always)]
-    fn size_internal(value: EthAddress) -> u8 {
-        1_u8
-    }
-}
-
-impl U128IntoU256 of Into<u128, u256> {
-    fn into(self: u128) -> u256 {
-        u256 { low: self, high: 0_u128 }
-    }
-}
-
-#[contract]
+#[starknet::contract]
 mod L2DAITeleportGateway {
     use starknet::get_caller_address;
     use starknet::syscalls::send_message_to_l1_syscall;
@@ -76,24 +28,15 @@ mod L2DAITeleportGateway {
     use starknet::ContractAddress;
     use traits::Into;
     use zeroable::Zeroable;
-    use integer::U128IntoFelt252;
     use starknet::EthAddress;
-    use starknet::EthAddressIntoFelt252;
-    use starknet::EthAddressSerde;
-    use starknet::EthAddressZeroable;
-    use starknet::StorageAddress;
-    use starknet::StorageBaseAddress;
-    use super::EthAddressStorageAccess;
     use super::IBurnableDispatcher;
     use super::IBurnableDispatcherTrait;
     use array::ArrayTrait;
-    use super::U128IntoU256;
 
     const FINALIZE_REGISTER_TELEPORT: felt252 = 0;
     const FINALIZE_FLUSH: felt252 = 1;
-    const MAX_NONCE: u128 = 1208925819614629174706175_u128; //2**80-1
+    const MAX_NONCE: u128 = 0xffffffffffffffffffff_u128; //2**80-1
 
-    //#[derive(Drop, Serde, PartialEq, Copy, storage_access::StorageAccess)]
     #[derive(Drop, Serde, PartialEq, storage_access::StorageAccess)]
     struct TeleportData {
         target_domain: felt252,
@@ -103,6 +46,7 @@ mod L2DAITeleportGateway {
         timestamp: u64
     }
 
+    #[storage]
     struct Storage {
         _nonce: u128,
         _is_open: bool,
@@ -116,19 +60,31 @@ mod L2DAITeleportGateway {
     }
 
     #[event]
-    fn Closed() {}
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        Closed: Closed,
+        Rely: Rely,
+        Deny: Deny,
+        File: File,
+        TeleportInitialized: TeleportInitialized,
+        TeleportRegisterFinalized: TeleportRegisterFinalized,
+        Flushed: Flushed,
+    }
 
-    #[event]
-    fn Rely(user: ContractAddress) {}
+    #[derive(Drop, starknet::Event)]
+    struct Closed {}
 
-    #[event]
-    fn Deny(user: ContractAddress) {}
+    #[derive(Drop, starknet::Event)]
+    struct Rely { user: ContractAddress }
 
-    #[event]
-    fn File(what: felt252, domain: felt252, data: bool) {}
+    #[derive(Drop, starknet::Event)]
+    struct Deny { user: ContractAddress }
 
-    #[event]
-    fn TeleportInitialized(
+    #[derive(Drop, starknet::Event)]
+    struct File { what: felt252, domain: felt252, data: bool }
+
+    #[derive(Drop, starknet::Event)]
+    struct TeleportInitialized {
         source_domain: felt252,
         target_domain: felt252,
         receiver: EthAddress,
@@ -136,10 +92,10 @@ mod L2DAITeleportGateway {
         amount: u128,
         nonce: u128,
         timestamp: u64,
-    ) {}
+    }
 
-    #[event]
-    fn TeleportRegisterFinalized(
+    #[derive(Drop, starknet::Event)]
+    struct TeleportRegisterFinalized {
         source_domain: felt252,
         target_domain: felt252,
         receiver: EthAddress,
@@ -147,213 +103,211 @@ mod L2DAITeleportGateway {
         amount: u128,
         nonce: u128,
         timestamp: u64,
-    ) {}
-
-    #[event]
-    fn Flushed(target_domain: felt252, dai: u256) {}
-
-    #[view]
-    fn nonce() -> u128 {
-        _nonce::read()
     }
 
-    #[view]
-    fn is_open() -> bool {
-        _is_open::read()
-    }
-
-    #[view]
-    fn dai() -> ContractAddress {
-        _dai::read().contract_address
-    }
-
-    #[view]
-    fn teleport_gateway() -> EthAddress {
-        _teleport_gateway::read()
-    }
-
-    #[view]
-    fn domain() -> felt252 {
-        _domain::read()
-    }
-
-    #[view]
-    fn valid_domains(domain: felt252) -> bool {
-        _valid_domains::read(domain)
-    }
-
-    #[view]
-    fn batched_dai_to_flush(domain: felt252) -> u256 {
-        _batched_dai_to_flush::read(domain)
-    }
-
-    #[view]
-    fn wards(user: ContractAddress) -> bool {
-        _wards::read(user)
-    }
-
-    #[view]
-    fn teleports(nonce: u128) -> TeleportData {
-        _teleports::read(nonce)
-    }
-
-    #[external]
-    fn rely(user: ContractAddress) {
-        auth();
-        _wards::write(user, true);
-        Rely(user);
-    }
-
-    #[external]
-    fn deny(user: ContractAddress) {
-        auth();
-        _wards::write(user, false);
-        Deny(user);
-    }
-
-    fn auth() {
-        assert(_wards::read(get_caller_address()), 'l2_dai_teleport/not-authorized');
-    }
-
-    fn read_and_update_nonce() -> u128 {
-        let nonce = _nonce::read();
-        assert(nonce < MAX_NONCE, 'l2_dai_teleport/nonce-overflow');
-        _nonce::write(nonce + 1);
-        nonce
+    #[derive(Drop, starknet::Event)]
+    struct Flushed {
+        target_domain: felt252, dai: u256
     }
 
     #[constructor]
     fn constructor(
+        ref self: ContractState,
         ward: ContractAddress,
         dai: ContractAddress,
         teleport_gateway: EthAddress,
         domain: felt252,
     ) {
-        _wards::write(ward, true);
-        Rely(ward);
+        self._wards.write(ward, true);
+        self.emit(Event::Rely(Rely { user: ward }));
 
-        _is_open::write(true);
-        _dai::write(IBurnableDispatcher { contract_address: dai });
-        _teleport_gateway::write(teleport_gateway);
-        _domain::write(domain);
+        self._is_open.write(true);
+        self._dai.write(IBurnableDispatcher { contract_address: dai });
+        self._teleport_gateway.write(teleport_gateway);
+        self._domain.write(domain);
     }
 
-    #[external]
-    fn close() {
-        auth();
-        _is_open::write(false);
-        Closed();
-    }
 
-    #[external]
-    fn file(what: felt252, domain: felt252, data: bool) {
-        auth();
-        assert(what == 'valid_domains', 'l2_dai_teleport/invalid-param');
-        _valid_domains::write(domain, data);
-        File(what, domain, data);
-    }
+    #[generate_trait]
+    impl L2DAIBridgeImpl of L2DAIBridgeTrait {
+        fn nonce(self: @ContractState) -> u128 {
+            self._nonce.read()
+        }
 
-    #[external]
-    fn initiate_teleport(
-        target_domain: felt252,
-        receiver: EthAddress,
-        amount: u128,
-        operator: EthAddress,
-    ) {
-        assert(_is_open::read(), 'l2_dai_teleport/gateway-closed');
-        assert(_valid_domains::read(target_domain), 'l2_dai_teleport/invalid-domain');
-        assert(amount.is_non_zero(), 'l2_dai_teleport/invalid-amount');
+        fn is_open(self: @ContractState) -> bool {
+            self._is_open.read()
+        }
 
-        _batched_dai_to_flush::write(
-            target_domain,
-            _batched_dai_to_flush::read(target_domain) + amount.into()
-        );
+        fn dai(self: @ContractState) -> ContractAddress {
+            self._dai.read().contract_address
+        }
 
-        _dai::read().burn(get_caller_address(), amount.into());
+        fn teleport_gateway(self: @ContractState) -> EthAddress {
+            self._teleport_gateway.read()
+        }
 
-        let domain = _domain::read();
-        let nonce = read_and_update_nonce();
-        let timestamp = get_block_timestamp();
+        fn domain(self: @ContractState) -> felt252 {
+            self._domain.read()
+        }
 
-        TeleportInitialized(
-            domain,
-            target_domain,
-            receiver,
-            operator,
-            amount,
-            nonce,
-            timestamp,
-        );
+        fn valid_domains(self: @ContractState, domain: felt252) -> bool {
+            self._valid_domains.read(domain)
+        }
 
-        _teleports::write(nonce, TeleportData {
-            target_domain,
-            receiver,
-            operator,
-            amount,
-            timestamp,
-        });
-    }
+        fn batched_dai_to_flush(self: @ContractState, domain: felt252) -> u256 {
+            self._batched_dai_to_flush.read(domain)
+        }
 
-    #[external]
-    fn finalize_register_teleport(
-        target_domain: felt252,
-        receiver: EthAddress,
-        amount: u128,
-        operator: EthAddress,
-        nonce: u128,
-        timestamp: u64,
-    ) {
-        assert(
-            TeleportData {
+        fn wards(self: @ContractState, user: ContractAddress) -> bool {
+            self._wards.read(user)
+        }
+
+        fn teleports(self: @ContractState, nonce: u128) -> TeleportData {
+            self._teleports.read(nonce)
+        }
+
+        fn rely(ref self: ContractState, user: ContractAddress) {
+            self.auth();
+            self._wards.write(user, true);
+            self.emit(Event::Rely(Rely{user}));
+        }
+
+        fn deny(ref self: ContractState, user: ContractAddress) {
+            self.auth();
+            self._wards.write(user, false);
+            self.emit(Event::Deny(Deny { user }));
+        }
+
+        fn auth(self: @ContractState, ) {
+            assert(self._wards.read(get_caller_address()), 'l2_dai_teleport/not-authorized');
+        }
+
+        fn read_and_update_nonce(ref self: ContractState) -> u128 {
+            let nonce = self._nonce.read();
+            assert(nonce < MAX_NONCE, 'l2_dai_teleport/nonce-overflow');
+            self._nonce.write(1_u128);
+            nonce
+        }
+
+        fn close(ref self: ContractState) {
+            self.auth();
+            self._is_open.write(false);
+            self.emit(Event::Closed( Closed{} ));
+        }
+
+        fn file(ref self: ContractState, what: felt252, domain: felt252, data: bool) {
+            self.auth();
+            assert(what == 'valid_domains', 'l2_dai_teleport/invalid-param');
+            self._valid_domains.write(domain, data);
+            self.emit(Event::File(File { what, domain, data }));
+        }
+
+        fn initiate_teleport(
+            ref self: ContractState,
+            target_domain: felt252,
+            receiver: EthAddress,
+            amount: u128,
+            operator: EthAddress,
+        ) {
+            assert(self._is_open.read(), 'l2_dai_teleport/gateway-closed');
+            assert(self._valid_domains.read(target_domain), 'l2_dai_teleport/invalid-domain');
+            assert(amount.is_non_zero(), 'l2_dai_teleport/invalid-amount');
+
+            self._batched_dai_to_flush.write(
+                target_domain,
+                self._batched_dai_to_flush.read(target_domain) + amount.into()
+            );
+
+            self._dai.read().burn(get_caller_address(), amount.into());
+
+            let source_domain = self._domain.read();
+            let nonce = self.read_and_update_nonce();
+            let timestamp = get_block_timestamp();
+
+            self.emit(Event::TeleportInitialized( TeleportInitialized {
+                source_domain,
+                target_domain,
+                receiver,
+                operator,
+                amount,
+                nonce,
+                timestamp,
+            }));
+
+            self._teleports.write(nonce, TeleportData {
                 target_domain,
                 receiver,
                 operator,
                 amount,
                 timestamp,
-            } == _teleports::read(nonce),
-            'l2_dai_teleport/does-not-exist'
-        );
+            });
+        }
 
-        let domain = _domain::read();
 
-        let mut payload: Array<felt252> = ArrayTrait::new();
-        payload.append(FINALIZE_REGISTER_TELEPORT);
-        payload.append(domain);
-        payload.append(target_domain);
-        payload.append(receiver.into());
-        payload.append(operator.into());
-        payload.append(amount.into());
-        payload.append(nonce.into());
-        payload.append(timestamp.into());
+        fn finalize_register_teleport(
+            ref self: ContractState,
+            target_domain: felt252,
+            receiver: EthAddress,
+            amount: u128,
+            operator: EthAddress,
+            nonce: u128,
+            timestamp: u64,
+        ) {
+            assert(
+                TeleportData {
+                    target_domain,
+                    receiver,
+                    operator,
+                    amount,
+                    timestamp,
+                } == self._teleports.read(nonce),
+                'l2_dai_teleport/does-not-exist'
+            );
 
-        TeleportRegisterFinalized(
-            domain,
-            target_domain,
-            receiver,
-            operator,
-            amount,
-            nonce,
-            timestamp,
-        );
+            let source_domain = self._domain.read();
 
-        send_message_to_l1_syscall(_teleport_gateway::read().into(), payload.span());
-    }
+            let mut payload: Array<felt252> = ArrayTrait::new();
+            payload.append(FINALIZE_REGISTER_TELEPORT);
+            payload.append(source_domain);
+            payload.append(target_domain);
+            payload.append(receiver.into());
+            payload.append(operator.into());
+            payload.append(amount.into());
+            payload.append(nonce.into());
+            payload.append(timestamp.into());
 
-    #[external]
-    fn flush(target_domain: felt252) {
-        let dai_to_flush = _batched_dai_to_flush::read(target_domain);
-        assert(dai_to_flush.is_non_zero(), 'l2_dai_teleport/no-dai-to-flush');
+            self.emit(Event::TeleportRegisterFinalized( TeleportRegisterFinalized {
+                source_domain,
+                target_domain,
+                receiver,
+                operator,
+                amount,
+                nonce,
+                timestamp,
+            }));
 
-        _batched_dai_to_flush::write(target_domain, Zeroable::zero());
+            send_message_to_l1_syscall(
+                self._teleport_gateway.read().into(),
+                payload.span()
+            );
+        }
 
-        let mut payload: Array<felt252> = ArrayTrait::new();
-        payload.append(FINALIZE_FLUSH);
-        payload.append(target_domain);
-        payload.append(dai_to_flush.low.into());
-        payload.append(dai_to_flush.high.into());
 
-        send_message_to_l1_syscall(_teleport_gateway::read().into(), payload.span());
+        fn flush(ref self: ContractState, target_domain: felt252) {
+            let dai_to_flush = self._batched_dai_to_flush.read(target_domain);
+            assert(dai_to_flush.is_non_zero(), 'l2_dai_teleport/no-dai-to-flush');
 
-        Flushed(target_domain, dai_to_flush);
+            self._batched_dai_to_flush.write(target_domain, Zeroable::zero());
+
+            let mut payload: Array<felt252> = ArrayTrait::new();
+            payload.append(FINALIZE_FLUSH);
+            payload.append(target_domain);
+            payload.append(dai_to_flush.low.into());
+            payload.append(dai_to_flush.high.into());
+
+            send_message_to_l1_syscall(self._teleport_gateway.read().into(), payload.span());
+
+            self.emit(Event::Flushed(Flushed { target_domain, dai: dai_to_flush }));
+        }
     }
 }
